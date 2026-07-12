@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
+import Header from "./Header";
+import Sidebar from "../components/Sidebar/Sidebar";
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -8,13 +8,35 @@ type MainLayoutProps = {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <Box sx={{ display: "flex", height: "100vh", bgcolor: "#F4F6F8" }}>
+    <Box
+      sx={{
+        display: "flex",
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        bgcolor: "#EEF3FB",
+      }}
+    >
       <Sidebar />
 
-      <Box sx={{ flexGrow: 1 }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
         <Header />
 
-        <Box sx={{ p: 3 }}>
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            px: 4,
+            py: 3,
+          }}
+        >
           {children}
         </Box>
       </Box>
