@@ -11,9 +11,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <Box
       sx={{
         display: "flex",
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
+        width: "100%",
+        minHeight: "100vh",
         bgcolor: "#EEF3FB",
       }}
     >
@@ -24,7 +23,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          minWidth: 0,
         }}
       >
         <Header />
@@ -33,8 +32,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
           sx={{
             flex: 1,
             overflow: "auto",
-            px: 4,
-            py: 3,
+
+            px: {
+              xs: 1,
+              sm: 2,
+              md: 3,
+              lg: 4,
+            },
+
+            py: {
+              xs: 1,
+              sm: 2,
+              md: 3,
+            },
           }}
         >
           {children}

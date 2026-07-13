@@ -1,11 +1,8 @@
+import type { Company } from "../types/company";
 import { companies } from "../mock/companies";
 
 export const CompanyService = {
-  getAll() {
+  getAll(): Company[] {
     return companies;
-  },
-
-  getById(id: number) {
-    return companies.find((x) => x.id === id);
   },
 };
