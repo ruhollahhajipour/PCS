@@ -1,35 +1,48 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Breadcrumbs } from "@mui/material";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 
-type PageHeaderProps = {
+type Props = {
   title: string;
-  subtitle?: string;
+  subtitle: string;
 };
 
 export default function PageHeader({
   title,
   subtitle,
-}: PageHeaderProps) {
+}: Props) {
   return (
     <Box sx={{ mb: 4 }}>
+      <Breadcrumbs sx={{ mb: 1 }}>
+        <HomeRoundedIcon
+          sx={{
+            fontSize: 18,
+          }}
+        />
+
+        <Typography color="#2563EB">
+          {title}
+        </Typography>
+      </Breadcrumbs>
+
       <Typography
-        variant="h4"
         sx={{
-          fontWeight: 700,
+          fontSize: 40,
+          fontWeight: 800,
           color: "#16355B",
         }}
       >
         {title}
       </Typography>
 
-      {subtitle && (
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ mt: 1 }}
-        >
-          {subtitle}
-        </Typography>
-      )}
+      <Typography
+        sx={{
+          mt: 1,
+          color: "#64748B",
+          fontSize: 17,
+        }}
+      >
+        {subtitle}
+      </Typography>
     </Box>
   );
 }

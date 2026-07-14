@@ -1,4 +1,5 @@
-import { Card, CardProps } from "@mui/material";
+import Card from "@mui/material/Card";
+import type { CardProps } from "@mui/material/Card";
 
 export default function PCSCard(props: CardProps) {
   return (

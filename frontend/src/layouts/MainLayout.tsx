@@ -11,19 +11,31 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <Box
       sx={{
         display: "flex",
-        width: "100%",
-        minHeight: "100vh",
-        bgcolor: "#EEF3FB",
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        bgcolor: "#EEF4FB",
       }}
     >
-      <Sidebar />
+      {/* Sidebar */}
+
+      <Box
+        sx={{
+          width: 290,
+          flexShrink: 0,
+        }}
+      >
+        <Sidebar />
+      </Box>
+
+      {/* Main */}
 
       <Box
         sx={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          minWidth: 0,
+          overflow: "hidden",
         }}
       >
         <Header />
@@ -32,19 +44,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
           sx={{
             flex: 1,
             overflow: "auto",
+            px: 4,
+            py: 4,
 
-            px: {
-              xs: 1,
-              sm: 2,
-              md: 3,
-              lg: 4,
-            },
-
-            py: {
-              xs: 1,
-              sm: 2,
-              md: 3,
-            },
+            background: `
+              radial-gradient(circle at top left,#DBEAFE 0%,transparent 35%),
+              radial-gradient(circle at bottom right,#E0E7FF 0%,transparent 25%),
+              linear-gradient(180deg,#F8FBFF 0%,#EEF4FB 100%)
+            `,
           }}
         >
           {children}
