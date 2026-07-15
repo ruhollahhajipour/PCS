@@ -1,76 +1,79 @@
-import { Grid, MenuItem, TextField } from "@mui/material";
+import {
+  Grid,
+  TextField,
+  MenuItem,
+} from "@mui/material";
 
-type Props = {
-  data?: any;
-  onChange?: (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => void;
-};
-
-export default function CompanyForm({
-  data,
-  onChange,
-}: Props) {
+export default function CompanyForm() {
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={2} sx={{ mt: 1 }}>
       <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          name="code"
           label="Company Code"
-          value={data?.code || ""}
-          onChange={onChange}
+          defaultValue="KGN"
         />
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          name="name"
+          label="Short Name"
+          defaultValue="KGN"
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12 }}>
+        <TextField
+          fullWidth
           label="Company Name"
-          value={data?.name || ""}
-          onChange={onChange}
+          defaultValue="Kousha Gaman Namavar"
         />
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          name="country"
           label="Country"
-          value={data?.country || ""}
-          onChange={onChange}
+          defaultValue="Iran"
         />
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          name="currency"
+          label="City"
+          defaultValue="Tehran"
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12 }}>
+        <TextField
+          fullWidth
+          label="Address"
+          defaultValue="Tehran"
+        />
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <TextField
+          fullWidth
           label="Currency"
-          value={data?.currency || ""}
-          onChange={onChange}
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          name="timezone"
-          label="Time Zone"
-          value={data?.timezone || ""}
-          onChange={onChange}
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
           select
+          defaultValue="USD"
+        >
+          <MenuItem value="USD">USD</MenuItem>
+          <MenuItem value="EUR">EUR</MenuItem>
+          <MenuItem value="IRR">IRR</MenuItem>
+        </TextField>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <TextField
           fullWidth
-          name="status"
           label="Status"
-          value={data?.status || "Active"}
-          onChange={onChange}
+          select
+          defaultValue="Active"
         >
           <MenuItem value="Active">
             Active
@@ -82,27 +85,17 @@ export default function CompanyForm({
         </TextField>
       </Grid>
 
-      <Grid size={{ xs: 12 }}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          multiline
-          rows={3}
-          name="address"
-          label="Address"
-          value={data?.address || ""}
-          onChange={onChange}
+          label="Registration No."
         />
       </Grid>
 
-      <Grid size={{ xs: 12 }}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <TextField
           fullWidth
-          multiline
-          rows={4}
-          name="description"
-          label="Description"
-          value={data?.description || ""}
-          onChange={onChange}
+          label="Tax No."
         />
       </Grid>
     </Grid>

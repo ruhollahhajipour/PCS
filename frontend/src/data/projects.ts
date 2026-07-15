@@ -1,0 +1,51 @@
+import type { Project } from "../services/project.service";
+
+const projects: Project[] = [
+  {
+    id: 1,
+    companyId: 1,
+    plantId: 1,
+    code: "PCS-001",
+    name: "Project Cost System",
+    client: "KGN",
+    contractor: "KGN",
+    startDate: "2026-07-01",
+    finishDate: "2027-01-01",
+    budget: 2500000,
+    currency: "USD",
+    progress: 15,
+    status: "Active",
+  },
+  {
+    id: 2,
+    companyId: 1,
+    plantId: 1,
+    code: "EPC-102",
+    name: "Utility Expansion",
+    client: "ADISH",
+    contractor: "KGN",
+    startDate: "2026-06-01",
+    finishDate: "2027-12-30",
+    budget: 9800000,
+    currency: "USD",
+    progress: 44,
+    status: "Active",
+  },
+  {
+    id: 3,
+    companyId: 2,
+    plantId: 3,
+    code: "PMC-210",
+    name: "Petrochemical Development",
+    client: "NPC",
+    contractor: "KGN",
+    startDate: "2026-04-01",
+    finishDate: "2028-04-01",
+    budget: 15400000,
+    currency: "USD",
+    progress: 8,
+    status: "Planning",
+  },
+];
+
+export default projects;

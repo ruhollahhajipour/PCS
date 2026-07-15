@@ -4,15 +4,14 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
-  TextField,
-  MenuItem,
 } from "@mui/material";
 
-type Props = {
+import CompanyForm from "./CompanyForm";
+
+interface Props {
   open: boolean;
   onClose: () => void;
-};
+}
 
 export default function CompanyDialog({
   open,
@@ -25,84 +24,25 @@ export default function CompanyDialog({
       maxWidth="md"
       fullWidth
     >
-      <DialogTitle
-        sx={{
-          fontWeight: 700,
-          fontSize: 24,
-        }}
-      >
+      <DialogTitle>
         Company Information
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 3 }}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Company Code"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Company Name"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Country"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Currency"
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              label="Address"
-              multiline
-              rows={3}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Status"
-              select
-              defaultValue="Active"
-            >
-              <MenuItem value="Active">
-                Active
-              </MenuItem>
-
-              <MenuItem value="Inactive">
-                Inactive
-              </MenuItem>
-            </TextField>
-          </Grid>
-        </Grid>
+      <DialogContent dividers>
+        <CompanyForm />
       </DialogContent>
 
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose}>
+      <DialogActions>
+        <Button
+          onClick={onClose}
+          color="inherit"
+        >
           Cancel
         </Button>
 
         <Button
           variant="contained"
-          sx={{
-            textTransform: "none",
-            borderRadius: 3,
-          }}
+          onClick={onClose}
         >
           Save
         </Button>

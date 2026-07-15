@@ -1,157 +1,84 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  TextField,
-  Stack,
-  InputAdornment,
-} from "@mui/material";
+import { Box, Paper } from "@mui/material";
 
-import {
-  AddRounded,
-  SearchRounded,
-} from "@mui/icons-material";
+import PageHeader from "../../components/Common/PageHeader";
 
-import { DataGrid } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid";
+import CompanyToolbar from "./CompanyToolbar";
+import CompanyTable from "./CompanyTable";
+import CompanyDialog from "./CompanyDialog";
 
-const rows = [
-  {
-    id: 1,
-    code: "KGN",
-    company: "Kousha Gaman Namavar",
-    country: "Iran",
-    currency: "USD",
-    plants: 2,
-    projects: 5,
-    status: "Active",
-  },
-  {
-    id: 2,
-    code: "ADISH",
-    company: "South Adish Gas Condensate Refinery",
-    country: "Iran",
-    currency: "USD",
-    plants: 1,
-    projects: 3,
-    status: "Active",
-  },
-];
+import CompanyService from "../../services/company.service";
+
+import type { Company } from "../../models/company";
 
 export default function Companies() {
-  const [search, setSearch] = useState("");
+  const [rows, setRows] = useState<Company[]>([]);
 
-  const columns: GridColDef[] = [
-    { field: "code", headerName: "Code", width: 120 },
-    { field: "company", headerName: "Company", flex: 1 },
-    { field: "country", headerName: "Country", width: 120 },
-    { field: "currency", headerName: "Currency", width: 120 },
-    { field: "plants", headerName: "Plants", width: 100 },
-    { field: "projects", headerName: "Projects", width: 100 },
-    { field: "status", headerName: "Status", width: 120 },
-  ];
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
+  const loadCompanies = async () => {
+    const data = await CompanyService.getAll();
+    setRows(data);
+  };
+
+  const handleAdd = () => {
+    setDialogOpen(true);
+  };
+
+  const handleClose = () => {
+    setDialogOpen(false);
+  };
+
+  const handleView = (row: Company) => {
+    console.log("VIEW", row);
+  };
+
+  const handleEdit = (row: Company) => {
+    console.log("EDIT", row);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (row: Company) => {
+    await CompanyService.delete(row.id);
+    loadCompanies();
+  };
 
   return (
-    <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight={700}>
-            Companies
-          </Typography>
-
-          <Typography color="text.secondary">
-            Enterprise Company Management
-          </Typography>
-        </Box>
-
-        <Button
-          variant="contained"
-          startIcon={<AddRounded />}
-          sx={{
-            borderRadius: 3,
-            px: 3,
-            py: 1.2,
-            background:
-              "linear-gradient(90deg,#4F46E5,#7C3AED)",
-          }}
-        >
-          New Company
-        </Button>
-      </Box>
+    <Box width="100%">
+      <PageHeader
+        title="Companies"
+        subtitle="Enterprise Company Management"
+      />
 
       <Paper
         sx={{
           p: 3,
-          borderRadius: 4,
-          boxShadow: "0 12px 35px rgba(0,0,0,.08)",
+          borderRadius: 5,
+          background: "rgba(255,255,255,.82)",
+          backdropFilter: "blur(18px)",
+          boxShadow:
+            "0 20px 50px rgba(15,23,42,.08)",
         }}
       >
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          mb={3}
-        >
-          <TextField
-            placeholder="Search Company..."
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ width: 350 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRounded />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Stack>
+        <CompanyToolbar onAdd={handleAdd} />
 
-        <DataGrid
-          rows={rows.filter(
-            (r) =>
-              r.company
-                .toLowerCase()
-                .includes(search.toLowerCase()) ||
-              r.code
-                .toLowerCase()
-                .includes(search.toLowerCase())
-          )}
-          columns={columns}
-          autoHeight
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 20, 50]}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
-          sx={{
-            border: 0,
-
-            "& .MuiDataGrid-columnHeaders": {
-              bgcolor: "#F8FAFC",
-              fontWeight: 700,
-            },
-
-            "& .MuiDataGrid-row:hover": {
-              bgcolor: "#EEF4FB",
-            },
-          }}
+        <CompanyTable
+          rows={rows}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </Paper>
+
+      <CompanyDialog
+        open={dialogOpen}
+        onClose={handleClose}
+      />
     </Box>
   );
 }

@@ -1,12 +1,10 @@
 import { Box } from "@mui/material";
+import { Outlet } from "react-router-dom";
+
 import Header from "./Header";
 import Sidebar from "../components/Sidebar/Sidebar";
 
-type MainLayoutProps = {
-  children: React.ReactNode;
-};
-
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout() {
   return (
     <Box
       sx={{
@@ -18,7 +16,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       }}
     >
       {/* Sidebar */}
-
       <Box
         sx={{
           width: 290,
@@ -29,7 +26,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </Box>
 
       {/* Main */}
-
       <Box
         sx={{
           flex: 1,
@@ -46,7 +42,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
             overflow: "auto",
             px: 4,
             py: 4,
-
             background: `
               radial-gradient(circle at top left,#DBEAFE 0%,transparent 35%),
               radial-gradient(circle at bottom right,#E0E7FF 0%,transparent 25%),
@@ -54,7 +49,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             `,
           }}
         >
-          {children}
+          <Outlet />
         </Box>
       </Box>
     </Box>
