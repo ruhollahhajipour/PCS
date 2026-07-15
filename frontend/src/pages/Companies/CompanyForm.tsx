@@ -1,103 +1,171 @@
 import {
+  Box,
+  Button,
   Grid,
-  TextField,
   MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
 
 export default function CompanyForm() {
   return (
-    <Grid container spacing={2} sx={{ mt: 1 }}>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Company Code"
-          defaultValue="KGN"
-        />
+    <Paper
+      sx={{
+        p: 4,
+        borderRadius: 3,
+      }}
+    >
+      <Typography
+        variant="h5"
+        mb={3}
+        fontWeight={700}
+      >
+        Company Information
+      </Typography>
+
+      <Grid container spacing={3}>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Company Code"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 8 }}>
+          <TextField
+            fullWidth
+            label="Company Name"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Short Name"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Country"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="City"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            label="Address"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Phone"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Email"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            label="Website"
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            select
+            fullWidth
+            label="Currency"
+            defaultValue="USD"
+          >
+            <MenuItem value="USD">USD</MenuItem>
+            <MenuItem value="EUR">EUR</MenuItem>
+            <MenuItem value="IRR">IRR</MenuItem>
+          </TextField>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            fullWidth
+            type="date"
+            label="Fiscal Year Start"
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            select
+            fullWidth
+            label="Status"
+            defaultValue="Active"
+          >
+            <MenuItem value="Active">
+              Active
+            </MenuItem>
+
+            <MenuItem value="Inactive">
+              Inactive
+            </MenuItem>
+          </TextField>
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Description"
+          />
+        </Grid>
+
       </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Short Name"
-          defaultValue="KGN"
-        />
-      </Grid>
+      <Box mt={4}>
 
-      <Grid size={{ xs: 12 }}>
-        <TextField
-          fullWidth
-          label="Company Name"
-          defaultValue="Kousha Gaman Namavar"
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Country"
-          defaultValue="Iran"
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="City"
-          defaultValue="Tehran"
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12 }}>
-        <TextField
-          fullWidth
-          label="Address"
-          defaultValue="Tehran"
-        />
-      </Grid>
-
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Currency"
-          select
-          defaultValue="USD"
+        <Stack
+          direction="row"
+          spacing={2}
+          justifyContent="flex-end"
         >
-          <MenuItem value="USD">USD</MenuItem>
-          <MenuItem value="EUR">EUR</MenuItem>
-          <MenuItem value="IRR">IRR</MenuItem>
-        </TextField>
-      </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Status"
-          select
-          defaultValue="Active"
-        >
-          <MenuItem value="Active">
-            Active
-          </MenuItem>
+          <Button
+            variant="outlined"
+          >
+            Cancel
+          </Button>
 
-          <MenuItem value="Inactive">
-            Inactive
-          </MenuItem>
-        </TextField>
-      </Grid>
+          <Button
+            variant="contained"
+          >
+            Save
+          </Button>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Registration No."
-        />
-      </Grid>
+        </Stack>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TextField
-          fullWidth
-          label="Tax No."
-        />
-      </Grid>
-    </Grid>
+      </Box>
+
+    </Paper>
   );
 }

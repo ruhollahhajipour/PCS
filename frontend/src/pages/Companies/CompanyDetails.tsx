@@ -1,154 +1,201 @@
 import {
-  Paper,
-  Typography,
-  Grid,
+  Box,
   Chip,
   Divider,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
 } from "@mui/material";
 
-import type { Company } from "../../models/company";
-
-interface Props {
-  company: Company;
-}
-
-export default function CompanyDetails({
-  company,
-}: Props) {
+export default function CompanyDetails() {
   return (
     <Paper
       sx={{
         p: 4,
-        borderRadius: 5,
-        background: "rgba(255,255,255,.82)",
-        backdropFilter: "blur(18px)",
+        borderRadius: 3,
       }}
     >
-      <Typography
-        variant="h5"
-        fontWeight={700}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
         mb={3}
       >
-        {company.name}
-      </Typography>
+        <Typography
+          variant="h4"
+          fontWeight={700}
+        >
+          Company Details
+        </Typography>
 
-      <Divider sx={{ mb: 3 }} />
+        <Chip
+          color="success"
+          label="Active"
+        />
+      </Stack>
+
+      <Divider sx={{ mb: 4 }} />
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             Company Code
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.code}
+          <Typography variant="body1">
+            KGN
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Company Name
+          </Typography>
+
+          <Typography variant="body1">
+            Kousha Gaman Niroo
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             Short Name
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.shortName}
+          <Typography variant="body1">
+            KGN
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             Country
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.country}
+          <Typography variant="body1">
+            Iran
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             City
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.city}
+          <Typography variant="body1">
+            Tehran
           </Typography>
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Typography color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             Address
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.address}
+          <Typography variant="body1">
+            Tehran, Iran
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Phone
+          </Typography>
+
+          <Typography variant="body1">
+            +98 21 00000000
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Email
+          </Typography>
+
+          <Typography variant="body1">
+            info@kgn.ir
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Website
+          </Typography>
+
+          <Typography variant="body1">
+            www.kgn.ir
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
             Currency
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.currency}
+          <Typography variant="body1">
+            USD
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
-            Status
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Fiscal Year
           </Typography>
 
-          <Chip
-            label={company.status}
-            color={
-              company.status === "Active"
-                ? "success"
-                : "default"
-            }
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
-            Registration No.
-          </Typography>
-
-          <Typography fontWeight={600}>
-            {company.registrationNumber}
+          <Typography variant="body1">
+            2026
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
-            Tax Number
+        <Grid size={{ xs: 12 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Description
           </Typography>
 
-          <Typography fontWeight={600}>
-            {company.taxNumber}
+          <Typography variant="body1">
+            Default company used during PCS
+            initialization.
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
-            Created
-          </Typography>
-
-          <Typography fontWeight={600}>
-            {company.createdAt}
-          </Typography>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Typography color="text.secondary">
-            Updated
-          </Typography>
-
-          <Typography fontWeight={600}>
-            {company.updatedAt}
-          </Typography>
-        </Grid>
       </Grid>
     </Paper>
   );

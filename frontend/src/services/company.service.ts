@@ -1,35 +1,24 @@
-import type { Company } from "../models/company";
+import type { Company } from "../types/company";
 
-const companies: Company[] = [
+let companies: Company[] = [
   {
     id: 1,
     code: "KGN",
-    name: "Kousha Gaman Namavar",
+    name: "Kousha Gaman Niroo",
     shortName: "KGN",
     country: "Iran",
     city: "Tehran",
     address: "Tehran",
+    postalCode: "1111111111",
+    phone: "+98 21 00000000",
+    email: "info@kgn.ir",
+    website: "https://kgn.ir",
     currency: "USD",
-    taxNumber: "123456789",
-    registrationNumber: "987654321",
+    fiscalYearStart: "2026-01-01",
     status: "Active",
-    createdAt: "2026-07-15",
-    updatedAt: "2026-07-15",
-  },
-  {
-    id: 2,
-    code: "ADISH",
-    name: "South Adish Gas Condensate Refinery",
-    shortName: "ADISH",
-    country: "Iran",
-    city: "Bushehr",
-    address: "South Pars",
-    currency: "USD",
-    taxNumber: "223344556",
-    registrationNumber: "556677889",
-    status: "Active",
-    createdAt: "2026-07-15",
-    updatedAt: "2026-07-15",
+    description: "Default Company",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
@@ -39,30 +28,28 @@ class CompanyService {
   }
 
   async getById(id: number): Promise<Company | undefined> {
-    return Promise.resolve(companies.find((c) => c.id === id));
+    return Promise.resolve(
+      companies.find((c) => c.id === id)
+    );
   }
 
-  async create(company: Company): Promise<Company> {
+  async create(company: Company): Promise<void> {
     companies.push(company);
-    return Promise.resolve(company);
+    return Promise.resolve();
   }
 
-  async update(company: Company): Promise<Company> {
-    const index = companies.findIndex((c) => c.id === company.id);
+  async update(company: Company): Promise<void> {
+    companies = companies.map((c) =>
+      c.id === company.id ? company : c
+    );
 
-    if (index >= 0) {
-      companies[index] = company;
-    }
-
-    return Promise.resolve(company);
+    return Promise.resolve();
   }
 
   async delete(id: number): Promise<void> {
-    const index = companies.findIndex((c) => c.id === id);
-
-    if (index >= 0) {
-      companies.splice(index, 1);
-    }
+    companies = companies.filter(
+      (c) => c.id !== id
+    );
 
     return Promise.resolve();
   }
