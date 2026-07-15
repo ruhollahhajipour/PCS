@@ -1,22 +1,18 @@
-import type { Company } from "../types/company";
+import type { Company } from "../models/company";
 
 let companies: Company[] = [
   {
     id: 1,
     code: "KGN",
-    name: "Kousha Gaman Niroo",
     shortName: "KGN",
+    name: "Kousha Gaman Niroo",
     country: "Iran",
     city: "Tehran",
     address: "Tehran",
-    postalCode: "1111111111",
-    phone: "+98 21 00000000",
-    email: "info@kgn.ir",
-    website: "https://kgn.ir",
     currency: "USD",
-    fiscalYearStart: "2026-01-01",
     status: "Active",
-    description: "Default Company",
+    registrationNumber: "REG-001",
+    taxNumber: "TAX-001",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
