@@ -1,10 +1,18 @@
-import { Paper, Box, Typography } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+} from "@mui/material";
+
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 
 type Props = {
   title: string;
   value: string;
-  change: string;
-  color: string;
+  change?: string;
+  positive?: boolean;
   icon: React.ReactNode;
 };
 
@@ -12,110 +20,93 @@ export default function KPICard({
   title,
   value,
   change,
-  color,
+  positive = true,
   icon,
 }: Props) {
   return (
-    <Paper
+    <Card
+      elevation={0}
       sx={{
-        position: "relative",
-        overflow: "hidden",
-
-        borderRadius: 5,
-
-        p: 3,
-
-        height: 180,
-
-        background: "rgba(255,255,255,.82)",
-
-        backdropFilter: "blur(18px)",
-
-        border: "1px solid rgba(255,255,255,.55)",
-
-        boxShadow:
-          "0 20px 50px rgba(15,23,42,.08)",
-
-        transition: ".35s",
-
+        borderRadius: 4,
+        border: "1px solid #E5E7EB",
+        height: "100%",
+        transition: ".25s",
         "&:hover": {
-          transform: "translateY(-8px)",
-          boxShadow:
-            "0 35px 70px rgba(37,99,235,.18)",
-        },
-
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: 6,
-          height: "100%",
-          bgcolor: color,
+          transform: "translateY(-4px)",
+          boxShadow: "0 12px 28px rgba(0,0,0,.08)",
         },
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box>
-          <Typography
-            sx={{
-              color: "#64748B",
-              fontSize: 14,
-            }}
-          >
-            {title}
-          </Typography>
-
-          <Typography
-            sx={{
-              mt: 2,
-              fontWeight: 800,
-              fontSize: 34,
-              color: "#16355B",
-            }}
-          >
-            {value}
-          </Typography>
-
-          <Typography
-            sx={{
-              mt: 2,
-              color: change.startsWith("-")
-                ? "#EF4444"
-                : "#10B981",
-              fontWeight: 700,
-            }}
-          >
-            {change}
-          </Typography>
-        </Box>
-
+      <CardContent>
         <Box
-          sx={{
-            width: 68,
-            height: 68,
-
-            borderRadius: 4,
-
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-
-            color: "white",
-
-            background: color,
-
-            boxShadow: `0 15px 30px ${color}55`,
-          }}
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
         >
-          {icon}
+          <Box>
+            <Typography
+              fontSize={13}
+              color="text.secondary"
+            >
+              {title}
+            </Typography>
+
+            <Typography
+              mt={1}
+              fontWeight={700}
+              fontSize={28}
+            >
+              {value}
+            </Typography>
+
+            {change && (
+              <Box
+                mt={1}
+                display="flex"
+                alignItems="center"
+                gap={0.5}
+              >
+                {positive ? (
+                  <TrendingUpIcon
+                    color="success"
+                    fontSize="small"
+                  />
+                ) : (
+                  <TrendingDownIcon
+                    color="error"
+                    fontSize="small"
+                  />
+                )}
+
+                <Typography
+                  fontSize={13}
+                  color={
+                    positive
+                      ? "success.main"
+                      : "error.main"
+                  }
+                >
+                  {change}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          <Box
+            sx={{
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              bgcolor: "#EEF4FF",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            {icon}
+          </Box>
         </Box>
-      </Box>
-    </Paper>
+      </CardContent>
+    </Card>
   );
 }

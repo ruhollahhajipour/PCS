@@ -1,11 +1,11 @@
-export interface Vendor {
-  id: number;
+import type { BaseEntity } from "./base";
 
+export interface Vendor extends BaseEntity {
   code: string;
 
-  name: string;
-
   shortName: string;
+
+  name: string;
 
   country: string;
 
@@ -15,19 +15,19 @@ export interface Vendor {
 
   contactPerson: string;
 
-  email: string;
-
   phone: string;
+
+  email: string;
 
   website: string;
 
-  taxNumber: string;
-
   registrationNumber: string;
 
-  status: "Active" | "Inactive";
+  taxNumber: string;
 
-  createdAt: string;
+  currency: string;
 
-  updatedAt: string;
+  paymentTerm: string;
+
+  rating: number;
 }

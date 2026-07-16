@@ -1,16 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { BrowserRouter } from "react-router-dom";
-
+import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
+
+import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 
 import theme from "./theme/theme";
 
-import AppProviders from "./context/AppProviders";
+import { AuthProvider } from "./context/AuthContext";
+import { WorkspaceProvider } from "./context/WorkspaceContext";
 
 import "./index.css";
 
@@ -22,9 +23,11 @@ ReactDOM.createRoot(
       <CssBaseline />
 
       <BrowserRouter>
-        <AppProviders>
-          <App />
-        </AppProviders>
+        <AuthProvider>
+          <WorkspaceProvider>
+            <App />
+          </WorkspaceProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   </React.StrictMode>

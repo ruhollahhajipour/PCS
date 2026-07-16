@@ -1,197 +1,111 @@
 import {
   AppBar,
   Toolbar,
-  Typography,
   Box,
-  IconButton,
+  Typography,
   Avatar,
-  TextField,
-  InputAdornment,
+  IconButton,
   Badge,
 } from "@mui/material";
 
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
-import ChatRoundedIcon from "@mui/icons-material/ChatRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import {
+  NotificationsNone,
+  Settings,
+} from "@mui/icons-material";
 
-import logo from "../assets/logo/kgn-logo.png";
+import { useLocation } from "react-router-dom";
+
+const pageTitles: Record<string, string> = {
+  "/": "Workspace",
+  "/companies": "Companies",
+  "/plants": "Plants",
+  "/projects": "Projects",
+  "/cost-control": "Cost Control",
+  "/warehouse": "Warehouse",
+  "/procurement": "Procurement",
+  "/documents": "Documents",
+  "/reports": "Reports",
+  "/settings": "Administration",
+};
 
 export default function Header() {
+  const location = useLocation();
+
+  const title =
+    pageTitles[location.pathname] ??
+    "Project Control System";
+
+  const hour = new Date().getHours();
+
+  const greeting =
+    hour < 12
+      ? "Good Morning"
+      : hour < 18
+      ? "Good Afternoon"
+      : "Good Evening";
+
   return (
     <AppBar
-      position="sticky"
+      position="static"
       elevation={0}
       sx={{
-        bgcolor: "rgba(255,255,255,.82)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(226,232,240,.9)",
-        color: "#F9F8F0",
-        height: 82,
-        justifyContent: "center",
+        bgcolor: "#ffffff",
+        color: "#1F2937",
+        borderBottom: "1px solid #E5E7EB",
       }}
     >
       <Toolbar
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          px: 4,
+          minHeight: 72,
         }}
       >
-        {/* Left */}
+        <Box>
+          <Typography
+            variant="h5"
+            fontWeight={700}
+          >
+            {title}
+          </Typography>
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2.5,
-          }}
-        >
-          <Box
-            component="img"
-            src={logo}
-            alt="KGN"
-            sx={{
-              width: 74,
-              transition: ".35s",
-
-              filter:
-                "drop-shadow(0 8px 18px #c5ead8) drop-shadow(0 3px 8px #4f4d523f)",
-
-              "&:hover": {
-                transform: "scale(1.05)",
-                filter:
-                  "drop-shadow(0 12px 25px #E1E1E3)",
-              },
-            }}
-          />
-
-          <Box>
-            <Typography
-              sx={{
-                fontWeight: 800,
-                fontSize: 20,
-                lineHeight: 1,
-                color: "#1f3b8d",
-              }}
-            >
-              Kousha Gaman Namavar
-            </Typography>
-
-            <Typography
-              sx={{
-                color: "#64748B",
-                mt: .6,
-                fontSize: 12,
-                letterSpacing: 1,
-              }}
-            >
-              PROJECT CONTROL SYSTEM
-            </Typography>
-          </Box>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {greeting},
+            Welcome to PCS
+          </Typography>
         </Box>
 
-        {/* Center */}
-
-        <TextField
-          placeholder="Search anything..."
-          size="small"
-          sx={{
-            width: 420,
-
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "#F8FAFC",
-              borderRadius: 4,
-              height: 48,
-
-              "& fieldset": {
-                borderColor: "#E2E8F0",
-              },
-
-              "&:hover fieldset": {
-                borderColor: "#2563EB",
-              },
-
-              "&.Mui-focused fieldset": {
-                borderColor: "#2563EB",
-              },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchRoundedIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        {/* Right */}
-
         <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-          }}
+          display="flex"
+          alignItems="center"
+          gap={2}
         >
-          <IconButton
-            sx={{
-              bgcolor: "#F8FAFC",
-
-              "&:hover": {
-                bgcolor: "#EEF4FB",
-              },
-            }}
-          >
-            <Badge color="error" variant="dot">
-              <NotificationsRoundedIcon />
+          <IconButton>
+            <Badge
+              badgeContent={4}
+              color="primary"
+            >
+              <NotificationsNone />
             </Badge>
           </IconButton>
 
-          <IconButton
-            sx={{
-              bgcolor: "#F8FAFC",
-
-              "&:hover": {
-                bgcolor: "#EEF4FB",
-              },
-            }}
-          >
-            <Badge color="primary" variant="dot">
-              <ChatRoundedIcon />
-            </Badge>
-          </IconButton>
-
-          <IconButton
-            sx={{
-              bgcolor: "#F8FAFC",
-
-              "&:hover": {
-                bgcolor: "#EEF4FB",
-              },
-            }}
-          >
-            <SettingsRoundedIcon />
+          <IconButton>
+            <Settings />
           </IconButton>
 
           <Box
-            sx={{
-              ml: 2,
-              pl: 2,
-              borderLeft: "1px solid #E2E8F0",
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
+            display="flex"
+            alignItems="center"
+            gap={1.5}
           >
             <Avatar
               sx={{
-                bgcolor: "#2563EB",
-                width: 48,
-                height: 48,
-                boxShadow:
-                  "0 10px 25px rgba(37,99,235,.35)",
+                bgcolor: "#3A7BFF",
+                width: 42,
+                height: 42,
               }}
             >
               R
@@ -199,21 +113,17 @@ export default function Header() {
 
             <Box>
               <Typography
-                sx={{
-                  fontWeight: 700,
-                  fontSize: 14,
-                }}
+                fontWeight={700}
+                fontSize={14}
               >
                 Ruhollah Hajipour
               </Typography>
 
               <Typography
-                sx={{
-                  color: "#64748B",
-                  fontSize: 12,
-                }}
+                fontSize={12}
+                color="text.secondary"
               >
-                System Administrator
+                Project Manager
               </Typography>
             </Box>
           </Box>

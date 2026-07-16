@@ -1,33 +1,31 @@
-export interface Material {
-  id: number;
+import type { BaseEntity } from "./base";
+
+export interface Material extends BaseEntity {
+  warehouseId: number;
 
   code: string;
 
-  name: string;
+  shortName: string;
 
-  description: string;
+  name: string;
 
   category: string;
 
   unit: string;
 
-  warehouse: string;
+  specification: string;
 
-  minimumStock: number;
+  manufacturer: string;
+
+  partNumber: string;
+
+  minStock: number;
+
+  maxStock: number;
 
   currentStock: number;
-
-  reservedStock: number;
 
   unitPrice: number;
 
   currency: string;
-
-  manufacturer: string;
-
-  status: "Available" | "Low Stock" | "Out of Stock";
-
-  createdAt: string;
-
-  updatedAt: string;
 }

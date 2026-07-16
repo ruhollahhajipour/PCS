@@ -1,38 +1,30 @@
-export interface CostControl {
-  id: number;
+import type { BaseEntity } from "./base";
 
-  companyId: number;
-
-  plantId: number;
-
+export interface CostControl
+  extends BaseEntity {
   projectId: number;
 
-  wbsCode: string;
+  wbs: string;
 
   costCode: string;
 
+  discipline: string;
+
   description: string;
 
-  budgetCost: number;
+  budget: number;
 
-  committedCost: number;
+  committed: number;
 
-  actualCost: number;
+  actual: number;
 
-  forecastCost: number;
+  forecast: number;
 
-  currency: string;
-
-  progress: number;
+  remaining: number;
 
   variance: number;
 
-  status:
-    | "Planning"
-    | "Active"
-    | "Completed";
+  currency: string;
 
-  createdAt: string;
-
-  updatedAt: string;
+  period: string;
 }

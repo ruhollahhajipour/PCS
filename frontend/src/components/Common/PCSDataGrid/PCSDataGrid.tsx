@@ -1,71 +1,64 @@
 import {
   DataGrid,
+  GridToolbar,
+  type GridColDef,
 } from "@mui/x-data-grid";
 
-import type {
-  GridColDef,
-  GridRowsProp,
-} from "@mui/x-data-grid";
-
-import Paper from "@mui/material/Paper";
-
-interface PCSDataGridProps {
-  rows: GridRowsProp;
+type Props = {
+  rows: any[];
   columns: GridColDef[];
   loading?: boolean;
-  pageSize?: number;
-  height?: number | string;
-}
+};
 
 export default function PCSDataGrid({
   rows,
   columns,
   loading = false,
-  pageSize = 10,
-  height = 600,
-}: PCSDataGridProps) {
+}: Props) {
   return (
-    <Paper
-      elevation={1}
-      sx={{
-        width: "100%",
-        height,
-        borderRadius: 2,
-        overflow: "hidden",
+    <DataGrid
+      rows={rows}
+      columns={columns}
+      loading={loading}
+      autoHeight
+      disableRowSelectionOnClick
+      pageSizeOptions={[10, 20, 50, 100]}
+      initialState={{
+        pagination: {
+          paginationModel: {
+            pageSize: 10,
+          },
+        },
       }}
-    >
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        loading={loading}
-        pageSizeOptions={[10, 20, 50, 100]}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              page: 0,
-              pageSize,
-            },
-          },
-        }}
-        disableRowSelectionOnClick
-        density="compact"
-        sx={{
-          border: 0,
+      slots={{
+        toolbar: GridToolbar,
+      }}
+      sx={{
+        border: 0,
 
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "#f5f5f5",
-            fontWeight: 700,
-          },
+        "& .MuiDataGrid-columnHeaders": {
+          backgroundColor: "#F8FAFC",
+          fontWeight: 700,
+          fontSize: 15,
+        },
 
-          "& .MuiDataGrid-cell:focus": {
-            outline: "none",
-          },
+        "& .MuiDataGrid-cell": {
+          borderBottom: "1px solid #EEF2F7",
+        },
 
-          "& .MuiDataGrid-columnHeader:focus": {
-            outline: "none",
-          },
-        }}
-      />
-    </Paper>
+        "& .MuiDataGrid-row:hover": {
+          backgroundColor: "#EEF6FF",
+        },
+
+        "& .MuiDataGrid-toolbarContainer": {
+          padding: 2,
+          borderBottom: "1px solid #EEF2F7",
+        },
+
+        "& .MuiDataGrid-footerContainer": {
+          backgroundColor: "#FAFBFD",
+        },
+      }}
+    />
   );
 }

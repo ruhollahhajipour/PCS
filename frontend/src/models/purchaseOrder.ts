@@ -1,36 +1,33 @@
-export interface PurchaseOrder {
-  id: number;
+import type { BaseEntity } from "./base";
 
-  companyId: number;
-
-  plantId: number;
-
+export interface PurchaseOrder
+  extends Omit<BaseEntity, "status"> {
   projectId: number;
-
-  poNumber: string;
 
   vendorId: number;
 
+  poNumber: string;
+
+  title: string;
+
   description: string;
 
-  currency: string;
-
-  amount: number;
-
-  issueDate: string;
+  orderDate: string;
 
   deliveryDate: string;
 
-  buyer: string;
+  currency: string;
+
+  totalAmount: number;
+
+  approvedAmount: number;
+
+  receivedAmount: number;
 
   status:
     | "Draft"
+    | "Pending"
     | "Approved"
-    | "Issued"
     | "Closed"
     | "Cancelled";
-
-  createdAt: string;
-
-  updatedAt: string;
 }

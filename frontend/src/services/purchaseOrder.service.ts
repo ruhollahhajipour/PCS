@@ -3,84 +3,71 @@ import type { PurchaseOrder } from "../models/purchaseOrder";
 const purchaseOrders: PurchaseOrder[] = [
   {
     id: 1,
-    companyId: 1,
-    plantId: 1,
+    code: "PO-001",
+
     projectId: 1,
-    poNumber: "PO-2026-001",
     vendorId: 1,
-    description: "Process Equipment",
+
+    poNumber: "PO-001",
+
+    title: "Pipe Procurement",
+
+    description: "API Pipes",
+
+    orderDate: "2026-01-01",
+
+    deliveryDate: "2026-02-15",
+
     currency: "USD",
-    amount: 1250000,
-    issueDate: "2026-07-01",
-    deliveryDate: "2026-09-15",
-    buyer: "Procurement Department",
-    status: "Issued",
-    createdAt: "2026-07-01",
-    updatedAt: "2026-07-10",
-  },
-  {
-    id: 2,
-    companyId: 1,
-    plantId: 1,
-    projectId: 2,
-    poNumber: "PO-2026-002",
-    vendorId: 2,
-    description: "Electrical Materials",
-    currency: "USD",
-    amount: 640000,
-    issueDate: "2026-07-08",
-    deliveryDate: "2026-10-01",
-    buyer: "Procurement Department",
+
+    totalAmount: 250000,
+
+    approvedAmount: 240000,
+
+    receivedAmount: 180000,
+
     status: "Approved",
-    createdAt: "2026-07-08",
-    updatedAt: "2026-07-12",
+
+    createdAt: new Date().toISOString(),
+
+    updatedAt: new Date().toISOString(),
   },
 ];
 
 class PurchaseOrderService {
-  async getAll(): Promise<PurchaseOrder[]> {
-    return Promise.resolve(purchaseOrders);
+  async getAll() {
+    return purchaseOrders;
   }
 
-  async getById(
-    id: number
-  ): Promise<PurchaseOrder | undefined> {
-    return Promise.resolve(
-      purchaseOrders.find((p) => p.id === id)
-    );
+  async getById(id: number) {
+    return purchaseOrders.find((x) => x.id === id);
   }
 
-  async create(
-    purchaseOrder: PurchaseOrder
-  ): Promise<PurchaseOrder> {
-    purchaseOrders.push(purchaseOrder);
-    return Promise.resolve(purchaseOrder);
+  async create(item: PurchaseOrder) {
+    purchaseOrders.push(item);
+    return item;
   }
 
-  async update(
-    purchaseOrder: PurchaseOrder
-  ): Promise<PurchaseOrder> {
+  async update(item: PurchaseOrder) {
     const index = purchaseOrders.findIndex(
-      (p) => p.id === purchaseOrder.id
+      (x) => x.id === item.id
     );
 
     if (index >= 0) {
-      purchaseOrders[index] = purchaseOrder;
+      purchaseOrders[index] = item;
     }
 
-    return Promise.resolve(purchaseOrder);
+    return item;
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number) {
     const index = purchaseOrders.findIndex(
-      (p) => p.id === id
+      (x) => x.id === id
     );
 
     if (index >= 0) {
       purchaseOrders.splice(index, 1);
     }
-
-    return Promise.resolve();
   }
 }
 

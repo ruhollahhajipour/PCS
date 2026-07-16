@@ -1,57 +1,107 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
 
-import type { User } from "../types/user";
+import type {
+  LoginRequest,
+  LoginResponse,
+} from "../types/auth";
+
+import AuthService from "../features/auth/services/auth.service";
 
 interface AuthContextType {
-  user: User | null;
+  token: string | null;
+  refreshToken: string | null;
+
+  isAuthenticated: boolean;
+  loading: boolean;
 
   login: (
-    user: User
-  ) => void;
+    request: LoginRequest
+  ) => Promise<void>;
 
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext =
-  createContext<AuthContextType | null>(
-    null
+  createContext<AuthContextType | undefined>(
+    undefined
   );
-
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
 
 export function AuthProvider({
   children,
-}: AuthProviderProps) {
+}: {
+  children: ReactNode;
+}) {
+  const [token, setToken] =
+    useState<string | null>(null);
 
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [refreshToken, setRefreshToken] =
+    useState<string | null>(null);
 
+  const [loading, setLoading] =
+    useState(true);
 
-  const login = (
-    userData: User
-  ) => {
-    setUser(userData);
-  };
+  useEffect(() => {
+    const access =
+      AuthService.getToken();
 
+    const refresh =
+      localStorage.getItem(
+        "pcs-refresh-token"
+      );
 
-  const logout = () => {
-    setUser(null);
-  };
+    setToken(access);
 
+    setRefreshToken(refresh);
+
+    setLoading(false);
+  }, []);
+
+  async function login(
+    request: LoginRequest
+  ) {
+    const response: LoginResponse =
+      await AuthService.login(request);
+
+    AuthService.saveSession(response);
+
+    setToken(response.token);
+
+    setRefreshToken(
+      response.refreshToken ?? null
+    );
+  }
+
+  async function logout() {
+    await AuthService.logout();
+
+    localStorage.removeItem(
+      "pcs-token"
+    );
+
+    localStorage.removeItem(
+      "pcs-refresh-token"
+    );
+
+    setToken(null);
+
+    setRefreshToken(null);
+  }
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        token,
+        refreshToken,
+
+        isAuthenticated: !!token,
+        loading,
+
         login,
         logout,
       }}
@@ -61,20 +111,15 @@ export function AuthProvider({
   );
 }
 
-
-
 export function useAuth() {
-
   const context =
     useContext(AuthContext);
-
 
   if (!context) {
     throw new Error(
       "useAuth must be used inside AuthProvider"
     );
   }
-
 
   return context;
 }
