@@ -1,21 +1,19 @@
-export interface Plant {
-  id: number;
+import type { BaseEntity } from "./base";
 
+export interface Plant extends BaseEntity {
   companyId: number;
-
-  code: string;
-
-  name: string;
 
   shortName: string;
 
-  location: string;
+  name: string;
+
+  country: string;
+
+  city: string;
 
   address: string;
 
-  status: "Active" | "Inactive";
+  timezone: string;
 
-  createdAt: string;
-
-  updatedAt: string;
+  currency: string;
 }

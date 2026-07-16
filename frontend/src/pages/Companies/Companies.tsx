@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Box, Paper } from "@mui/material";
 
@@ -16,6 +16,8 @@ import type { Company } from "../../models/company";
 
 export default function Companies() {
   const [rows, setRows] = useState<Company[]>([]);
+
+  const [search, setSearch] = useState("");
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -36,6 +38,22 @@ export default function Companies() {
     const data = await CompanyService.getAll();
     setRows(data);
   };
+
+  const filteredRows = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    if (!keyword) return rows;
+
+    return rows.filter((c) => {
+      return (
+        c.code.toLowerCase().includes(keyword) ||
+        c.shortName.toLowerCase().includes(keyword) ||
+        c.name.toLowerCase().includes(keyword) ||
+        c.country.toLowerCase().includes(keyword) ||
+        c.city.toLowerCase().includes(keyword)
+      );
+    });
+  }, [rows, search]);
 
   const handleAdd = () => {
     setSelectedCompany(null);
@@ -97,10 +115,14 @@ export default function Companies() {
             "0 20px 50px rgba(15,23,42,.08)",
         }}
       >
-        <CompanyToolbar onAdd={handleAdd} />
+        <CompanyToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onAdd={handleAdd}
+        />
 
         <CompanyTable
-          rows={rows}
+          rows={filteredRows}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}

@@ -1,16 +1,25 @@
-import { Stack, Button, TextField, InputAdornment } from "@mui/material";
+import {
+  Stack,
+  TextField,
+  Button,
+  InputAdornment,
+} from "@mui/material";
 
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 
 type Props = {
   search: string;
+  addLabel?: string;
+  placeholder?: string;
   onSearchChange: (value: string) => void;
   onAdd: () => void;
 };
 
-export default function CompanyToolbar({
+export default function CRUDToolbar({
   search,
+  addLabel = "New",
+  placeholder = "Search...",
   onSearchChange,
   onAdd,
 }: Props) {
@@ -19,19 +28,19 @@ export default function CompanyToolbar({
       direction="row"
       justifyContent="space-between"
       alignItems="center"
-      mb={3}
       spacing={2}
+      mb={3}
     >
       <TextField
         size="small"
-        placeholder="Search company..."
         value={search}
+        placeholder={placeholder}
         onChange={(e) =>
           onSearchChange(e.target.value)
         }
         sx={{
           width: 350,
-          bgcolor: "#fff",
+          bgcolor: "#FFFFFF",
           borderRadius: 2,
         }}
         InputProps={{
@@ -48,7 +57,7 @@ export default function CompanyToolbar({
         startIcon={<AddRoundedIcon />}
         onClick={onAdd}
       >
-        New Company
+        {addLabel}
       </Button>
     </Stack>
   );

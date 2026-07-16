@@ -1,8 +1,6 @@
-export interface Company {
-  id: number;
+import type { BaseEntity } from "./base";
 
-  code: string;
-
+export interface Company extends BaseEntity {
   shortName: string;
 
   name: string;
@@ -15,13 +13,7 @@ export interface Company {
 
   currency: string;
 
-  status: "Active" | "Inactive";
-
   registrationNumber: string;
 
   taxNumber: string;
-
-  createdAt: string;
-
-  updatedAt: string;
 }

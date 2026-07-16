@@ -1,33 +1,20 @@
-export interface Plant {
-  id: number;
+import type { Plant } from "../models/plant";
 
-  companyId: number;
-
-  code: string;
-
-  name: string;
-
-  location: string;
-
-  status: "Active" | "Inactive";
-}
-
-const plants: Plant[] = [
+let plants: Plant[] = [
   {
     id: 1,
     companyId: 1,
-    code: "ADISH-REF",
-    name: "South Adish Gas Condensate Refinery",
-    location: "Bushehr",
+    code: "ADS",
+    shortName: "ADS",
+    name: "Adish South",
+    country: "Iran",
+    city: "Bushehr",
+    address: "South Pars",
+    timezone: "Asia/Tehran",
+    currency: "USD",
     status: "Active",
-  },
-  {
-    id: 2,
-    companyId: 1,
-    code: "UTILITY",
-    name: "Utility Plant",
-    location: "Bushehr",
-    status: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
@@ -36,47 +23,29 @@ class PlantService {
     return Promise.resolve(plants);
   }
 
-  async getByCompany(
-    companyId: number
-  ): Promise<Plant[]> {
-    return Promise.resolve(
-      plants.filter((p) => p.companyId === companyId)
-    );
-  }
-
-  async getById(
-    id: number
-  ): Promise<Plant | undefined> {
+  async getById(id: number) {
     return Promise.resolve(
       plants.find((p) => p.id === id)
     );
   }
 
-  async create(plant: Plant): Promise<Plant> {
-    plants.push(plant);
-    return Promise.resolve(plant);
+  async create(data: Plant) {
+    plants.push(data);
+    return Promise.resolve();
   }
 
-  async update(plant: Plant): Promise<Plant> {
-    const index = plants.findIndex(
-      (p) => p.id === plant.id
+  async update(data: Plant) {
+    plants = plants.map((p) =>
+      p.id === data.id ? data : p
     );
 
-    if (index >= 0) {
-      plants[index] = plant;
-    }
-
-    return Promise.resolve(plant);
+    return Promise.resolve();
   }
 
-  async delete(id: number): Promise<void> {
-    const index = plants.findIndex(
-      (p) => p.id === id
+  async delete(id: number) {
+    plants = plants.filter(
+      (p) => p.id !== id
     );
-
-    if (index >= 0) {
-      plants.splice(index, 1);
-    }
 
     return Promise.resolve();
   }
