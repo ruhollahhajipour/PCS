@@ -1,180 +1,78 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  Box,
-  Paper,
-  Stack,
-  Button,
-  TextField,
-  Chip,
-  InputAdornment,
-} from "@mui/material";
+import CRUDPage from "../../components/Common/CRUD/CRUDPage";
 
-import { DataGrid } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid";
+import WarehouseTable from "./WarehouseTable";
+import WarehouseDialog from "./WarehouseDialog";
 
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import WarehouseService from "../../services/warehouse.service";
 
-import PageHeader from "../../components/Common/PageHeader";
+import type { Warehouse } from "../../models/warehouse";
 
-const rows = [
-  {
-    id: 1,
-    code: "MAT-001",
-    item: "Carbon Steel Pipe 8in",
-    unit: "Meter",
-    stock: 2450,
-    reserved: 320,
-    available: 2130,
-    warehouse: "Central",
-    status: "Available",
-  },
-  {
-    id: 2,
-    code: "MAT-002",
-    item: "Butterfly Valve",
-    unit: "EA",
-    stock: 16,
-    reserved: 8,
-    available: 8,
-    warehouse: "Mechanical",
-    status: "Low Stock",
-  },
-];
+export default function WarehousePage() {
+  const [rows, setRows] = useState<Warehouse[]>([]);
 
-export default function Warehouse() {
-  const [data] = useState(rows);
+  const [search, setSearch] = useState("");
 
-  const columns: GridColDef[] = [
-    {
-      field: "code",
-      headerName: "Code",
-      width: 130,
-    },
-    {
-      field: "item",
-      headerName: "Material",
-      flex: 1,
-      minWidth: 260,
-    },
-    {
-      field: "unit",
-      headerName: "Unit",
-      width: 90,
-    },
-    {
-      field: "stock",
-      headerName: "Stock",
-      width: 110,
-    },
-    {
-      field: "reserved",
-      headerName: "Reserved",
-      width: 120,
-    },
-    {
-      field: "available",
-      headerName: "Available",
-      width: 120,
-    },
-    {
-      field: "warehouse",
-      headerName: "Warehouse",
-      width: 150,
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 140,
-      renderCell: (params) => (
-        <Chip
-          size="small"
-          label={String(params.value)}
-          color={
-            params.value === "Available"
-              ? "success"
-              : "warning"
-          }
-        />
-      ),
-    },
-  ];
+  const [dialogOpen, setDialogOpen] =
+    useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    const data = await WarehouseService.getAll();
+
+    setRows(data);
+  }
+
+  const filteredRows = rows.filter((x) =>
+    (
+      x.code +
+      x.shortName +
+      x.name +
+      x.location +
+      x.manager
+    )
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
-    <Box width="100%">
-      <PageHeader
-        title="Warehouse"
-        subtitle="Inventory Management"
-      />
-
-      <Paper
-        sx={{
-          p: 3,
-          borderRadius: 5,
-          background: "rgba(255,255,255,.82)",
-          backdropFilter: "blur(18px)",
-          boxShadow:
-            "0 20px 50px rgba(15,23,42,.08)",
-        }}
+    <>
+      <CRUDPage
+        title="Warehouses"
+        subtitle="Warehouse Management"
+        search={search}
+        onSearchChange={setSearch}
+        addLabel="New Warehouse"
+        searchPlaceholder="Search Warehouse..."
+        onAdd={() => setDialogOpen(true)}
       >
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          mb={3}
-        >
-          <TextField
-            size="small"
-            placeholder="Search Material..."
-            sx={{ width: 350 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
+        <WarehouseTable
+          rows={filteredRows}
+          onView={(r) =>
+            console.log("VIEW", r)
+          }
+          onEdit={(r) =>
+            console.log("EDIT", r)
+          }
+          onDelete={async (r) => {
+            await WarehouseService.delete(r.id);
 
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            sx={{
-              borderRadius: 3,
-              textTransform: "none",
-            }}
-          >
-            New Material
-          </Button>
-        </Stack>
-
-        <DataGrid
-          rows={data}
-          columns={columns}
-          autoHeight
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 20, 50]}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
-          sx={{
-            border: 0,
-
-            "& .MuiDataGrid-columnHeaders": {
-              bgcolor: "#F8FAFC",
-              fontWeight: 700,
-            },
-
-            "& .MuiDataGrid-row:hover": {
-              bgcolor: "#EEF4FB",
-            },
+            loadData();
           }}
         />
-      </Paper>
-    </Box>
+      </CRUDPage>
+
+      <WarehouseDialog
+        open={dialogOpen}
+        onClose={() =>
+          setDialogOpen(false)
+        }
+        onSaved={loadData}
+      />
+    </>
   );
 }

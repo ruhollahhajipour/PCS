@@ -1,27 +1,15 @@
-export interface Warehouse {
-  id: number;
+import type { BaseEntity } from "./base";
 
-  companyId: number;
-
+export interface Warehouse extends BaseEntity {
   plantId: number;
 
-  code: string;
+  shortName: string;
 
   name: string;
 
   location: string;
 
-  keeper: string;
+  manager: string;
 
-  totalItems: number;
-
-  totalValue: number;
-
-  currency: string;
-
-  status: "Active" | "Inactive";
-
-  createdAt: string;
-
-  updatedAt: string;
+  description: string;
 }
