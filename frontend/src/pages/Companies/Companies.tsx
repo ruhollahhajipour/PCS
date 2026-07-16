@@ -8,6 +8,8 @@ import CompanyToolbar from "./CompanyToolbar";
 import CompanyTable from "./CompanyTable";
 import CompanyDialog from "./CompanyDialog";
 
+import DeleteConfirmDialog from "../../components/Common/Dialog/DeleteConfirmDialog";
+
 import CompanyService from "../../services/company.service";
 
 import type { Company } from "../../models/company";
@@ -16,6 +18,15 @@ export default function Companies() {
   const [rows, setRows] = useState<Company[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const [selectedCompany, setSelectedCompany] =
+    useState<Company | null>(null);
+
+  const [deleteOpen, setDeleteOpen] =
+    useState(false);
+
+  const [deleteLoading, setDeleteLoading] =
+    useState(false);
 
   useEffect(() => {
     loadCompanies();
@@ -27,6 +38,7 @@ export default function Companies() {
   };
 
   const handleAdd = () => {
+    setSelectedCompany(null);
     setDialogOpen(true);
   };
 
@@ -34,17 +46,37 @@ export default function Companies() {
     setDialogOpen(false);
   };
 
+  const handleSaved = () => {
+    loadCompanies();
+  };
+
   const handleView = (row: Company) => {
-    console.log("VIEW", row);
+    console.log(row);
   };
 
   const handleEdit = (row: Company) => {
-    console.log("EDIT", row);
+    setSelectedCompany(row);
     setDialogOpen(true);
   };
 
-  const handleDelete = async (row: Company) => {
-    await CompanyService.delete(row.id);
+  const handleDelete = (row: Company) => {
+    setSelectedCompany(row);
+    setDeleteOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedCompany) return;
+
+    setDeleteLoading(true);
+
+    await CompanyService.delete(selectedCompany.id);
+
+    setDeleteLoading(false);
+
+    setDeleteOpen(false);
+
+    setSelectedCompany(null);
+
     loadCompanies();
   };
 
@@ -77,7 +109,22 @@ export default function Companies() {
 
       <CompanyDialog
         open={dialogOpen}
+        company={selectedCompany}
         onClose={handleClose}
+        onSaved={handleSaved}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        loading={deleteLoading}
+        title="Delete Company"
+        message="Are you sure you want to delete this company?"
+        itemName={selectedCompany?.name}
+        onCancel={() => {
+          setDeleteOpen(false);
+          setSelectedCompany(null);
+        }}
+        onConfirm={handleDeleteConfirm}
       />
     </Box>
   );

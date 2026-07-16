@@ -20,34 +20,41 @@ let companies: Company[] = [
 
 class CompanyService {
   async getAll(): Promise<Company[]> {
-    return Promise.resolve(companies);
+    return [...companies];
   }
 
   async getById(id: number): Promise<Company | undefined> {
-    return Promise.resolve(
-      companies.find((c) => c.id === id)
-    );
+    return companies.find((c) => c.id === id);
   }
 
-  async create(company: Company): Promise<void> {
-    companies.push(company);
-    return Promise.resolve();
+  async create(
+    company: Omit<Company, "id" | "createdAt" | "updatedAt">
+  ): Promise<Company> {
+    const newCompany: Company = {
+      ...company,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    companies.push(newCompany);
+
+    return newCompany;
   }
 
   async update(company: Company): Promise<void> {
     companies = companies.map((c) =>
-      c.id === company.id ? company : c
+      c.id === company.id
+        ? {
+            ...company,
+            updatedAt: new Date().toISOString(),
+          }
+        : c
     );
-
-    return Promise.resolve();
   }
 
   async delete(id: number): Promise<void> {
-    companies = companies.filter(
-      (c) => c.id !== id
-    );
-
-    return Promise.resolve();
+    companies = companies.filter((c) => c.id !== id);
   }
 }
 

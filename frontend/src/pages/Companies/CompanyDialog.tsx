@@ -1,71 +1,113 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  Grid,
-  type SelectChangeEvent,
-} from "@mui/material";
+import { Grid, type SelectChangeEvent } from "@mui/material";
 
 import PCSDialog from "../../components/Common/Form/PCSDialog";
 import PCSFormActions from "../../components/Common/Form/PCSFormActions";
 import PCSTextField from "../../components/Common/Form/PCSTextField";
 import PCSSelect from "../../components/Common/Form/PCSSelect";
 
+import CompanyService from "../../services/company.service";
+
+import type { Company } from "../../models/company";
+
 type CompanyDialogProps = {
   open: boolean;
+  company: Company | null;
   onClose: () => void;
+  onSaved: () => void;
+};
+
+const emptyForm = {
+  code: "",
+  shortName: "",
+  name: "",
+  country: "",
+  city: "",
+  address: "",
+  currency: "USD",
+  status: "Active" as "Active" | "Inactive",
+  registrationNumber: "",
+  taxNumber: "",
 };
 
 export default function CompanyDialog({
   open,
+  company,
   onClose,
+  onSaved,
 }: CompanyDialogProps) {
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    code: "",
-    shortName: "",
-    name: "",
-    country: "",
-    city: "",
-    address: "",
-    currency: "USD",
-    status: "Active",
-    registrationNumber: "",
-    taxNumber: "",
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (company) {
+      setForm({
+        code: company.code,
+        shortName: company.shortName,
+        name: company.name,
+        country: company.country,
+        city: company.city,
+        address: company.address,
+        currency: company.currency,
+        status: company.status,
+        registrationNumber: company.registrationNumber,
+        taxNumber: company.taxNumber,
+      });
+    } else {
+      setForm(emptyForm);
+    }
+  }, [company, open]);
 
   const handleTextChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const handleSelectChange = (
     e: SelectChangeEvent
   ) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name as string]: e.target.value,
-    });
+    }));
   };
 
-  const handleSubmit = (
+  const handleSubmit = async (
     e: React.FormEvent
   ) => {
     e.preventDefault();
 
-    console.log(form);
+    setLoading(true);
+
+    if (company) {
+      await CompanyService.update({
+        ...company,
+        ...form,
+      });
+    } else {
+      await CompanyService.create(form);
+    }
+
+    setLoading(false);
+
+    onSaved();
 
     onClose();
   };
-
-  return (
+   return (
     <PCSDialog
       open={open}
-      title="New Company"
+      title={
+        company ? "Edit Company" : "New Company"
+      }
       width="md"
       onClose={onClose}
     >
@@ -178,6 +220,9 @@ export default function CompanyDialog({
 
         <PCSFormActions
           loading={loading}
+          saveText={
+            company ? "Update" : "Save"
+          }
           onCancel={onClose}
         />
       </form>
