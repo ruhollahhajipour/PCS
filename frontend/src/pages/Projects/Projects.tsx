@@ -115,7 +115,7 @@ export default function Projects() {
           background: "rgba(255,255,255,.82)",
           backdropFilter: "blur(18px)",
           boxShadow:
-            "0 20px 50px rgba(15,23,42,.08)",
+            "0 20px 50px rgba(126, 184, 196, 0.08)",
         }}
       >
         <Stack

@@ -26,7 +26,7 @@ export default function Header() {
         bgcolor: "rgba(255,255,255,.82)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(226,232,240,.9)",
-        color: "#16355B",
+        color: "#F9F8F0",
         height: 82,
         justifyContent: "center",
       }}
@@ -56,12 +56,12 @@ export default function Header() {
               transition: ".35s",
 
               filter:
-                "drop-shadow(0 8px 18px rgba(37,99,235,.25)) drop-shadow(0 3px 8px rgba(0,0,0,.18))",
+                "drop-shadow(0 8px 18px #c5ead8) drop-shadow(0 3px 8px #4f4d523f)",
 
               "&:hover": {
                 transform: "scale(1.05)",
                 filter:
-                  "drop-shadow(0 12px 25px rgba(37,99,235,.45))",
+                  "drop-shadow(0 12px 25px #E1E1E3)",
               },
             }}
           />
@@ -70,9 +70,9 @@ export default function Header() {
             <Typography
               sx={{
                 fontWeight: 800,
-                fontSize: 23,
+                fontSize: 20,
                 lineHeight: 1,
-                color: "#16355B",
+                color: "#1f3b8d",
               }}
             >
               Kousha Gaman Namavar
@@ -82,7 +82,7 @@ export default function Header() {
               sx={{
                 color: "#64748B",
                 mt: .6,
-                fontSize: 13,
+                fontSize: 12,
                 letterSpacing: 1,
               }}
             >
