@@ -1,50 +1,61 @@
 import TextField from "@mui/material/TextField";
 
-type PCSTextFieldProps = {
+export interface PCSTextFieldProps {
   label: string;
   name: string;
-  value: string;
-  required?: boolean;
-  disabled?: boolean;
-  multiline?: boolean;
-  rows?: number;
-  type?: string;
+
+  value: string | number;
+
   onChange: (
-    e: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>
   ) => void;
-};
+
+  required?: boolean;
+
+  type?: string;
+
+  multiline?: boolean;
+
+  rows?: number;
+
+  disabled?: boolean;
+}
 
 export default function PCSTextField({
   label,
   name,
   value,
-  required = false,
-  disabled = false,
-  multiline = false,
-  rows = 3,
-  type = "text",
   onChange,
+  required = false,
+  type = "text",
+  multiline = false,
+  rows = 1,
+  disabled = false,
 }: PCSTextFieldProps) {
   return (
     <TextField
       fullWidth
       variant="outlined"
+
       label={label}
+
       name={name}
+
       value={value}
-      required={required}
-      disabled={disabled}
-      multiline={multiline}
-      rows={multiline ? rows : undefined}
-      type={type}
+
       onChange={onChange}
+
+      required={required}
+
+      type={type}
+
+      multiline={multiline}
+
+      rows={rows}
+
+      disabled={disabled}
+
       size="small"
-      sx={{
-        "& .MuiOutlinedInput-root": {
-          borderRadius: 2,
-          bgcolor: "#FFFFFF",
-        },
-      }}
     />
   );
 }

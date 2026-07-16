@@ -1,50 +1,52 @@
-import type { Project } from "../services/project.service";
+import type { Project } from "../models/project";
 
 const projects: Project[] = [
   {
     id: 1,
-    companyId: 1,
     plantId: 1,
-    code: "PCS-001",
-    name: "Project Cost System",
-    client: "KGN",
-    contractor: "KGN",
-    startDate: "2026-07-01",
-    finishDate: "2027-01-01",
-    budget: 2500000,
+
+    code: "PRJ-001",
+    shortName: "OFFSITE",
+
+    name: "Offsite Facilities",
+
+    description: "Utilities & Offsite",
+
+    startDate: "2026-01-01",
+    finishDate: "2028-12-31",
+
+    budget: 25000000,
+
     currency: "USD",
-    progress: 15,
+
     status: "Active",
+
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
+
   {
     id: 2,
-    companyId: 1,
     plantId: 1,
-    code: "EPC-102",
-    name: "Utility Expansion",
-    client: "ADISH",
-    contractor: "KGN",
-    startDate: "2026-06-01",
-    finishDate: "2027-12-30",
-    budget: 9800000,
+
+    code: "PRJ-002",
+    shortName: "PROCESS",
+
+    name: "Process Units",
+
+    description: "Main Process Area",
+
+    startDate: "2026-03-01",
+    finishDate: "2029-01-15",
+
+    budget: 42000000,
+
     currency: "USD",
-    progress: 44,
+
     status: "Active",
-  },
-  {
-    id: 3,
-    companyId: 2,
-    plantId: 3,
-    code: "PMC-210",
-    name: "Petrochemical Development",
-    client: "NPC",
-    contractor: "KGN",
-    startDate: "2026-04-01",
-    finishDate: "2028-04-01",
-    budget: 15400000,
-    currency: "USD",
-    progress: 8,
-    status: "Planning",
+
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 

@@ -1,33 +1,19 @@
-export interface Project {
-  id: number;
+import type { BaseEntity } from "./base";
 
-  companyId: number;
-
+export interface Project extends BaseEntity {
   plantId: number;
-
-  code: string;
-
-  name: string;
 
   shortName: string;
 
-  client: string;
+  name: string;
 
-  contractor: string;
-
-  budget: number;
-
-  currency: string;
-
-  progress: number;
+  description: string;
 
   startDate: string;
 
   finishDate: string;
 
-  status: "Planning" | "Active" | "Completed";
+  budget: number;
 
-  createdAt: string;
-
-  updatedAt: string;
+  currency: string;
 }
