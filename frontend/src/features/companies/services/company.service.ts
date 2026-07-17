@@ -2,34 +2,71 @@ import type { Company } from "../types/company";
 
 import { companyMock } from "../data/company.mock";
 
-class CompanyService{
+const STORAGE_KEY = "PCS_COMPANIES";
 
-  private data=[...companyMock];
+class CompanyService {
+  private loadStorage(): Company[] {
+    const raw = localStorage.getItem(STORAGE_KEY);
 
-  async getAll(){
+    if (!raw) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(companyMock)
+      );
 
-    return [...this.data];
+      return [...companyMock];
+    }
 
+    return JSON.parse(raw);
   }
 
-  async create(company:Company){
-
-    this.data.push(company);
-
+  private saveStorage(data: Company[]) {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(data)
+    );
   }
 
-  async update(company:Company){
-
-    this.data=this.data.map(x=>x.id===company.id?company:x);
-
+  async getAll() {
+    return this.loadStorage();
   }
 
-  async delete(id:number){
+  async create(company: Company) {
+    const data = this.loadStorage();
 
-    this.data=this.data.filter(x=>x.id!==id);
+    data.push(company);
 
+    this.saveStorage(data);
   }
 
+  async update(company: Company) {
+    const data = this.loadStorage();
+
+    const result = data.map((x) =>
+      x.id === company.id ? company : x
+    );
+
+    this.saveStorage(result);
+  }
+
+  async delete(id: number) {
+    const data = this.loadStorage();
+
+    const result = data.filter(
+      (x) => x.id !== id
+    );
+
+    this.saveStorage(result);
+  }
+
+  async getById(id: number) {
+    const data = this.loadStorage();
+
+    return (
+      data.find((x) => x.id === id) ??
+      null
+    );
+  }
 }
 
 export default new CompanyService();

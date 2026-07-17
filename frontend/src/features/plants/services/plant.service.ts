@@ -1,53 +1,65 @@
-import type { Plant } from "../../../models/plant";
+import type { Plant } from "../types/plant";
 
-let plants: Plant[] = [
-  {
-    id: 1,
-    companyId: 1,
-    code: "ADS",
-    shortName: "ADS",
-    name: "Adish South",
-    country: "Iran",
-    city: "Bushehr",
-    address: "South Pars",
-    timezone: "Asia/Tehran",
-    currency: "USD",
-    status: "Active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+import { plantMock } from "../data/plant.mock";
+
+const STORAGE_KEY = "PCS_PLANTS";
 
 class PlantService {
-  async getAll(): Promise<Plant[]> {
-    return Promise.resolve(plants);
+  private load(): Plant[] {
+    const raw =
+      localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(plantMock)
+      );
+
+      return [...plantMock];
+    }
+
+    return JSON.parse(raw);
   }
 
-  async getById(id: number) {
-    return Promise.resolve(
-      plants.find((p) => p.id === id)
+  private save(data: Plant[]) {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(data)
     );
   }
 
-  async create(data: Plant) {
-    plants.push(data);
-    return Promise.resolve();
+  async getAll() {
+    return this.load();
   }
 
-  async update(data: Plant) {
-    plants = plants.map((p) =>
-      p.id === data.id ? data : p
-    );
+  async create(plant: Plant) {
+    const data = this.load();
 
-    return Promise.resolve();
+    data.push(plant);
+
+    this.save(data);
+  }
+
+  async update(plant: Plant) {
+    const data = this.load();
+
+    this.save(
+      data.map((x) =>
+        x.id === plant.id
+          ? plant
+          : x
+      )
+    );
   }
 
   async delete(id: number) {
-    plants = plants.filter(
-      (p) => p.id !== id
-    );
+    const data = this.load();
 
-    return Promise.resolve();
+    this.save(
+      data.filter(
+        (x) => x.id !== id
+      )
+    );
   }
 }
 

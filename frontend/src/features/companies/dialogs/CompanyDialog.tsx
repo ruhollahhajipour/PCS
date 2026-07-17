@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { Grid } from "@mui/material";
+import {
+  Grid,
+  Box,
+  Avatar,
+  Button,
+} from "@mui/material";
+
+import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
 
 import PCSDialog from "../../../components/Common/Form/PCSDialog";
 import PCSFormActions from "../../../components/Common/Form/PCSFormActions";
@@ -64,6 +71,25 @@ export default function CompanyDialog({
     });
   }
 
+  function uploadLogo(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setForm((prev) => ({
+        ...prev,
+        logo: reader.result as string,
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  }
+
   async function handleSubmit(
     e: React.FormEvent
   ) {
@@ -73,9 +99,14 @@ export default function CompanyDialog({
 
     await onSave({
       ...form,
+
+      id:
+        form.id || Date.now(),
+
       createdAt:
         form.createdAt ||
         new Date().toISOString(),
+
       updatedAt:
         new Date().toISOString(),
     });
@@ -88,16 +119,48 @@ export default function CompanyDialog({
   return (
     <PCSDialog
       open={open}
+      width="md"
       title={
         company
           ? "Edit Company"
           : "New Company"
       }
-      width="md"
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
+          <Grid size={12}>
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={3}
+            >
+              <Avatar
+                src={form.logo}
+                sx={{
+                  width: 90,
+                  height: 90,
+                }}
+              />
+
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={
+                  <CloudUploadRoundedIcon />
+                }
+              >
+                Upload Logo
+
+                <input
+                  hidden
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadLogo}
+                />
+              </Button>
+            </Box>
+          </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
             <PCSTextField
@@ -214,14 +277,12 @@ export default function CompanyDialog({
               ]}
             />
           </Grid>
-
         </Grid>
 
         <PCSFormActions
           loading={loading}
           onCancel={onClose}
         />
-
       </form>
     </PCSDialog>
   );

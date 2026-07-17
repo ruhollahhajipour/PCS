@@ -1,26 +1,27 @@
-import type { Project } from "../types/project";
+import type { CostItem } from "../types/costItem";
 
-import { projectMock } from "../data/project.mock";
+import { costMock } from "../data/cost.mock";
 
-const STORAGE_KEY = "PCS_PROJECTS";
+const STORAGE_KEY = "PCS_COST_CONTROL";
 
-class ProjectService {
-  private load(): Project[] {
-    const raw = localStorage.getItem(STORAGE_KEY);
+class CostService {
+  private load(): CostItem[] {
+    const raw =
+      localStorage.getItem(STORAGE_KEY);
 
     if (!raw) {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(projectMock)
+        JSON.stringify(costMock)
       );
 
-      return [...projectMock];
+      return [...costMock];
     }
 
     return JSON.parse(raw);
   }
 
-  private save(data: Project[]) {
+  private save(data: CostItem[]) {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(data)
@@ -31,20 +32,20 @@ class ProjectService {
     return this.load();
   }
 
-  async create(project: Project) {
+  async create(item: CostItem) {
     const data = this.load();
 
-    data.push(project);
+    data.push(item);
 
     this.save(data);
   }
 
-  async update(project: Project) {
+  async update(item: CostItem) {
     const data = this.load();
 
     this.save(
       data.map((x) =>
-        x.id === project.id ? project : x
+        x.id === item.id ? item : x
       )
     );
   }
@@ -58,4 +59,4 @@ class ProjectService {
   }
 }
 
-export default new ProjectService();
+export default new CostService();

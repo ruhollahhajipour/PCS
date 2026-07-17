@@ -3,35 +3,23 @@ import Typography from "@mui/material/Typography";
 
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  XAxis,
-  YAxis,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
+  Legend,
 } from "recharts";
 
 const data = [
-  {
-    category: "Pipes",
-    stock: 320,
-  },
-  {
-    category: "Valves",
-    stock: 210,
-  },
-  {
-    category: "Flanges",
-    stock: 185,
-  },
-  {
-    category: "Fittings",
-    stock: 265,
-  },
-  {
-    category: "Instruments",
-    stock: 95,
-  },
+  { name: "Available", value: 68 },
+  { name: "Reserved", value: 22 },
+  { name: "Consumed", value: 10 },
+];
+
+const COLORS = [
+  "#2563EB",
+  "#10B981",
+  "#F59E0B",
 ];
 
 export default function DashboardWarehouseChart() {
@@ -39,8 +27,10 @@ export default function DashboardWarehouseChart() {
     <Paper
       sx={{
         p: 3,
-        borderRadius: 4,
+        borderRadius: 5,
         height: 360,
+        background: "rgba(255,255,255,.82)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <Typography
@@ -48,34 +38,36 @@ export default function DashboardWarehouseChart() {
         fontWeight={700}
         mb={2}
       >
-        Warehouse Stock
+        Warehouse Status
       </Typography>
 
       <ResponsiveContainer
         width="100%"
         height="88%"
       >
-        <BarChart
-          data={data}
-          layout="vertical"
-        >
-          <CartesianGrid strokeDasharray="3 3" />
+        <PieChart>
 
-          <XAxis type="number" />
-
-          <YAxis
-            dataKey="category"
-            type="category"
-            width={90}
-          />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={65}
+            outerRadius={105}
+            paddingAngle={4}
+          >
+            {data.map((_, index) => (
+              <Cell
+                key={index}
+                fill={COLORS[index]}
+              />
+            ))}
+          </Pie>
 
           <Tooltip />
 
-          <Bar
-            dataKey="stock"
-            radius={[0, 6, 6, 0]}
-          />
-        </BarChart>
+          <Legend />
+
+        </PieChart>
       </ResponsiveContainer>
     </Paper>
   );

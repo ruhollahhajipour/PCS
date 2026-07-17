@@ -5,112 +5,189 @@ import {
   Box,
 } from "@mui/material";
 
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
 
 type Props = {
   title: string;
   value: string;
   change?: string;
-  positive?: boolean;
   icon?: React.ReactNode;
 };
 
 export default function KPICard({
   title,
   value,
-  change,
-  positive = true,
+  change = "+0%",
   icon,
 }: Props) {
+
+  const positive = !change.startsWith("-");
+
   return (
+
     <Card
+
       elevation={0}
+
       sx={{
-        borderRadius: 4,
-        border: "1px solid #E5E7EB",
-        height: "100%",
-        transition: ".25s",
 
-        "&:hover": {
-          transform: "translateY(-4px)",
+        borderRadius:5,
+
+        height:170,
+
+        background:
+          "linear-gradient(135deg,#FFFFFF,#F8FAFC)",
+
+        border:"1px solid #E2E8F0",
+
+        transition:".35s",
+
+        overflow:"hidden",
+
+        "&:hover":{
+
+          transform:"translateY(-8px)",
+
           boxShadow:
-            "0 12px 28px rgba(0,0,0,.08)",
+            "0 25px 45px rgba(15,23,42,.12)",
+
         },
+
       }}
+
     >
-      <CardContent>
+
+      <CardContent
+        sx={{
+          height:"100%",
+        }}
+      >
+
         <Box
+
           display="flex"
+
           justifyContent="space-between"
-          alignItems="center"
+
         >
+
           <Box>
+
             <Typography
-              fontSize={13}
+
               color="text.secondary"
+
+              fontSize={15}
+
             >
+
               {title}
+
             </Typography>
 
             <Typography
-              mt={1}
-              fontWeight={700}
-              fontSize={28}
+
+              mt={2}
+
+              fontSize={34}
+
+              fontWeight={800}
+
             >
+
               {value}
+
             </Typography>
 
-            {change && (
-              <Box
-                mt={1}
-                display="flex"
-                alignItems="center"
-                gap={0.5}
-              >
-                {positive ? (
-                  <TrendingUpIcon
-                    color="success"
-                    fontSize="small"
-                  />
-                ) : (
-                  <TrendingDownIcon
-                    color="error"
-                    fontSize="small"
-                  />
-                )}
-
-                <Typography
-                  fontSize={13}
-                  color={
-                    positive
-                      ? "success.main"
-                      : "error.main"
-                  }
-                >
-                  {change}
-                </Typography>
-              </Box>
-            )}
           </Box>
 
-          {icon && (
-            <Box
-              sx={{
-                width: 58,
-                height: 58,
-                borderRadius: "50%",
-                bgcolor: "#EEF4FF",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {icon}
-            </Box>
-          )}
+          <Box
+
+            sx={{
+
+              width:58,
+
+              height:58,
+
+              borderRadius:4,
+
+              display:"flex",
+
+              justifyContent:"center",
+
+              alignItems:"center",
+
+              bgcolor:"#EFF6FF",
+
+            }}
+
+          >
+
+            {icon}
+
+          </Box>
+
         </Box>
+
+        <Box
+
+          mt={4}
+
+          display="flex"
+
+          alignItems="center"
+
+          gap={1}
+
+        >
+
+          {
+
+            positive ?
+
+            <TrendingUpRoundedIcon color="success"/>
+
+            :
+
+            <TrendingDownRoundedIcon color="error"/>
+
+          }
+
+          <Typography
+
+            fontWeight={700}
+
+            color={
+              positive
+              ? "success.main"
+              : "error.main"
+            }
+
+          >
+
+            {change}
+
+          </Typography>
+
+          <Typography
+
+            color="text.secondary"
+
+            fontSize={13}
+
+          >
+
+            compared to last month
+
+          </Typography>
+
+        </Box>
+
       </CardContent>
+
     </Card>
+
   );
+
 }

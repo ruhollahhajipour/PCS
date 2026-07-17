@@ -6,72 +6,73 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
+  Chip,
 } from "@mui/material";
 
 import {
-  Dashboard,
-  Business,
-  Apartment,
-  Folder,
-  AccountBalanceWallet,
-  Warehouse,
-  ShoppingCart,
-  Description,
-  BarChart,
-  Settings,
+  DashboardRounded,
+  BusinessRounded,
+  ApartmentRounded,
+  FolderRounded,
+  AccountBalanceWalletRounded,
+  WarehouseRounded,
+  ShoppingCartRounded,
+  DescriptionRounded,
+  BarChartRounded,
+  SettingsRounded,
 } from "@mui/icons-material";
 
 import { NavLink } from "react-router-dom";
 
 const menu = [
   {
-    text: "Workspace",
-    icon: <Dashboard />,
-    path: "/",
+    text: "Dashboard",
+    icon: <DashboardRounded />,
+    path: "/dashboard",
   },
   {
     text: "Companies",
-    icon: <Business />,
+    icon: <BusinessRounded />,
     path: "/companies",
   },
   {
     text: "Plants",
-    icon: <Apartment />,
+    icon: <ApartmentRounded />,
     path: "/plants",
   },
   {
     text: "Projects",
-    icon: <Folder />,
+    icon: <FolderRounded />,
     path: "/projects",
   },
   {
     text: "Cost Control",
-    icon: <AccountBalanceWallet />,
+    icon: <AccountBalanceWalletRounded />,
     path: "/cost-control",
   },
   {
     text: "Warehouse",
-    icon: <Warehouse />,
+    icon: <WarehouseRounded />,
     path: "/warehouse",
   },
   {
     text: "Procurement",
-    icon: <ShoppingCart />,
+    icon: <ShoppingCartRounded />,
     path: "/procurement",
   },
   {
     text: "Documents",
-    icon: <Description />,
+    icon: <DescriptionRounded />,
     path: "/documents",
   },
   {
     text: "Reports",
-    icon: <BarChart />,
+    icon: <BarChartRounded />,
     path: "/reports",
   },
   {
     text: "Administration",
-    icon: <Settings />,
+    icon: <SettingsRounded />,
     path: "/settings",
   },
 ];
@@ -80,101 +81,59 @@ export default function Sidebar() {
   return (
     <Box
       sx={{
-        width: 270,
+        width: 285,
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-
         background:
-          "linear-gradient(180deg,#32455A 0%,#2A3B4F 100%)",
-
+          "linear-gradient(180deg,#182434 0%,#22364C 100%)",
         color: "#fff",
-
         borderRight: "1px solid rgba(255,255,255,.08)",
       }}
     >
-      {/* ================= LOGO ================= */}
+      {/* Logo */}
 
       <Box
         sx={{
-          pt: 4,
-          pb: 3,
-          px: 2,
+          py: 4,
+          px: 3,
           textAlign: "center",
         }}
       >
-        {/* لوگوی برنامه */}
         <Box
           component="img"
           src="/pcs-logo.png"
           alt="PCS"
           sx={{
-            width: 74,
-            mb: 1.2,
+            width: 90,
+            mx: "auto",
+            mb: 2,
           }}
         />
 
         <Typography
-          sx={{
-            fontWeight: 700,
-            fontSize: 22,
-            lineHeight: 1.2,
-          }}
+          fontWeight={800}
+          fontSize={23}
+        >
+          PCS
+        </Typography>
+
+        <Typography
+          fontSize={14}
+          color="#B8C6D8"
+          mt={0.5}
         >
           Project Control System
         </Typography>
 
-        <Typography
+        <Chip
+          label="KNG Enterprise"
+          color="primary"
+          size="small"
           sx={{
-            mt: 0.3,
-            fontSize: 12,
-            color: "#AFC5D9",
-          }}
-        >
-          Enterprise Project Management Platform
-        </Typography>
-
-        {/* لوگوی شرکت */}
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="KNG"
-          sx={{
-            width: 95,
-            mt: 3,
-            mb: 1,
-            opacity: 0.95,
+            mt: 2,
           }}
         />
-
-        <Typography
-          sx={{
-            fontSize: 13,
-            fontWeight: 700,
-          }}
-        >
-          KNG
-        </Typography>
-
-        <Typography
-          sx={{
-            fontSize: 11,
-            color: "#C9D4DE",
-          }}
-        >
-          Multi Purpose Engineering Company
-        </Typography>
-
-        <Typography
-          sx={{
-            mt: 0.8,
-            fontSize: 10,
-            letterSpacing: 2,
-            color: "#79B8FF",
-          }}
-        >
-          Version 1.0
-        </Typography>
       </Box>
 
       <Divider
@@ -183,12 +142,11 @@ export default function Sidebar() {
         }}
       />
 
-      {/* ================= MENU ================= */}
-
       <List
         sx={{
-          mt: 2,
-          px: 1.5,
+          px: 2,
+          py: 2,
+          flex: 1,
         }}
       >
         {menu.map((item) => (
@@ -196,27 +154,27 @@ export default function Sidebar() {
             key={item.text}
             component={NavLink}
             to={item.path}
-            end={item.path === "/"}
             sx={{
               borderRadius: 3,
-              mb: 0.8,
-              py: 1.2,
+              mb: 1,
+              py: 1.3,
+              transition: ".25s",
 
-              color: "#E8EEF7",
+              color: "#E5EDF8",
 
               "& .MuiListItemIcon-root": {
-                color: "#E8EEF7",
-                minWidth: 40,
+                color: "#E5EDF8",
+                minWidth: 42,
               },
 
               "&.active": {
                 background:
-                  "linear-gradient(90deg,#4A8BFF,#5B63FF)",
+                  "linear-gradient(90deg,#2563EB,#4F46E5)",
 
                 color: "#fff",
 
                 boxShadow:
-                  "0 8px 22px rgba(70,110,255,.35)",
+                  "0 12px 25px rgba(37,99,235,.35)",
 
                 "& .MuiListItemIcon-root": {
                   color: "#fff",
@@ -224,8 +182,8 @@ export default function Sidebar() {
               },
 
               "&:hover": {
-                background:
-                  "rgba(255,255,255,.08)",
+                transform: "translateX(6px)",
+                background: "rgba(255,255,255,.08)",
               },
             }}
           >
@@ -243,6 +201,32 @@ export default function Sidebar() {
           </ListItemButton>
         ))}
       </List>
+
+      <Divider
+        sx={{
+          borderColor: "rgba(255,255,255,.08)",
+        }}
+      />
+
+      <Box
+        sx={{
+          p: 3,
+        }}
+      >
+        <Typography
+          fontWeight={700}
+        >
+          Kousha Gaman Namavar
+        </Typography>
+
+        <Typography
+          color="#9FB3C8"
+          fontSize={13}
+          mt={0.5}
+        >
+          Version 1.0.0
+        </Typography>
+      </Box>
     </Box>
   );
 }

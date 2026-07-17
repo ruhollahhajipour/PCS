@@ -1,280 +1,231 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Box,
   Paper,
-  Button,
-  Typography,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 
-import AddIcon from "@mui/icons-material/Add";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 
 import PCSDataGrid from "../../../components/Common/PCSDataGrid/PCSDataGrid";
+import StatusChip from "../../../components/Common/StatusChip";
 
-import StatusChip from "../../../components/Common/StatusChip/StatusChip";
+import ConfirmDialog from "../../../components/Common/Dialog/ConfirmDialog";
 
+import CompanyToolbar from "../components/CompanyToolbar";
 import CompanyDialog from "../dialogs/CompanyDialog";
-import CompanyActions from "../components/CompanyActions";
 
 import useCompanies from "../hooks/useCompanies";
 
 import type { Company } from "../types/company";
 
 export default function Companies() {
-
   const {
-
     companies,
-
     loading,
-
     create,
-
     update,
-
     remove,
-
+    reload,
   } = useCompanies();
 
   const [open, setOpen] = useState(false);
 
-  const [editing, setEditing] =
+  const [search, setSearch] = useState("");
+
+  const [selectedCompany, setSelectedCompany] =
     useState<Company | null>(null);
 
-  function handleNew() {
+  const [deleteOpen, setDeleteOpen] =
+    useState(false);
 
-    setEditing(null);
+  const [deleteId, setDeleteId] =
+    useState<number | null>(null);
 
-    setOpen(true);
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
 
-  }
-
-  function handleEdit(
-    company: Company
-  ) {
-
-    setEditing(company);
-
-    setOpen(true);
-
-  }
-
-  async function handleDelete(
-    id: number
-  ) {
-
-    if (
-      window.confirm(
-        "Delete this company?"
-      )
-    ) {
-
-      await remove(id);
-
-    }
-
-  }
+    return companies.filter((x) => {
+      return (
+        x.code.toLowerCase().includes(q) ||
+        x.name.toLowerCase().includes(q) ||
+        x.country.toLowerCase().includes(q) ||
+        x.city.toLowerCase().includes(q)
+      );
+    });
+  }, [companies, search]);
 
   async function handleSave(
     company: Company
   ) {
-
-    if (editing) {
-
+    if (selectedCompany) {
       await update(company);
-
-    }
-
-    else {
-
+    } else {
       await create(company);
-
     }
 
+    setOpen(false);
+
+    setSelectedCompany(null);
+  }
+
+  async function handleDelete() {
+    if (deleteId == null) return;
+
+    await remove(deleteId);
+
+    setDeleteOpen(false);
+
+    setDeleteId(null);
   }
 
   return (
-
     <Box>
 
-      <Box
-
-        display="flex"
-
-        justifyContent="space-between"
-
-        alignItems="center"
-
-        mb={3}
-
-      >
-
-        <Typography
-
-          variant="h4"
-
-          fontWeight={700}
-
-        >
-
-          Companies
-
-        </Typography>
-
-        <Button
-
-          variant="contained"
-
-          startIcon={<AddIcon />}
-
-          onClick={handleNew}
-
-        >
-
-          New Company
-
-        </Button>
-
-      </Box>
+      <CompanyToolbar
+        search={search}
+        onSearch={setSearch}
+        onRefresh={reload}
+        onNew={() => {
+          setSelectedCompany(null);
+          setOpen(true);
+        }}
+      />
 
       <Paper
-
         sx={{
-
-          borderRadius:4,
-
-          overflow:"hidden",
-
+          borderRadius: 5,
+          overflow: "hidden",
         }}
-
       >
-
         <PCSDataGrid
-
-          rows={companies}
-
+          rows={filtered}
           loading={loading}
-
           columns={[
-
             {
-
-              field:"code",
-
-              headerName:"Code",
-
-              flex:1,
-
+              field: "code",
+              headerName: "Code",
+              flex: 1,
             },
 
             {
-
-              field:"name",
-
-              headerName:"Company",
-
-              flex:2,
-
+              field: "name",
+              headerName: "Company",
+              flex: 2,
             },
 
             {
-
-              field:"country",
-
-              headerName:"Country",
-
-              flex:1,
-
+              field: "country",
+              headerName: "Country",
+              flex: 1,
             },
 
             {
-
-              field:"city",
-
-              headerName:"City",
-
-              flex:1,
-
+              field: "city",
+              headerName: "City",
+              flex: 1,
             },
 
             {
-
-              field:"phone",
-
-              headerName:"Phone",
-
-              flex:1.4,
-
+              field: "phone",
+              headerName: "Phone",
+              flex: 1.4,
             },
 
             {
+              field: "status",
+              headerName: "Status",
+              flex: 1,
 
-              field:"status",
-
-              headerName:"Status",
-
-              flex:1,
-
-              renderCell:(params:any)=>(
-
-                <StatusChip
-
-                  value={params.value}
-
-                />
-
+              renderCell: (params: any) => (
+                <StatusChip value={params.value} />
               ),
-
             },
 
             {
+              field: "actions",
 
-              field:"actions",
+              headerName: "Actions",
 
-              headerName:"",
+              sortable: false,
 
-              width:120,
+              filterable: false,
 
-              sortable:false,
+              width: 170,
 
-              filterable:false,
+              renderCell: (params: any) => (
+                <>
 
-              renderCell:(params:any)=>(
+                  <Tooltip title="View">
+                    <IconButton
+                      color="primary"
+                    >
+                      <VisibilityRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
 
-                <CompanyActions
+                  <Tooltip title="Edit">
+                    <IconButton
+                      color="warning"
+                      onClick={() => {
+                        setSelectedCompany(
+                          params.row
+                        );
 
-                  company={params.row}
+                        setOpen(true);
+                      }}
+                    >
+                      <EditRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
 
-                  onEdit={handleEdit}
+                  <Tooltip title="Delete">
+                    <IconButton
+                      color="error"
+                      onClick={() => {
+                        setDeleteId(
+                          params.row.id
+                        );
 
-                  onDelete={handleDelete}
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      <DeleteRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
 
-                />
-
+                </>
               ),
-
             },
-
           ]}
-
         />
-
       </Paper>
 
       <CompanyDialog
-
         open={open}
-
-        company={editing}
-
-        onClose={()=>setOpen(false)}
-
+        company={selectedCompany}
+        onClose={() => {
+          setOpen(false);
+          setSelectedCompany(null);
+        }}
         onSave={handleSave}
+      />
 
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete Company"
+        message="Are you sure you want to delete this company?"
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteId(null);
+        }}
+        onConfirm={handleDelete}
       />
 
     </Box>
-
   );
-
 }

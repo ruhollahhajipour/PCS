@@ -1,118 +1,126 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
 import {
   Box,
   Paper,
   Typography,
+  TextField,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Stack,
 } from "@mui/material";
 
-import PCSTextField from "../components/Common/Form/PCSTextField";
-import PCSButton from "../components/UI/PCSButton";
-
-import { useAuth } from "../context/AuthContext";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 export default function Login() {
-  const navigate = useNavigate();
-
-  const { login } = useAuth();
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [form, setForm] =
-    useState({
-      username: "",
-      password: "",
-    });
-
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    setForm({
-      ...form,
-      [e.target.name]:
-        e.target.value,
-    });
-  }
-
-  async function handleSubmit(
-    e: React.FormEvent
-  ) {
-    e.preventDefault();
-
-    setLoading(true);
-
-    await login(form);
-
-    setLoading(false);
-
-    navigate("/");
-  }
-
   return (
     <Box
       sx={{
+        width: "100vw",
         height: "100vh",
+
+        backgroundImage: `
+linear-gradient(
+rgba(10,20,35,.70),
+rgba(10,20,35,.80)
+),
+url('/images/login-bg.jpg')
+`,
+
+backgroundSize: "cover",
+
+backgroundPosition: "center",
+
+backgroundRepeat: "no-repeat",
+
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#EEF4FB",
       }}
     >
       <Paper
+        elevation={12}
         sx={{
-          width: 420,
-          p: 5,
-          borderRadius: 4,
-        }}
+  width: 480,
+
+  borderRadius: 7,
+
+  p: 5,
+
+  background: "rgba(255,255,255,.88)",
+
+  backdropFilter: "blur(20px)",
+
+  border: "1px solid rgba(255,255,255,.35)",
+
+  boxShadow:
+    "0 30px 80px rgba(0,0,0,.35)",
+}}
       >
-        <Typography
-          variant="h4"
-          fontWeight={700}
-          mb={1}
-        >
-          PCS
-        </Typography>
+        <Stack spacing={3}>
 
-        <Typography
-          color="text.secondary"
-          mb={4}
-        >
-          Project Control Suite
-        </Typography>
+          <Box textAlign="center">
 
-        <form
-          onSubmit={handleSubmit}
-        >
-          <PCSTextField
-            label="Username"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-          />
+            <LockOutlinedIcon
+              color="primary"
+              sx={{
+                fontSize: 58,
+                mb: 2,
+              }}
+            />
 
-          <Box mt={2} />
+            <Typography
+              variant="h4"
+              fontWeight={800}
+            >
+              PCS
+            </Typography>
 
-          <PCSTextField
-            label="Password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-          />
+            <Typography
+              color="text.secondary"
+            >
+              Project Control System
+            </Typography>
 
-          <Box mt={4} />
+            <Typography
+              fontSize={13}
+              mt={1}
+              color="#64748B"
+            >
+              Powered by KNG Engineering
+            </Typography>
 
-          <PCSButton
+          </Box>
+
+          <TextField
             fullWidth
+            label="Username"
+          />
+
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+          />
+
+          <FormControlLabel
+            control={<Checkbox />}
+            label="Remember Me"
+          />
+
+          <Button
+            fullWidth
+            size="large"
             variant="contained"
-            type="submit"
-            loading={loading}
+            sx={{
+              py: 1.5,
+              borderRadius: 3,
+              fontWeight: 700,
+            }}
           >
-            Login
-          </PCSButton>
-        </form>
+            Sign In
+          </Button>
+
+        </Stack>
       </Paper>
     </Box>
   );

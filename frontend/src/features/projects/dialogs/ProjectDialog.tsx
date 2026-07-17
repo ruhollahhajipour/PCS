@@ -1,74 +1,106 @@
 import { useEffect, useState } from "react";
 
 import { Grid } from "@mui/material";
-import type { SelectChangeEvent } from "@mui/material";
 
 import PCSDialog from "../../../components/Common/Form/PCSDialog";
 import PCSFormActions from "../../../components/Common/Form/PCSFormActions";
 import PCSTextField from "../../../components/Common/Form/PCSTextField";
 import PCSSelect from "../../../components/Common/Form/PCSSelect";
 
-import ProjectService from "../services/project.service";
+import type { Project } from "../types/project";
 
-const initialForm = {
+const initialForm: Project = {
   id: 0,
-  plantId: 1,
 
   code: "",
-  shortName: "",
+
   name: "",
 
-  description: "",
+  companyId: 1,
 
-  startDate: "",
-  finishDate: "",
+  plantId: 1,
+
+  contractNo: "",
+
+  client: "",
+
+  contractor: "",
+
+  consultant: "",
 
   budget: 0,
 
-  currency: "USD",
+  actualCost: 0,
 
-  status: "Active" as "Active" | "Inactive",
+  progress: 0,
+
+  spi: 1,
+
+  cpi: 1,
+
+  startDate: "",
+
+  finishDate: "",
+
+  description: "",
+
+  status: "Active",
 
   createdAt: "",
+
   updatedAt: "",
 };
 
 type Props = {
   open: boolean;
+
+  project: Project | null;
+
   onClose: () => void;
-  onSaved: () => void;
+
+  onSave: (
+    project: Project
+  ) => Promise<void>;
 };
 
 export default function ProjectDialog({
   open,
+  project,
   onClose,
-  onSaved,
+  onSave,
 }: Props) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] =
+    useState<Project>(initialForm);
 
   useEffect(() => {
-    if (open) setForm(initialForm);
-  }, [open]);
+    if (!open) return;
 
-  const handleText = (
+    if (project)
+      setForm(project);
+    else
+      setForm(initialForm);
+  }, [project, open]);
+
+  function handleChange(
     e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  ) {
+    const { name, value } = e.target;
 
-  const handleSelect = (
-    e: SelectChangeEvent
-  ) => {
     setForm({
       ...form,
-      [e.target.name as string]: e.target.value,
+      [name]:
+        name === "budget" ||
+        name === "actualCost" ||
+        name === "progress" ||
+        name === "spi" ||
+        name === "cpi"
+          ? Number(value)
+          : value,
     });
-  };
+  }
 
   async function handleSubmit(
     e: React.FormEvent
@@ -77,21 +109,22 @@ export default function ProjectDialog({
 
     setLoading(true);
 
-    await ProjectService.create({
+    await onSave({
       ...form,
 
-      id: Date.now(),
+      id:
+        form.id ||
+        Date.now(),
 
-      budget: Number(form.budget),
+      createdAt:
+        form.createdAt ||
+        new Date().toISOString(),
 
-      createdAt: new Date().toISOString(),
-
-      updatedAt: new Date().toISOString(),
+      updatedAt:
+        new Date().toISOString(),
     });
 
     setLoading(false);
-
-    onSaved();
 
     onClose();
   }
@@ -99,37 +132,162 @@ export default function ProjectDialog({
   return (
     <PCSDialog
       open={open}
-      title="New Project"
-      width="md"
+      width="lg"
+      title={
+        project
+          ? "Edit Project"
+          : "New Project"
+      }
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
+
         <Grid container spacing={2}>
 
-          <Grid size={{ xs:12, md:6 }}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <PCSTextField
               label="Code"
               name="code"
               value={form.code}
-              onChange={handleText}
+              onChange={handleChange}
             />
           </Grid>
 
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSTextField
-              label="Short Name"
-              name="shortName"
-              value={form.shortName}
-              onChange={handleText}
-            />
-          </Grid>
-
-          <Grid size={12}>
+          <Grid size={{ xs: 12, md: 9 }}>
             <PCSTextField
               label="Project Name"
               name="name"
               value={form.name}
-              onChange={handleText}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Client"
+              name="client"
+              value={form.client}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Contractor"
+              name="contractor"
+              value={form.contractor}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Consultant"
+              name="consultant"
+              value={form.consultant}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Contract No"
+              name="contractNo"
+              value={form.contractNo}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSTextField
+              label="Budget"
+              name="budget"
+              value={String(form.budget)}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSTextField
+              label="Actual Cost"
+              name="actualCost"
+              value={String(form.actualCost)}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSTextField
+              label="Progress %"
+              name="progress"
+              value={String(form.progress)}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSTextField
+              label="SPI"
+              name="spi"
+              value={String(form.spi)}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSTextField
+              label="CPI"
+              name="cpi"
+              value={String(form.cpi)}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <PCSSelect
+              label="Status"
+              name="status"
+              value={form.status}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status:
+                    e.target
+                      .value as Project["status"],
+                })
+              }
+              options={[
+                {
+                  value: "Active",
+                  label: "Active",
+                },
+                {
+                  value: "Inactive",
+                  label: "Inactive",
+                },
+                {
+                  value: "Completed",
+                  label: "Completed",
+                },
+              ]}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Start Date"
+              name="startDate"
+              value={form.startDate}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <PCSTextField
+              label="Finish Date"
+              name="finishDate"
+              value={form.finishDate}
+              onChange={handleChange}
             />
           </Grid>
 
@@ -137,67 +295,8 @@ export default function ProjectDialog({
             <PCSTextField
               label="Description"
               name="description"
-              multiline
-              rows={3}
               value={form.description}
-              onChange={handleText}
-            />
-          </Grid>
-
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSTextField
-              label="Start Date"
-              name="startDate"
-              type="date"
-              value={form.startDate}
-              onChange={handleText}
-            />
-          </Grid>
-
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSTextField
-              label="Finish Date"
-              name="finishDate"
-              type="date"
-              value={form.finishDate}
-              onChange={handleText}
-            />
-          </Grid>
-
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSTextField
-              label="Budget"
-              name="budget"
-              type="number"
-              value={form.budget}
-              onChange={handleText}
-            />
-          </Grid>
-
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSSelect
-              label="Currency"
-              name="currency"
-              value={form.currency}
-              onChange={handleSelect}
-              options={[
-                { value:"USD",label:"USD"},
-                { value:"EUR",label:"EUR"},
-                { value:"IRR",label:"IRR"},
-              ]}
-            />
-          </Grid>
-
-          <Grid size={{ xs:12, md:6 }}>
-            <PCSSelect
-              label="Status"
-              name="status"
-              value={form.status}
-              onChange={handleSelect}
-              options={[
-                { value:"Active",label:"Active"},
-                { value:"Inactive",label:"Inactive"},
-              ]}
+              onChange={handleChange}
             />
           </Grid>
 
@@ -207,7 +306,9 @@ export default function ProjectDialog({
           loading={loading}
           onCancel={onClose}
         />
+
       </form>
+
     </PCSDialog>
   );
 }

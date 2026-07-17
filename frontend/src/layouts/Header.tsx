@@ -1,134 +1,228 @@
 import {
   AppBar,
   Toolbar,
-  Box,
   Typography,
+  Box,
   Avatar,
   IconButton,
   Badge,
+  Chip,
 } from "@mui/material";
 
-import {
-  NotificationsNone,
-  Settings,
-} from "@mui/icons-material";
-
-import { useLocation } from "react-router-dom";
-
-const pageTitles: Record<string, string> = {
-  "/": "Workspace",
-  "/companies": "Companies",
-  "/plants": "Plants",
-  "/projects": "Projects",
-  "/cost-control": "Cost Control",
-  "/warehouse": "Warehouse",
-  "/procurement": "Procurement",
-  "/documents": "Documents",
-  "/reports": "Reports",
-  "/settings": "Administration",
-};
+import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 
 export default function Header() {
-  const location = useLocation();
 
-  const title =
-    pageTitles[location.pathname] ??
-    "Project Control System";
+  const now = new Date();
 
-  const hour = new Date().getHours();
+  const hour = now.getHours();
 
-  const greeting =
-    hour < 12
-      ? "Good Morning"
-      : hour < 18
-      ? "Good Afternoon"
-      : "Good Evening";
+  let greeting = "Good Evening";
+
+  if (hour < 12) greeting = "Good Morning";
+  else if (hour < 18) greeting = "Good Afternoon";
 
   return (
+
     <AppBar
-      position="static"
+
+      position="sticky"
+
       elevation={0}
+
       sx={{
-        bgcolor: "#ffffff",
-        color: "#1F2937",
-        borderBottom: "1px solid #E5E7EB",
+
+        bgcolor:"rgba(255,255,255,.82)",
+
+        backdropFilter:"blur(18px)",
+
+        color:"#0F172A",
+
+        borderBottom:"1px solid #E2E8F0",
+
       }}
+
     >
+
       <Toolbar
+
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          minHeight: 72,
+
+          minHeight:86,
+
+          display:"flex",
+
+          justifyContent:"space-between",
+
         }}
+
       >
+
         <Box>
+
+          <Chip
+
+            size="small"
+
+            label="KNG Engineering"
+
+            color="primary"
+
+            sx={{mb:1}}
+
+          />
+
           <Typography
-            variant="h5"
-            fontWeight={700}
+
+            fontSize={34}
+
+            fontWeight={800}
+
           >
-            {title}
+
+            Project Control System
+
           </Typography>
 
           <Typography
-            variant="body2"
+
             color="text.secondary"
+
+            mt={.5}
+
           >
-            {greeting},
-            Welcome to PCS
+
+            {greeting}, Ruhollah 👋
+
           </Typography>
+
         </Box>
 
         <Box
-          display="flex"
-          alignItems="center"
-          gap={2}
-        >
-          <IconButton>
-            <Badge
-              badgeContent={4}
-              color="primary"
-            >
-              <NotificationsNone />
-            </Badge>
-          </IconButton>
 
-          <IconButton>
-            <Settings />
-          </IconButton>
+          display="flex"
+
+          alignItems="center"
+
+          gap={2}
+
+        >
 
           <Box
-            display="flex"
-            alignItems="center"
-            gap={1.5}
+
+            textAlign="right"
+
           >
-            <Avatar
-              sx={{
-                bgcolor: "#3A7BFF",
-                width: 42,
-                height: 42,
-              }}
+
+            <Typography
+
+              fontWeight={700}
+
             >
-              R
-            </Avatar>
 
-            <Box>
-              <Typography
-                fontWeight={700}
-                fontSize={14}
-              >
-                Ruhollah Hajipour
-              </Typography>
+              {now.toLocaleDateString()}
 
-              <Typography
-                fontSize={12}
-                color="text.secondary"
-              >
-                Project Manager
-              </Typography>
-            </Box>
+            </Typography>
+
+            <Typography
+
+              color="text.secondary"
+
+              fontSize={13}
+
+            >
+
+              {now.toLocaleTimeString()}
+
+            </Typography>
+
           </Box>
+
+          <IconButton>
+
+            <CalendarMonthRoundedIcon/>
+
+          </IconButton>
+
+          <IconButton>
+
+            <LightModeRoundedIcon/>
+
+          </IconButton>
+
+          <IconButton>
+
+            <Badge
+
+              badgeContent={5}
+
+              color="primary"
+
+            >
+
+              <NotificationsRoundedIcon/>
+
+            </Badge>
+
+          </IconButton>
+
+          <IconButton>
+
+            <SettingsRoundedIcon/>
+
+          </IconButton>
+
+          <Avatar
+
+            sx={{
+
+              bgcolor:"#2563EB",
+
+              width:46,
+
+              height:46,
+
+              fontWeight:800,
+
+            }}
+
+          >
+
+            RH
+
+          </Avatar>
+
+          <Box>
+
+            <Typography fontWeight={700}>
+
+              Ruhollah Hajipour
+
+            </Typography>
+
+            <Typography
+
+              color="text.secondary"
+
+              fontSize={13}
+
+            >
+
+              Project Manager
+
+            </Typography>
+
+          </Box>
+
         </Box>
+
       </Toolbar>
+
     </AppBar>
+
   );
+
 }

@@ -1,16 +1,14 @@
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
 
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
 } from "recharts";
 
 const data = [
@@ -27,59 +25,64 @@ const data = [
 export default function DashboardCostChart() {
   return (
     <Paper
-      elevation={0}
       sx={{
         p: 3,
-        borderRadius: 4,
-        border: "1px solid",
-        borderColor: "divider",
-        height: 380,
-        display: "flex",
-        flexDirection: "column",
+        borderRadius: 5,
+        height: 360,
+        background: "rgba(255,255,255,.82)",
+        backdropFilter: "blur(16px)",
       }}
     >
-      <Box mb={2}>
-        <Typography variant="h6" fontWeight={700}>
-          Cost Performance Trend
-        </Typography>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        mb={2}
+      >
+        Cost Performance
+      </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          Planned vs actual project cost
-        </Typography>
-      </Box>
+      <ResponsiveContainer
+        width="100%"
+        height="88%"
+      >
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="planned" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#2563EB" stopOpacity={0.75} />
+              <stop offset="95%" stopColor="#2563EB" stopOpacity={0.05} />
+            </linearGradient>
 
-      <Box flex={1}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <linearGradient id="actual" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10B981" stopOpacity={0.75} />
+              <stop offset="95%" stopColor="#10B981" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
 
-            <XAxis dataKey="month" />
+          <CartesianGrid strokeDasharray="3 3" />
 
-            <YAxis />
+          <XAxis dataKey="month" />
 
-            <Tooltip />
+          <YAxis />
 
-            <Legend />
+          <Tooltip />
 
-            <Line
-              type="monotone"
-              dataKey="planned"
-              strokeWidth={3}
-              dot={false}
-            />
+          <Area
+            type="monotone"
+            dataKey="planned"
+            stroke="#2563EB"
+            strokeWidth={3}
+            fill="url(#planned)"
+          />
 
-            <Line
-              type="monotone"
-              dataKey="actual"
-              strokeWidth={3}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Box>
+          <Area
+            type="monotone"
+            dataKey="actual"
+            stroke="#10B981"
+            strokeWidth={3}
+            fill="url(#actual)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </Paper>
   );
 }

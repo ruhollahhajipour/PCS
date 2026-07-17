@@ -1,26 +1,20 @@
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
 } from "recharts";
 
 const data = [
-  { month: "Jan", planned: 5, actual: 4 },
-  { month: "Feb", planned: 12, actual: 10 },
-  { month: "Mar", planned: 20, actual: 18 },
-  { month: "Apr", planned: 32, actual: 30 },
-  { month: "May", planned: 48, actual: 45 },
-  { month: "Jun", planned: 63, actual: 60 },
-  { month: "Jul", planned: 78, actual: 74 },
-  { month: "Aug", planned: 90, actual: 86 },
+  {
+    name: "Progress",
+    value: 74,
+    fill: "#2563EB",
+  },
 ];
 
 export default function DashboardProgressChart() {
@@ -28,8 +22,10 @@ export default function DashboardProgressChart() {
     <Paper
       sx={{
         p: 3,
-        borderRadius: 4,
+        borderRadius: 5,
         height: 360,
+        background: "rgba(255,255,255,.82)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <Typography
@@ -37,43 +33,59 @@ export default function DashboardProgressChart() {
         fontWeight={700}
         mb={2}
       >
-        Project Progress (%)
+        Overall Project Progress
       </Typography>
 
-      <ResponsiveContainer
-        width="100%"
-        height="88%"
+      <Box
+        sx={{
+          height: "88%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
       >
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            innerRadius="70%"
+            outerRadius="100%"
+            data={data}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              tick={false}
+            />
 
-          <XAxis dataKey="month" />
+            <RadialBar
+              background
+              dataKey="value"
+              cornerRadius={12}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
 
-          <YAxis
-            domain={[0, 100]}
-          />
+        <Box
+          sx={{
+            position: "absolute",
+            textAlign: "center",
+          }}
+        >
+          <Typography
+            fontSize={46}
+            fontWeight={800}
+          >
+            74%
+          </Typography>
 
-          <Tooltip />
-
-          <Legend />
-
-          <Line
-            type="monotone"
-            dataKey="planned"
-            name="Planned"
-            strokeWidth={3}
-            dot={false}
-          />
-
-          <Line
-            type="monotone"
-            dataKey="actual"
-            name="Actual"
-            strokeWidth={3}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          <Typography
+            color="text.secondary"
+          >
+            Completed
+          </Typography>
+        </Box>
+      </Box>
     </Paper>
   );
 }

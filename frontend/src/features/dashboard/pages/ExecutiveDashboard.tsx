@@ -19,7 +19,7 @@ export default function ExecutiveDashboard() {
           title="Total Budget"
           value="$145 M"
           change="+8.2%"
-          positive={true}
+          
         />
       </Grid>
 
@@ -28,7 +28,7 @@ export default function ExecutiveDashboard() {
           title="Actual Cost"
           value="$132 M"
           change="+5.4%"
-          positive={true}
+          
         />
       </Grid>
 
@@ -37,7 +37,7 @@ export default function ExecutiveDashboard() {
           title="SPI"
           value="0.97"
           change="-2.1%"
-          positive={false}
+          
         />
       </Grid>
 
@@ -46,7 +46,7 @@ export default function ExecutiveDashboard() {
           title="CPI"
           value="1.04"
           change="+4.8%"
-          positive={true}
+          
         />
       </Grid>
 

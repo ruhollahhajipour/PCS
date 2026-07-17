@@ -3,37 +3,29 @@ import Typography from "@mui/material/Typography";
 
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
   Tooltip,
-  Legend,
+  Bar,
+  Cell,
 } from "recharts";
 
 const data = [
-  {
-    name: "Approved",
-    value: 62,
-  },
-  {
-    name: "Pending",
-    value: 21,
-  },
-  {
-    name: "Draft",
-    value: 11,
-  },
-  {
-    name: "Cancelled",
-    value: 6,
-  },
+  { stage: "PR", value: 42 },
+  { stage: "RFQ", value: 35 },
+  { stage: "Bid", value: 28 },
+  { stage: "PO", value: 19 },
+  { stage: "Delivered", value: 12 },
 ];
 
-const colors = [
-  "#2E7D32",
-  "#ED6C02",
-  "#1976D2",
-  "#D32F2F",
+const COLORS = [
+  "#2563EB",
+  "#3B82F6",
+  "#60A5FA",
+  "#93C5FD",
+  "#BFDBFE",
 ];
 
 export default function DashboardProcurementChart() {
@@ -41,8 +33,10 @@ export default function DashboardProcurementChart() {
     <Paper
       sx={{
         p: 3,
-        borderRadius: 4,
+        borderRadius: 5,
         height: 360,
+        background: "rgba(255,255,255,.82)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <Typography
@@ -50,34 +44,34 @@ export default function DashboardProcurementChart() {
         fontWeight={700}
         mb={2}
       >
-        Procurement Status
+        Procurement Pipeline
       </Typography>
 
       <ResponsiveContainer
         width="100%"
         height="88%"
       >
-        <PieChart>
-          <Pie
-            data={data}
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis dataKey="stage" />
+
+          <YAxis />
+
+          <Tooltip />
+
+          <Bar
             dataKey="value"
-            nameKey="name"
-            outerRadius={110}
-            innerRadius={60}
-            paddingAngle={2}
+            radius={[8, 8, 0, 0]}
           >
             {data.map((_, index) => (
               <Cell
                 key={index}
-                fill={colors[index]}
+                fill={COLORS[index]}
               />
             ))}
-          </Pie>
-
-          <Tooltip />
-
-          <Legend />
-        </PieChart>
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </Paper>
   );

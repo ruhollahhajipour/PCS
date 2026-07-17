@@ -1,81 +1,89 @@
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
 
 import {
   ResponsiveContainer,
-  BarChart,
+  AreaChart,
+  Area,
   CartesianGrid,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  Legend,
-  Bar,
 } from "recharts";
 
 const data = [
-  { month: "Jan", budget: 220, actual: 180 },
-  { month: "Feb", budget: 250, actual: 210 },
-  { month: "Mar", budget: 270, actual: 240 },
-  { month: "Apr", budget: 300, actual: 295 },
-  { month: "May", budget: 340, actual: 318 },
-  { month: "Jun", budget: 380, actual: 350 },
-  { month: "Jul", budget: 420, actual: 392 },
-  { month: "Aug", budget: 460, actual: 438 },
+  { month: "Jan", value: 120 },
+  { month: "Feb", value: 180 },
+  { month: "Mar", value: 260 },
+  { month: "Apr", value: 340 },
+  { month: "May", value: 420 },
+  { month: "Jun", value: 500 },
+  { month: "Jul", value: 580 },
+  { month: "Aug", value: 660 },
 ];
 
 export default function DashboardBudgetChart() {
   return (
     <Paper
-      elevation={0}
       sx={{
         p: 3,
-        borderRadius: 4,
-        border: "1px solid",
-        borderColor: "divider",
-        height: 380,
-        display: "flex",
-        flexDirection: "column",
+        borderRadius: 5,
+        height: 360,
+        background: "rgba(255,255,255,.82)",
+        backdropFilter: "blur(16px)",
       }}
     >
-      <Box mb={2}>
-        <Typography variant="h6" fontWeight={700}>
-          Budget vs Actual
-        </Typography>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        mb={2}
+      >
+        Budget Trend
+      </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          Monthly project budget comparison
-        </Typography>
-      </Box>
+      <ResponsiveContainer
+        width="100%"
+        height="88%"
+      >
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient
+              id="budget"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="5%"
+                stopColor="#2563EB"
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="95%"
+                stopColor="#2563EB"
+                stopOpacity={0.05}
+              />
+            </linearGradient>
+          </defs>
 
-      <Box flex={1}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" />
 
-            <XAxis dataKey="month" />
+          <XAxis dataKey="month" />
 
-            <YAxis />
+          <YAxis />
 
-            <Tooltip />
+          <Tooltip />
 
-            <Legend />
-
-            <Bar
-              dataKey="budget"
-              radius={[6, 6, 0, 0]}
-            />
-
-            <Bar
-              dataKey="actual"
-              radius={[6, 6, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </Box>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#2563EB"
+            strokeWidth={4}
+            fill="url(#budget)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </Paper>
   );
 }
