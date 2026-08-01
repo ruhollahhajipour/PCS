@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+
+    <OutputType>WinExe</OutputType>
+
+    <TargetFramework>net10.0-windows</TargetFramework>
+
+    <Nullable>enable</Nullable>
+
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <ImplicitUsings>enable</ImplicitUsings>
+
+
+    <!-- Installer Publish -->
+
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <SelfContained>true</SelfContained>
+
+    <PublishSingleFile>true</PublishSingleFile>
+
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <PublishTrimmed>false</PublishTrimmed>
+
+
+    <!-- Application Icon -->
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+
+    <!-- Version -->
+
+    <AssemblyName>PCS.Installer</AssemblyName>
+
+    <RootNamespace>PCS.Installer</RootNamespace>
+
+    <Version>1.0.0</Version>
+
+    <FileVersion>1.0.0.0</FileVersion>
+
+    <InformationalVersion>PCS Installer 1.0.0</InformationalVersion>
+
+
+  </PropertyGroup>
+
+
+
+  <ItemGroup>
+
+    <ProjectReference Include="..\PCS.Infrastructure\PCS.Infrastructure.csproj" />
+
+    <ProjectReference Include="..\PCS.Application\PCS.Application.csproj" />
+
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+
+    <PackageReference Include="SQLitePCLRaw.core" Version="2.1.11" />
+
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+
+    <Content Include="Resources\**\*">
+
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+
+    </Content>
+
+
+  </ItemGroup>
+
+
+
+</Project>

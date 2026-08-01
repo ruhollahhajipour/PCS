@@ -1,0 +1,52 @@
+# =========================
+# Node
+# =========================
+node_modules/
+dist/
+coverage/
+.vite/
+
+# =========================
+# .NET
+# =========================
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+.vscode/
+.idea/
+
+# WiX
+.wix/
+
+# Installer build output
+installer/bin/
+installer/obj/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# User files
+*.user
+*.suo
+# Build Output
+backend/Release/
+backend/**/bin/
+backend/**/obj/
+
+# Installer Publish
+installer/publish/
+backend/src/PCS.Installer/bin/
+backend/src/PCS.Installer/obj/
+
+# Wix
+.wix/
+
+# Environment
+.env

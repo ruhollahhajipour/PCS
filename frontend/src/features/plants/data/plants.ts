@@ -1,0 +1,51 @@
+import type { Plant } from "../../../models/plant";
+
+const plants: Plant[] = [
+  {
+    id: "1",
+    companyId: 1,
+    code: "ADISH-01",
+    shortName: "ADS",
+    name: "South Adish Gas Condensate Refinery",
+    country: "Iran",
+    city: "Bushehr",
+    address: "South Pars Phase 13",
+    timezone: "Asia/Tehran",
+    currency: "USD",
+    status: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    companyId: 1,
+    code: "UTIL-01",
+    shortName: "UTL",
+    name: "Utility Plant",
+    country: "Iran",
+    city: "Bushehr",
+    address: "South Pars",
+    timezone: "Asia/Tehran",
+    currency: "USD",
+    status: "Active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    companyId: 2,
+    code: "PETRO-01",
+    shortName: "PET",
+    name: "Petrochemical Unit",
+    country: "Iran",
+    city: "Assaluyeh",
+    address: "Assaluyeh Industrial Zone",
+    timezone: "Asia/Tehran",
+    currency: "USD",
+    status: "Inactive",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+export default plants;

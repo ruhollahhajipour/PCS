@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PCS.API/PCS.API.csproj" />
+    <Project Path="src/PCS.Application/PCS.Application.csproj" />
+    <Project Path="src/PCS.Domain/PCS.Domain.csproj" />
+    <Project Path="src/PCS.Infrastructure/PCS.Infrastructure.csproj" />
+    <Project Path="src/PCS.Installer/PCS.Installer.csproj" />
+  </Folder>
+</Solution>
