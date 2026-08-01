@@ -63,3 +63,6 @@ dist/
 # Build / Release artifacts
 **/Release/
 **/Publish/
+# PCS Installer outputs
+**/PCS-Setup*.exe
+**/PCS.Installer.exe
