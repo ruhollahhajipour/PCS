@@ -77,3 +77,4 @@ backend/src/PCS.Installer/Setup/PCSSetup.exe
 frontend/frontend_structure.txt
 backend/src/PCS.Application/Resources/Backend.zip
 backend/src/PCS.Application/Resources/Frontend.zip
+backend/_bundle_test/
