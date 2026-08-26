@@ -1,20 +1,53 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\PCS.Domain\PCS.Domain.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.105.1" />
-    <PackageReference Include="FluentValidation" Version="12.1.1" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+
+  <ItemGroup>
+
+    <ProjectReference
+      Include="..\PCS.Domain\PCS.Domain.csproj" />
+
+  </ItemGroup>
+
+
+  <ItemGroup>
+
+    <PackageReference
+      Include="ClosedXML"
+      Version="0.105.1" />
+
+    <PackageReference
+      Include="FluentValidation"
+      Version="12.1.1" />
+
+    <PackageReference
+      Include="FluentValidation.DependencyInjectionExtensions"
+      Version="12.1.1" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+      Version="10.0.10" />
+
+  </ItemGroup>
+
+
+  <!-- =====================================================
+       CENTRAL PCS BRANDING
+       This is the single source of truth for the PCS logo.
+       ===================================================== -->
+
+  <ItemGroup>
+
+    <None
+      Include="Resources\Branding\pcs-logo.png"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest" />
+
+  </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PCS.Domain.Entities.PMS;
+using PCS.Domain.Entities.Planning;
 
 namespace PCS.Infrastructure.Persistence.Configurations;
 
@@ -14,6 +14,11 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
         builder.HasKey(x => x.Id);
 
 
+
+        // ==========================================
+        // Basic Information
+        // ==========================================
+
         builder.Property(x => x.Code)
             .HasMaxLength(50)
             .IsRequired();
@@ -24,8 +29,22 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .IsRequired();
 
 
+
+        // ==========================================
+        // Cost Control
+        // ==========================================
+
         builder.Property(x => x.Budget)
             .HasPrecision(18, 2);
+
+
+        builder.Property(x => x.ActualCost)
+            .HasPrecision(18, 2);
+
+
+        builder.Property(x => x.EarnedValue)
+            .HasPrecision(18, 2);
+
 
 
         builder.Property(x => x.Weight)
@@ -37,12 +56,20 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
 
 
 
+        // ==========================================
+        // Project Relationship
+        // ==========================================
+
         builder.HasOne(x => x.Project)
-            .WithMany()
-            .HasForeignKey(x => x.ProjectId)
-            .OnDelete(DeleteBehavior.Cascade);
+        .WithMany(x => x.Activities)
+        .HasForeignKey(x => x.ProjectId)
+        .OnDelete(DeleteBehavior.Cascade);
 
 
+
+        // ==========================================
+        // WBS Relationship
+        // ==========================================
 
         builder.HasOne(x => x.WbsNode)
             .WithMany(x => x.Activities)
@@ -50,6 +77,10 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .OnDelete(DeleteBehavior.Restrict);
 
 
+
+        // ==========================================
+        // Index
+        // ==========================================
 
         builder.HasIndex(x => new
         {

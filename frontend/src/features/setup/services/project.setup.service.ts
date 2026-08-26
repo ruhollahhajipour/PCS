@@ -1,53 +1,27 @@
-import axios from "axios";
-
+import http from "../../../api/http";
 
 export interface CreateProjectRequest {
-
-
-  code:string;
-
-  name:string;
-
-  description?:string;
-
-  companyId:string;
-
-  startDate:string;
-
-  endDate:string;
-
-  budget:number;
-
-
+  code: string;
+  name: string;
+  description?: string;
+  companyId: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
 }
-
-
 
 class ProjectSetupService {
-
-
   async create(
-    data:CreateProjectRequest
-  ){
-
-
+    data: CreateProjectRequest
+  ) {
     const response =
-      await axios.post(
-
-        "http://localhost:5201/api/Projects",
-
+      await http.post(
+        "/Projects",
         data
-
       );
 
-
     return response.data;
-
-
   }
-
-
 }
-
 
 export default new ProjectSetupService();

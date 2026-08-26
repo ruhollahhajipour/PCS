@@ -1,3 +1,4 @@
+using PCS.Installer.Themes;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
@@ -11,7 +12,6 @@ public abstract class InstallerPageBase : UserControl
     protected Label DescriptionLabel = null!;
 
 
-
     [DesignerSerializationVisibility(
         DesignerSerializationVisibility.Hidden)]
     public string PageTitle
@@ -19,7 +19,6 @@ public abstract class InstallerPageBase : UserControl
         get => TitleLabel.Text;
         set => TitleLabel.Text = value;
     }
-
 
 
     [DesignerSerializationVisibility(
@@ -31,49 +30,130 @@ public abstract class InstallerPageBase : UserControl
     }
 
 
-
     protected InstallerPageBase()
     {
-        Dock = DockStyle.Fill;
+        // =========================================================
+        // BASIC CONTROL SETTINGS
+        // =========================================================
 
-        BackColor = Color.White;
+        Dock =
+            DockStyle.Fill;
+
+        BackColor =
+            Colors.Background;
+
+        DoubleBuffered =
+            true;
+
+
+        // =========================================================
+        // DPI SCALING
+        // =========================================================
+        //
+        // The previous AutoScaleMode.None prevented WinForms from
+        // adapting the fixed-size UI to 125%, 150%, etc. displays.
+        //
+        // Program.cs enables PerMonitorV2, and pages use DPI scaling.
+        //
+
+        AutoScaleMode =
+            AutoScaleMode.Dpi;
+
+
+        AutoScaleDimensions =
+            new SizeF(
+                96F,
+                96F);
+
 
         BuildBaseUI();
     }
 
 
-
     private void BuildBaseUI()
     {
-        TitleLabel = new Label
-        {
-            AutoSize = true,
-            Font = new Font(
-                "Segoe UI",
-                18,
-                FontStyle.Bold),
-            ForeColor =
-                Color.FromArgb(15, 23, 42),
-            Location =
-                new Point(20, 20)
-        };
+        // ==========================================================
+        // PAGE TITLE
+        // ==========================================================
+
+        TitleLabel =
+            new Label
+            {
+                AutoSize =
+                    false,
+
+                Location =
+                    new Point(
+                        28,
+                        12),
+
+                Size =
+                    new Size(
+                        740,
+                        30),
+
+                Font =
+                    Fonts.WizardTitle,
+
+                ForeColor =
+                    Colors.TextPrimary,
+
+                BackColor =
+                    Color.Transparent,
+
+                TextAlign =
+                    ContentAlignment.MiddleLeft,
+
+                Anchor =
+                    AnchorStyles.Top |
+                    AnchorStyles.Left |
+                    AnchorStyles.Right
+            };
 
 
-        DescriptionLabel = new Label
-        {
-            AutoSize = true,
-            Font = new Font(
-                "Segoe UI",
-                10),
-            ForeColor =
-                Color.Gray,
-            Location =
-                new Point(22, 60)
-        };
+        // ==========================================================
+        // PAGE DESCRIPTION
+        // ==========================================================
+
+        DescriptionLabel =
+            new Label
+            {
+                AutoSize =
+                    false,
+
+                Location =
+                    new Point(
+                        30,
+                        43),
+
+                Size =
+                    new Size(
+                        740,
+                        24),
+
+                Font =
+                    Fonts.WizardDescription,
+
+                ForeColor =
+                    Colors.TextSecondary,
+
+                BackColor =
+                    Color.Transparent,
+
+                TextAlign =
+                    ContentAlignment.MiddleLeft,
+
+                Anchor =
+                    AnchorStyles.Top |
+                    AnchorStyles.Left |
+                    AnchorStyles.Right
+            };
 
 
-        Controls.Add(TitleLabel);
+        Controls.Add(
+            TitleLabel);
 
-        Controls.Add(DescriptionLabel);
+        Controls.Add(
+            DescriptionLabel);
     }
 }

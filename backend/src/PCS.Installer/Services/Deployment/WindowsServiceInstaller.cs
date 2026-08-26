@@ -1,158 +1,71 @@
 using PCS.Installer.Models;
-using System.Diagnostics;
 
 namespace PCS.Installer.Services.Deployment;
 
-public class WindowsServiceInstaller
+public sealed class WindowsServiceInstaller
 {
-    private const string ServiceName =
-        "PCS.API.Service";
-
-
-    private const string DisplayName =
-        "PCS Project Control Suite API";
-
-
+    /*
+     * PCS no longer installs the API as a Windows Service.
+     *
+     * The installer is intentionally designed to run
+     * without Administrator privileges or UAC elevation.
+     *
+     * These methods are retained as compatibility
+     * no-op methods so existing installer/uninstaller
+     * code does not break.
+     */
 
     public void Install(
         InstallerContext context)
     {
-        string apiFolder =
-            Path.Combine(
-                context.InstallPath,
-                "Backend");
-
-
-        string exePath =
-            Path.Combine(
-                apiFolder,
-                "PCS.API.exe");
-
-
-
-        if (!File.Exists(exePath))
+        if (context == null)
         {
-            throw new FileNotFoundException(
-                "PCS.API.exe not found.",
-                exePath);
+            throw new ArgumentNullException(
+                nameof(context));
         }
 
-
-
-        RemoveExistingService();
-
-
-
-        ProcessStartInfo info =
-            new ProcessStartInfo
-            {
-                FileName =
-                    "sc.exe",
-
-                Arguments =
-                    $"create {ServiceName} " +
-                    $"binPath= \"{exePath}\" " +
-                    $"DisplayName= \"{DisplayName}\" " +
-                    "start= auto",
-
-                UseShellExecute =
-                    false,
-
-                CreateNoWindow =
-                    true
-            };
-
-
-
-        using(Process process =
-            Process.Start(info)!)
-        {
-            process.WaitForExit();
-        }
-
-
-
-        StartService();
+        /*
+         * Intentionally no-op.
+         *
+         * Do NOT call:
+         *
+         *     sc.exe create
+         *     sc.exe start
+         *
+         * because Windows Service management requires
+         * Administrator privileges.
+         */
     }
 
 
-
-    private void StartService()
+    public void Stop(
+        InstallerContext context)
     {
-        ProcessStartInfo info =
-            new ProcessStartInfo
-            {
-                FileName =
-                    "sc.exe",
-
-                Arguments =
-                    $"start {ServiceName}",
-
-                UseShellExecute =
-                    false,
-
-                CreateNoWindow =
-                    true
-            };
-
-
-        using(Process process =
-            Process.Start(info)!)
+        if (context == null)
         {
-            process.WaitForExit();
+            throw new ArgumentNullException(
+                nameof(context));
         }
+
+        /*
+         * Intentionally no-op.
+         */
     }
 
 
-
-    public void Stop()
+    public void Uninstall(
+        InstallerContext context)
     {
-        Process.Start(
-            "sc.exe",
-            $"stop {ServiceName}");
-    }
-
-
-
-    public void Uninstall()
-    {
-        Stop();
-
-        RemoveExistingService();
-    }
-
-
-
-    private void RemoveExistingService()
-    {
-        try
+        if (context == null)
         {
-            ProcessStartInfo info =
-                new ProcessStartInfo
-                {
-                    FileName =
-                        "sc.exe",
-
-                    Arguments =
-                        $"delete {ServiceName}",
-
-                    UseShellExecute =
-                        false,
-
-                    CreateNoWindow =
-                        true
-                };
-
-
-            using(Process process =
-                Process.Start(info)!)
-            {
-                process.WaitForExit();
-            }
+            throw new ArgumentNullException(
+                nameof(context));
         }
-        catch
-        {
 
-        }
+        /*
+         * Intentionally no-op.
+         *
+         * No Windows Service is created by PCS.
+         */
     }
 }

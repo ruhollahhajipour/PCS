@@ -9,113 +9,283 @@ public class UninstallerService
         InstallerContext context,
         bool removeDatabase)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
+
+        /*
+         * Current PCS Free / Local installation does
+         * not create a Windows Service.
+         *
+         * These calls are intentionally kept harmless
+         * for compatibility with future editions.
+         */
         StopWindowsService();
 
         RemoveWindowsService();
 
+
+
+        /*
+         * ======================================================
+         * REMOVE APPLICATION DIRECTORIES
+         * ======================================================
+         */
+
         DeleteFolder(
-            Path.Combine(
-                context.InstallPath,
-                "Backend"));
+            context.BackendPath);
+
+
+        DeleteFolder(
+            context.FrontendPath);
+
 
         DeleteFolder(
             Path.Combine(
                 context.InstallPath,
-                "Frontend"));
+                "Launcher"));
+
 
         DeleteFolder(
-            Path.Combine(
-                context.InstallPath,
-                "Config"));
+            context.ConfigPath);
+
 
         DeleteFolder(
-            Path.Combine(
-                context.InstallPath,
-                "Logs"));
+            context.LogsPath);
+
+
+        DeleteFolder(
+            context.BackupPath);
+
+
+        DeleteFolder(
+            context.ImportPath);
+
+
+        DeleteFolder(
+            context.ExportPath);
+
+
 
         if (removeDatabase)
         {
             DeleteFolder(
-                Path.Combine(
-                    context.InstallPath,
-                    "Database"));
+                context.DatabasePath);
         }
 
-        RemoveDesktopShortcut();
 
-        RemoveStartMenuShortcut();
+
+        /*
+         * ======================================================
+         * REMOVE SHORTCUTS
+         * ======================================================
+         */
+
+        RemoveDesktopShortcut(
+            context.ProductName);
+
+
+        RemoveStartMenuShortcut(
+            context.ProductName);
+
+
+
+        /*
+         * ======================================================
+         * REMOVE EMPTY INSTALL DIRECTORY
+         * ======================================================
+         */
+
+        TryDeleteEmptyDirectory(
+            context.InstallPath);
     }
 
-    private void StopWindowsService()
+
+
+    private static void StopWindowsService()
     {
         ExecuteCommand(
             "sc",
             "stop PCS.API.Service");
     }
 
-    private void RemoveWindowsService()
+
+
+    private static void RemoveWindowsService()
     {
         ExecuteCommand(
             "sc",
             "delete PCS.API.Service");
     }
 
+
+
     private static void DeleteFolder(
         string folder)
     {
         if (!Directory.Exists(folder))
+        {
             return;
-
-        var directory =
-            new DirectoryInfo(folder);
-
-        foreach (var file in directory.GetFiles("*", SearchOption.AllDirectories))
-        {
-            file.IsReadOnly = false;
         }
 
-        Directory.Delete(
-            folder,
-            true);
+
+        try
+        {
+            DirectoryInfo directory =
+                new DirectoryInfo(folder);
+
+
+            foreach (
+                FileInfo file
+                in directory.GetFiles(
+                    "*",
+                    SearchOption.AllDirectories))
+            {
+                try
+                {
+                    file.IsReadOnly = false;
+                }
+                catch
+                {
+                    // Ignore individual file attribute errors.
+                }
+            }
+
+
+            Directory.Delete(
+                folder,
+                recursive: true);
+        }
+        catch
+        {
+            /*
+             * Cleanup errors must not crash the
+             * uninstaller.
+             */
+        }
     }
 
-    private static void RemoveDesktopShortcut()
+
+
+    private static void RemoveDesktopShortcut(
+        string productName)
     {
+        string desktop =
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.DesktopDirectory);
+
+
+        if (string.IsNullOrWhiteSpace(desktop))
+        {
+            return;
+        }
+
+
         string shortcut =
             Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.DesktopDirectory),
+                desktop,
                 "PCS.lnk");
 
-        if (File.Exists(shortcut))
-        {
-            File.Delete(shortcut);
-        }
+
+        TryDeleteFile(
+            shortcut);
     }
 
-    private static void RemoveStartMenuShortcut()
-    {
-        string shortcut =
-            Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.Programs),
-                "PCS",
-                "PCS.lnk");
 
-        if (File.Exists(shortcut))
+
+    private static void RemoveStartMenuShortcut(
+        string productName)
+    {
+        string programs =
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.Programs);
+
+
+        if (string.IsNullOrWhiteSpace(programs))
         {
-            File.Delete(shortcut);
+            return;
         }
+
 
         string folder =
-            Path.GetDirectoryName(shortcut)!;
+            Path.Combine(
+                programs,
+                productName);
 
-        if (Directory.Exists(folder) &&
-            !Directory.EnumerateFileSystemEntries(folder).Any())
+
+        string shortcut =
+            Path.Combine(
+                folder,
+                "PCS.lnk");
+
+
+        TryDeleteFile(
+            shortcut);
+
+
+        TryDeleteEmptyDirectory(
+            folder);
+    }
+
+
+
+    private static void TryDeleteFile(
+        string file)
+    {
+        try
         {
-            Directory.Delete(folder);
+            if (!File.Exists(file))
+            {
+                return;
+            }
+
+
+            File.SetAttributes(
+                file,
+                FileAttributes.Normal);
+
+
+            File.Delete(
+                file);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
         }
     }
+
+
+
+    private static void TryDeleteEmptyDirectory(
+        string directory)
+    {
+        try
+        {
+            if (!Directory.Exists(directory))
+            {
+                return;
+            }
+
+
+            if (
+                Directory
+                    .EnumerateFileSystemEntries(
+                        directory)
+                    .Any())
+            {
+                return;
+            }
+
+
+            Directory.Delete(
+                directory);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
+        }
+    }
+
+
 
     private static void ExecuteCommand(
         string fileName,
@@ -123,20 +293,40 @@ public class UninstallerService
     {
         try
         {
-            using Process process = new();
+            using Process process =
+                new();
 
-            process.StartInfo.FileName = fileName;
-            process.StartInfo.Arguments = arguments;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.UseShellExecute = false;
+
+            process.StartInfo.FileName =
+                fileName;
+
+
+            process.StartInfo.Arguments =
+                arguments;
+
+
+            process.StartInfo.CreateNoWindow =
+                true;
+
+
+            process.StartInfo.UseShellExecute =
+                false;
+
 
             process.Start();
+
 
             process.WaitForExit();
         }
         catch
         {
-            // Ignore cleanup errors
+            /*
+             * Current Free / Local installation does
+             * not require a Windows Service.
+             *
+             * Therefore service cleanup failures are
+             * intentionally ignored.
+             */
         }
     }
 }

@@ -8,63 +8,48 @@ public class ConfigurationService
     public void Create(
         InstallerContext context)
     {
+        if (context == null)
+        {
+            throw new ArgumentNullException(
+                nameof(context));
+        }
+
+
         Directory.CreateDirectory(
             context.ConfigPath);
 
 
+        Directory.CreateDirectory(
+            context.BackendPath);
 
-        string file =
+
+        string connectionString =
+            context.ConnectionString;
+
+
+        if (string.IsNullOrWhiteSpace(
+                connectionString))
+        {
+            throw new InvalidOperationException(
+                "PCS database connection string was not configured.");
+        }
+
+
+        // ==================================================
+        // PCS installer configuration
+        // ==================================================
+
+        string pcsConfigFile =
             Path.Combine(
                 context.ConfigPath,
                 "pcs.config.json");
 
 
-
-        string connectionString;
-
-
-
-        if (context.DatabaseType == DatabaseType.SqlServer)
-        {
-            if (context.WindowsAuthentication)
-            {
-                connectionString =
-                    $"Server={context.DatabaseServer};" +
-                    $"Database={context.DatabaseName};" +
-                    $"Trusted_Connection=True;" +
-                    $"TrustServerCertificate=True;";
-            }
-            else
-            {
-                connectionString =
-                    $"Server={context.DatabaseServer};" +
-                    $"Database={context.DatabaseName};" +
-                    $"User Id={context.Username};" +
-                    $"Password={context.Password};" +
-                    $"TrustServerCertificate=True;";
-            }
-        }
-        else
-        {
-            connectionString =
-                $"Data Source={Path.Combine(
-                    context.DatabasePath,
-                    $"{context.DatabaseName}.db")}";
-        }
-
-
-
-        context.ConnectionString =
-            connectionString;
-
-
-
-        var config =
+        var pcsConfig =
             new
             {
                 ConnectionString =
                     connectionString,
-
 
                 Installation =
                     new
@@ -72,18 +57,14 @@ public class ConfigurationService
                         Product =
                             context.ProductName,
 
-
                         Version =
                             context.Version,
-
 
                         Type =
                             context.InstallationType.ToString(),
 
-
                         InstalledAt =
                             DateTime.Now,
-
 
                         ApiUrl =
                             context.ApiUrl
@@ -91,19 +72,70 @@ public class ConfigurationService
             };
 
 
-
-        string json =
+        string pcsConfigJson =
             JsonSerializer.Serialize(
-                config,
+                pcsConfig,
                 new JsonSerializerOptions
                 {
                     WriteIndented = true
                 });
 
 
+        File.WriteAllText(
+            pcsConfigFile,
+            pcsConfigJson);
+
+
+        // ==================================================
+        // ASP.NET Core API configuration
+        // ==================================================
+
+        string appSettingsFile =
+            Path.Combine(
+                context.BackendPath,
+                "appsettings.json");
+
+
+        var appSettings =
+            new
+            {
+                ConnectionStrings =
+                    new
+                    {
+                        DefaultConnection =
+                            connectionString
+                    },
+
+                Logging =
+                    new
+                    {
+                        LogLevel =
+                            new
+                            {
+                                Default =
+                                    "Information",
+
+                                MicrosoftAspNetCore =
+                                    "Warning"
+                            }
+                    },
+
+                AllowedHosts =
+                    "*"
+            };
+
+
+        string appSettingsJson =
+            JsonSerializer.Serialize(
+                appSettings,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
 
         File.WriteAllText(
-            file,
-            json);
+            appSettingsFile,
+            appSettingsJson);
     }
 }

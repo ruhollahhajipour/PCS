@@ -9,8 +9,8 @@ public class DatabaseInstallerService
     public void CreateDatabase(
         InstallerContext context)
     {
-
-        if (context.DatabaseType == DatabaseType.SqlServer)
+        if (context.DatabaseType ==
+            DatabaseType.SqlServer)
         {
             CreateSqlServerDatabase(context);
         }
@@ -18,27 +18,26 @@ public class DatabaseInstallerService
         {
             CreateSqliteDatabase(context);
         }
-
     }
-
-
-
-
-
-
 
 
     private void CreateSqlServerDatabase(
         InstallerContext context)
     {
+        string connectionString =
+            BuildSqlServerConnection(context);
+
+
+        context.ConnectionString =
+            connectionString;
+
 
         var options =
             new DbContextOptionsBuilder<PCSDbContext>();
 
 
         options.UseSqlServer(
-            BuildSqlServerConnection(context));
-
+            connectionString);
 
 
         using var db =
@@ -46,35 +45,22 @@ public class DatabaseInstallerService
                 options.Options);
 
 
-
         db.Database.Migrate();
-
 
 
         SeedData(db);
     }
 
 
-
-
-
-
-
-
-
     private void CreateSqliteDatabase(
         InstallerContext context)
     {
-
         string folder =
-            Path.Combine(
-                context.InstallPath,
-                "Database");
+            context.DatabasePath;
 
 
-
-        Directory.CreateDirectory(folder);
-
+        Directory.CreateDirectory(
+            folder);
 
 
         string database =
@@ -83,15 +69,20 @@ public class DatabaseInstallerService
                 $"{context.DatabaseName}.db");
 
 
+        string connectionString =
+            $"Data Source={database}";
+
+
+        context.ConnectionString =
+            connectionString;
+
 
         var options =
             new DbContextOptionsBuilder<PCSDbContext>();
 
 
-
         options.UseSqlite(
-            $"Data Source={database}");
-
+            connectionString);
 
 
         using var db =
@@ -99,26 +90,16 @@ public class DatabaseInstallerService
                 options.Options);
 
 
-
         db.Database.Migrate();
-
 
 
         SeedData(db);
     }
 
 
-
-
-
-
-
-
-
     private string BuildSqlServerConnection(
         InstallerContext context)
     {
-
         if (context.WindowsAuthentication)
         {
             return
@@ -127,7 +108,6 @@ public class DatabaseInstallerService
                 "Trusted_Connection=True;" +
                 "TrustServerCertificate=True;";
         }
-
 
 
         return
@@ -139,21 +119,12 @@ public class DatabaseInstallerService
     }
 
 
-
-
-
-
-
-
-
     private void SeedData(
         PCSDbContext db)
     {
-
         // Initial seed data
         // Admin user / roles / settings
-        // در مرحله بعد تکمیل می‌شود
-
+        // در مرحله بعد تکمیل می‌شود.
 
         db.SaveChanges();
     }

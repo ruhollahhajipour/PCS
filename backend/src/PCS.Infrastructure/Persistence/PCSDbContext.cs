@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using PCS.Domain.Entities;
-using PCS.Domain.Entities.PMS;
+using PCS.Domain.Entities.Planning;
 using PCS.Domain.Entities.Security;
 
 namespace PCS.Infrastructure.Persistence;
@@ -134,13 +134,7 @@ public class PCSDbContext : DbContext
             .IsUnique();
 
 
-        // ===================================
-        // Unique Role Name
-        // ===================================
-
-        modelBuilder.Entity<Role>()
-            .HasIndex(x => x.Name)
-            .IsUnique();
+        
 
 
        

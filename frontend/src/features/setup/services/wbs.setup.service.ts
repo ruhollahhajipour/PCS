@@ -1,92 +1,46 @@
-import axios from "axios";
+import http from "../../../api/http";
 
-
-const API =
-  "http://localhost:5201/api/pms";
-
-
+const API = "/pms";
 
 class WbsSetupService {
-
-
-  async downloadTemplate(){
-
-
+  async downloadTemplate() {
     const response =
-      await axios.get(
-
+      await http.get(
         `${API}/template`,
-
         {
-
-          responseType:
-            "blob"
-
+          responseType: "blob",
         }
-
       );
 
-
     return response.data;
-
   }
 
-
-
-
-
-
   async importExcel(
-
-    projectId:string,
-
-    file:File
-
-  ){
-
-
+    projectId: string,
+    file: File
+  ) {
     const formData =
       new FormData();
-
-
 
     formData.append(
       "file",
       file
     );
 
-
-
     const response =
-      await axios.post(
-
+      await http.post(
         `${API}/import?projectId=${projectId}`,
-
         formData,
-
         {
-
-          headers:{
-
+          headers: {
             "Content-Type":
-              "multipart/form-data"
-
-          }
-
+              "multipart/form-data",
+          },
         }
-
       );
 
-
-
     return response.data;
-
-
   }
-
-
 }
-
-
 
 export default new WbsSetupService();

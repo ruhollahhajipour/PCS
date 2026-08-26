@@ -7,93 +7,354 @@ namespace PCS.Installer.Controls;
 
 public class SecondaryButton : Button
 {
+    private bool isHovered;
+    private bool isPressed;
+
     public SecondaryButton()
     {
-        FlatStyle = FlatStyle.Flat;
-        FlatAppearance.BorderSize = 0;
+        FlatStyle =
+            FlatStyle.Flat;
 
-        Cursor = Cursors.Hand;
+        FlatAppearance.BorderSize =
+            0;
 
-        Width = 130;
-        Height = 42;
+        FlatAppearance.MouseDownBackColor =
+            Color.Transparent;
 
-        BackColor = Color.White;
-        ForeColor = Colors.Primary;
+        FlatAppearance.MouseOverBackColor =
+            Color.Transparent;
 
-        Font = Fonts.Button;
+        UseVisualStyleBackColor =
+            false;
 
-        DoubleBuffered = true;
+        Cursor =
+            Cursors.Hand;
 
-        MouseEnter += (_, _) =>
-        {
-            BackColor = Colors.Hover;
-            Invalidate();
-        };
+        Width =
+            130;
 
-        MouseLeave += (_, _) =>
-        {
-            BackColor = Color.White;
-            Invalidate();
-        };
+        Height =
+            42;
 
-        MouseDown += (_, _) =>
-        {
-            BackColor = Colors.PrimaryLight;
-            Invalidate();
-        };
+        Font =
+            Fonts.Button;
 
-        MouseUp += (_, _) =>
-        {
-            BackColor = Colors.Hover;
-            Invalidate();
-        };
+        ForeColor =
+            Colors.TextPrimary;
+
+        BackColor =
+            Colors.Card;
+
+        DoubleBuffered =
+            true;
+
+        SetStyle(
+            ControlStyles.UserPaint |
+            ControlStyles.AllPaintingInWmPaint |
+            ControlStyles.OptimizedDoubleBuffer |
+            ControlStyles.ResizeRedraw,
+            true);
+
+
+        MouseEnter +=
+            (_, _) =>
+            {
+                isHovered =
+                    true;
+
+                Invalidate();
+            };
+
+
+        MouseLeave +=
+            (_, _) =>
+            {
+                isHovered =
+                    false;
+
+                isPressed =
+                    false;
+
+                Invalidate();
+            };
+
+
+        MouseDown +=
+            (_, e) =>
+            {
+                if (e.Button ==
+                    MouseButtons.Left)
+                {
+                    isPressed =
+                        true;
+
+                    Invalidate();
+                }
+            };
+
+
+        MouseUp +=
+            (_, e) =>
+            {
+                if (e.Button ==
+                    MouseButtons.Left)
+                {
+                    isPressed =
+                        false;
+
+                    Invalidate();
+                }
+            };
     }
 
-    protected override void OnPaint(PaintEventArgs e)
+
+    protected override void OnPaint(
+        PaintEventArgs e)
     {
-        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        Graphics g =
+            e.Graphics;
 
-        Rectangle rect = ClientRectangle;
-        rect.Width--;
-        rect.Height--;
+        g.SmoothingMode =
+            SmoothingMode.AntiAlias;
 
-        using GraphicsPath path = CreateRoundRectangle(rect, 10);
+        g.PixelOffsetMode =
+            PixelOffsetMode.HighQuality;
 
-        using SolidBrush brush = new(BackColor);
-        e.Graphics.FillPath(brush, path);
+        g.TextRenderingHint =
+            System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-        using Pen pen = new(Colors.Border, 1);
-        e.Graphics.DrawPath(pen, path);
+
+        Rectangle rect =
+            ClientRectangle;
+
+        rect.Width -= 1;
+        rect.Height -= 1;
+
+
+        // =========================================================
+        // PRESS EFFECT
+        // =========================================================
+
+        if (isPressed)
+        {
+            rect.Offset(
+                1,
+                2);
+        }
+
+
+        // =========================================================
+        // SHADOW
+        // =========================================================
+
+        if (!isPressed)
+        {
+            Rectangle shadowRect =
+                rect;
+
+            shadowRect.Offset(
+                0,
+                3);
+
+            using GraphicsPath shadowPath =
+                CreateRoundRectangle(
+                    shadowRect,
+                    10);
+
+            using SolidBrush shadowBrush =
+                new SolidBrush(
+                    Color.FromArgb(
+                        80,
+                        0,
+                        0,
+                        0));
+
+            g.FillPath(
+                shadowBrush,
+                shadowPath);
+        }
+
+
+        // =========================================================
+        // BUTTON BACKGROUND
+        // =========================================================
+
+        Color backgroundColor;
+
+
+        if (isPressed)
+        {
+            backgroundColor =
+                Colors.BackgroundDeep;
+        }
+        else if (isHovered)
+        {
+            backgroundColor =
+                Colors.Hover;
+        }
+        else
+        {
+            backgroundColor =
+                Colors.Card;
+        }
+
+
+        using GraphicsPath path =
+            CreateRoundRectangle(
+                rect,
+                10);
+
+
+        using SolidBrush backgroundBrush =
+            new SolidBrush(
+                backgroundColor);
+
+        g.FillPath(
+            backgroundBrush,
+            path);
+
+
+        // =========================================================
+        // TOP HIGHLIGHT
+        // =========================================================
+
+        if (!isPressed)
+        {
+            Rectangle highlightRect =
+                new Rectangle(
+                    rect.X + 2,
+                    rect.Y + 1,
+                    rect.Width - 4,
+                    1);
+
+            using SolidBrush highlightBrush =
+                new SolidBrush(
+                    Color.FromArgb(
+                        isHovered
+                            ? 90
+                            : 45,
+                        255,
+                        255,
+                        255));
+
+            g.FillRectangle(
+                highlightBrush,
+                highlightRect);
+        }
+
+
+        // =========================================================
+        // BORDER
+        // =========================================================
+
+        Color borderColor =
+            isHovered
+                ? Colors.BorderLight
+                : Colors.Border;
+
+
+        using Pen borderPen =
+            new Pen(
+                borderColor,
+                1f);
+
+        g.DrawPath(
+            borderPen,
+            path);
+
+
+        // =========================================================
+        // TEXT
+        // =========================================================
+
+        Rectangle textRect =
+            rect;
+
+        if (isPressed)
+        {
+            textRect.Offset(
+                0,
+                1);
+        }
+
+
+        Color textColor =
+            isHovered
+                ? Colors.TextLight
+                : Colors.TextPrimary;
+
 
         TextRenderer.DrawText(
-            e.Graphics,
+            g,
             Text,
             Font,
-            rect,
-            ForeColor,
+            textRect,
+            textColor,
             TextFormatFlags.HorizontalCenter |
-            TextFormatFlags.VerticalCenter);
+            TextFormatFlags.VerticalCenter |
+            TextFormatFlags.NoPadding);
     }
 
-    protected override void OnResize(EventArgs e)
+
+    protected override void OnResize(
+        EventArgs e)
     {
         base.OnResize(e);
+
         Invalidate();
     }
 
-    private static GraphicsPath CreateRoundRectangle(Rectangle r, int radius)
+
+    private static GraphicsPath CreateRoundRectangle(
+        Rectangle rectangle,
+        int radius)
     {
-        GraphicsPath gp = new();
+        GraphicsPath path =
+            new GraphicsPath();
 
-        int d = radius * 2;
+        int diameter =
+            radius * 2;
 
-        gp.AddArc(r.X, r.Y, d, d, 180, 90);
-        gp.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-        gp.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
-        gp.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
 
-        gp.CloseFigure();
+        path.AddArc(
+            rectangle.X,
+            rectangle.Y,
+            diameter,
+            diameter,
+            180,
+            90);
 
-        return gp;
+
+        path.AddArc(
+            rectangle.Right - diameter,
+            rectangle.Y,
+            diameter,
+            diameter,
+            270,
+            90);
+
+
+        path.AddArc(
+            rectangle.Right - diameter,
+            rectangle.Bottom - diameter,
+            diameter,
+            diameter,
+            0,
+            90);
+
+
+        path.AddArc(
+            rectangle.X,
+            rectangle.Bottom - diameter,
+            diameter,
+            diameter,
+            90,
+            90);
+
+
+        path.CloseFigure();
+
+
+        return path;
     }
 }

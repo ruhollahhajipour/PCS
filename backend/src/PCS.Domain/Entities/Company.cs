@@ -29,16 +29,29 @@ public class Company : AuditableEntity
     public bool IsActive { get; set; } = true;
 
 
+
+    // ==========================
+    // Branding Theme
+    // ==========================
+
+    public CompanyTheme Theme { get; set; }
+        = new();
+
+
+
     /// <summary>
     /// کاربران عضو این شرکت
     /// شامل مدیر شرکت، کاربران عملیاتی و سایر نقش‌ها
     /// </summary>
-    public ICollection<CompanyUser> Users { get; set; } = new List<CompanyUser>();
+    public ICollection<CompanyUser> Users { get; set; }
+        = new List<CompanyUser>();
+
 
 
     /// <summary>
     /// درخواست‌های مدیریتی شرکت
     /// مانند تغییر مدیر اصلی شرکت
     /// </summary>
-    public ICollection<CompanyAdminRequest> AdminRequests { get; set; } = new List<CompanyAdminRequest>();
+    public ICollection<CompanyAdminRequest> AdminRequests { get; set; }
+        = new List<CompanyAdminRequest>();
 }

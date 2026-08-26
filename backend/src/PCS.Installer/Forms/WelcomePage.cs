@@ -1,18 +1,20 @@
-using PCS.Installer.Pages;
 using PCS.Installer.Controls;
+using PCS.Installer.Pages;
 using PCS.Installer.Themes;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace PCS.Installer.Forms;
 
 public class WelcomePage : InstallerPageBase
 {
-    private Label welcomeTitle = null!;
-
+    private Label eyebrowLabel = null!;
+    private Label titleLabel = null!;
     private Label descriptionLabel = null!;
 
-    private PictureBox logoBox = null!;
+    private CardPanel featureCard = null!;
+    private CardPanel requirementCard = null!;
 
 
     public WelcomePage()
@@ -20,129 +22,354 @@ public class WelcomePage : InstallerPageBase
         PageTitle =
             "Welcome to PCS Installer";
 
-
         PageDescription =
             "Project Control Suite installation wizard";
-
 
         BuildContent();
     }
 
 
-
-
-
     private void BuildContent()
     {
-        logoBox = new PictureBox
-        {
-            Size =
-                new Size(120,120),
-
-            Location =
-                new Point(40,40),
-
-            SizeMode =
-                PictureBoxSizeMode.Zoom,
-
-            BackColor =
-                Color.Transparent
-        };
+        SuspendLayout();
 
 
+        // =========================================================
+        // HERO
+        // =========================================================
 
-        welcomeTitle = new Label
-        {
-            Text =
-                "Welcome to Project Control Suite",
+        eyebrowLabel =
+            new Label
+            {
+                Text =
+                    "PROJECT CONTROL SUITE",
 
-            Location =
-                new Point(200,55),
+                Location =
+                    new Point(
+                        42,
+                        34),
 
-            AutoSize = true,
+                Size =
+                    new Size(
+                        760,
+                        24),
 
-            Font =
-                Fonts.Header,
+                Font =
+                    Fonts.SmallBold,
 
-            ForeColor =
-                Colors.TextPrimary
-        };
+                ForeColor =
+                    Colors.Primary,
 
-
-
-
-        descriptionLabel = new Label
-        {
-            Text =
-                "This wizard will guide you through the installation of PCS.\n\n" +
-                "PCS provides project control, cost management,\n" +
-                "reporting and operational monitoring capabilities.",
-
-
-            Location =
-                new Point(200,110),
+                BackColor =
+                    Color.Transparent
+            };
 
 
-            Size =
-                new Size(500,100),
+        titleLabel =
+            new Label
+            {
+                Text =
+                    "Welcome to PCS",
+
+                Location =
+                    new Point(
+                        40,
+                        62),
+
+                Size =
+                    new Size(
+                        760,
+                        48),
+
+                Font =
+                    Fonts.Header,
+
+                ForeColor =
+                    Colors.TextPrimary,
+
+                BackColor =
+                    Color.Transparent
+            };
 
 
-            Font =
-                Fonts.Body,
+        descriptionLabel =
+            new Label
+            {
+                Text =
+                    "A professional platform for project control, " +
+                    "cost management, planning and reporting.",
+
+                Location =
+                    new Point(
+                        42,
+                        112),
+
+                Size =
+                    new Size(
+                        760,
+                        48),
+
+                Font =
+                    Fonts.Body,
+
+                ForeColor =
+                    Colors.TextSecondary,
+
+                BackColor =
+                    Color.Transparent
+            };
 
 
-            ForeColor =
-                Colors.TextSecondary
-        };
+        // =========================================================
+        // FEATURE CARD
+        // =========================================================
+
+        featureCard =
+            new CardPanel
+            {
+                Location =
+                    new Point(
+                        40,
+                        178),
+
+                Size =
+                    new Size(
+                        800,
+                        128)
+            };
 
 
+        Label featureTitle =
+            new Label
+            {
+                Text =
+                    "What PCS provides",
+
+                Location =
+                    new Point(
+                        22,
+                        18),
+
+                Size =
+                    new Size(
+                        740,
+                        28),
+
+                Font =
+                    Fonts.Header,
+
+                ForeColor =
+                    Colors.TextPrimary,
+
+                BackColor =
+                    Color.Transparent
+            };
 
 
+        Label featureText =
+            new Label
+            {
+                Text =
+                    "• Project Planning & PMS\r\n" +
+                    "• Cost Control & EVM\r\n" +
+                    "• Management Reporting & Analytics\r\n" +
+                    "• Centralized project information",
 
-        CardPanel infoCard = new()
-        {
-            Location =
-                new Point(40,220),
+                Location =
+                    new Point(
+                        24,
+                        50),
 
-            Size =
-                new Size(650,140)
-        };
+                Size =
+                    new Size(
+                        740,
+                        72),
 
+                Font =
+                    Fonts.Body,
 
+                ForeColor =
+                    Colors.TextSecondary,
 
-        Label infoLabel = new()
-        {
-            Text =
-                "Before starting installation:\n\n" +
-                "• Make sure you have administrator privileges\n" +
-                "• Prepare database configuration details\n" +
-                "• Close other running PCS components",
-
-
-            Location =
-                new Point(20,20),
-
-            AutoSize = true,
-
-            Font =
-                Fonts.Body,
-
-            ForeColor =
-                Colors.TextPrimary
-        };
+                BackColor =
+                    Color.Transparent
+            };
 
 
+        featureCard.Controls.Add(
+            featureTitle);
 
-        infoCard.Controls.Add(infoLabel);
+        featureCard.Controls.Add(
+            featureText);
 
 
+        // =========================================================
+        // REQUIREMENT CARD
+        // =========================================================
 
-        Controls.Add(logoBox);
+        requirementCard =
+            new CardPanel
+            {
+                Location =
+                    new Point(
+                        40,
+                        330),
 
-        Controls.Add(welcomeTitle);
+                Size =
+                    new Size(
+                        800,
+                        128)
+            };
 
-        Controls.Add(descriptionLabel);
 
-        Controls.Add(infoCard);
+        Label requirementTitle =
+            new Label
+            {
+                Text =
+                    "Before you begin",
+
+                Location =
+                    new Point(
+                        22,
+                        18),
+
+                Size =
+                    new Size(
+                        740,
+                        28),
+
+                Font =
+                    Fonts.Header,
+
+                ForeColor =
+                    Colors.TextPrimary,
+
+                BackColor =
+                    Color.Transparent
+            };
+
+
+        Label requirementText =
+            new Label
+            {
+                Text =
+                    "The installer will guide you through the required " +
+                    "configuration steps. Your existing PCS data will not " +
+                    "be modified unless you explicitly select an existing " +
+                    "installation.",
+
+                Location =
+                    new Point(
+                        24,
+                        52),
+
+                Size =
+                    new Size(
+                        740,
+                        64),
+
+                Font =
+                    Fonts.Body,
+
+                ForeColor =
+                    Colors.TextSecondary,
+
+                BackColor =
+                    Color.Transparent
+            };
+
+
+        requirementCard.Controls.Add(
+            requirementTitle);
+
+        requirementCard.Controls.Add(
+            requirementText);
+
+
+        // =========================================================
+        // VERSION / STATUS
+        // =========================================================
+
+        Label versionLabel =
+            new Label
+            {
+                Text =
+                    "PCS • Installation Wizard",
+
+                Location =
+                    new Point(
+                        42,
+                        486),
+
+                Size =
+                    new Size(
+                        400,
+                        24),
+
+                Font =
+                    Fonts.Small,
+
+                ForeColor =
+                    Colors.TextMuted,
+
+                BackColor =
+                    Color.Transparent
+            };
+
+
+        // =========================================================
+        // ADD CONTROLS
+        // =========================================================
+
+        Controls.Add(
+            eyebrowLabel);
+
+        Controls.Add(
+            titleLabel);
+
+        Controls.Add(
+            descriptionLabel);
+
+        Controls.Add(
+            featureCard);
+
+        Controls.Add(
+            requirementCard);
+
+        Controls.Add(
+            versionLabel);
+
+
+        ResumeLayout(
+            false);
+    }
+
+
+    protected override void OnPaint(
+        PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+
+        e.Graphics.SmoothingMode =
+            SmoothingMode.AntiAlias;
+
+
+        Rectangle accent =
+            new Rectangle(
+                40,
+                34,
+                4,
+                76);
+
+
+        using SolidBrush brush =
+            new SolidBrush(
+                Colors.Primary);
+
+
+        e.Graphics.FillRectangle(
+            brush,
+            accent);
     }
 }

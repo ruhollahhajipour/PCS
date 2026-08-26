@@ -1,120 +1,49 @@
+import http from "../../../api/http";
 import type { CostItem } from "../types/costItem";
 
-
-const API_URL =
-  "http://localhost:5000/api/cost-items";
-
+const API_URL = "/cost-items";
 
 class CostService {
-
-
   async getAll(): Promise<CostItem[]> {
-
     const response =
-      await fetch(API_URL);
-
-
-    if(!response.ok){
-      throw new Error(
-        "Failed to load cost items"
+      await http.get<CostItem[]>(
+        API_URL
       );
-    }
 
-
-    return response.json();
-
+    return response.data;
   }
-
-
 
   async create(
     item: CostItem
   ) {
-
-
     const response =
-      await fetch(
+      await http.post(
         API_URL,
-        {
-          method:"POST",
-
-          headers:{
-            "Content-Type":
-              "application/json",
-          },
-
-          body:
-            JSON.stringify(item),
-        }
+        item
       );
 
-
-    if(!response.ok){
-      throw new Error(
-        "Create failed"
-      );
-    }
-
+    return response.data;
   }
-
-
-
 
   async update(
     item: CostItem
   ) {
-
-
     const response =
-      await fetch(
+      await http.put(
         `${API_URL}/${item.id}`,
-        {
-          method:"PUT",
-
-          headers:{
-            "Content-Type":
-              "application/json",
-          },
-
-          body:
-            JSON.stringify(item),
-        }
+        item
       );
 
-
-    if(!response.ok){
-      throw new Error(
-        "Update failed"
-      );
-    }
-
+    return response.data;
   }
-
-
-
 
   async delete(
-    id:number
-  ){
-
-    const response =
-      await fetch(
-        `${API_URL}/${id}`,
-        {
-          method:"DELETE",
-        }
-      );
-
-
-    if(!response.ok){
-      throw new Error(
-        "Delete failed"
-      );
-    }
-
+    id: number
+  ) {
+    await http.delete(
+      `${API_URL}/${id}`
+    );
   }
-
 }
-
 
 export default new CostService();

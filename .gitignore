@@ -65,4 +65,15 @@ dist/
 **/Publish/
 # PCS Installer outputs
 **/PCS-Setup*.exe
-**/PCS.Installer.exe
+**/PCS.Installer.exebackend/_bundle_test/
+backend/src/PCS.Installer/Publish/
+backend/src/PCS.Installer/Resources/Publish/
+backend/pms-template-test.xlsx
+Backend_Structure.txt
+PCS_Runtime_Structure.txt
+backend/PCS_Install_Files.txt
+backend/PCS_Program.txt
+backend/src/PCS.Installer/Setup/PCSSetup.exe
+frontend/frontend_structure.txt
+backend/src/PCS.Application/Resources/Backend.zip
+backend/src/PCS.Application/Resources/Frontend.zip

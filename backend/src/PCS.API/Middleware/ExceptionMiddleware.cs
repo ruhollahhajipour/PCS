@@ -8,6 +8,7 @@ public sealed class ExceptionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
 
+
     public ExceptionMiddleware(
         RequestDelegate next,
         ILogger<ExceptionMiddleware> logger)
@@ -16,7 +17,10 @@ public sealed class ExceptionMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+
+
+    public async Task InvokeAsync(
+        HttpContext context)
     {
         try
         {
@@ -26,21 +30,45 @@ public sealed class ExceptionMiddleware
         {
             _logger.LogError(
                 ex,
-                ex.Message);
+                "Unhandled exception occurred");
+
 
             context.Response.ContentType =
                 "application/json";
 
+
             context.Response.StatusCode =
                 (int)HttpStatusCode.InternalServerError;
+
+
+
+            var errors = new List<string>();
+
+
+            var current = ex;
+
+
+            while (current != null)
+            {
+                if (!string.IsNullOrWhiteSpace(
+                    current.Message))
+                {
+                    errors.Add(
+                        current.Message);
+                }
+
+
+                current = current.InnerException;
+            }
+
+
 
             var response =
                 ApiResponse<object>.Fail(
                     "An unexpected error occurred.",
-                    new[]
-                    {
-                        ex.Message
-                    });
+                    errors.ToArray());
+
+
 
             await context.Response.WriteAsJsonAsync(
                 response);

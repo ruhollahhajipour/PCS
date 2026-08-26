@@ -87,12 +87,15 @@ import Vendors from "../features/vendors/pages/Vendors";
 // =====================
 import Reports from "../features/reports/pages/Reports";
 
+import Plants from "../features/plants/pages/Plants";
+
 
 // =====================
 // Project Setup
 // =====================
 import ProjectSetup from "../features/setup/pages/ProjectSetup";
 
+import Settings from "../features/settings/pages/Settings";
 
 
 export default function AppRoutes() {
@@ -154,6 +157,12 @@ export default function AppRoutes() {
 
           />
 
+         {/* Plants */}
+
+         <Route
+           path="plants"
+          element={<Plants />}
+          />
 
           <Route
 
@@ -301,7 +310,10 @@ export default function AppRoutes() {
 
           />
 
-
+         <Route
+           path="settings"
+            element={<Settings />}
+          />
 
           {/* Documents */}
 

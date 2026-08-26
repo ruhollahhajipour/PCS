@@ -269,13 +269,14 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.Activity", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.Activity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ActualFinish")
@@ -331,6 +332,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("EarnedValue")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("FreeFloat")
@@ -407,7 +409,7 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("Activities", (string)null);
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ActivityRelationship", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ActivityRelationship", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -438,13 +440,13 @@ namespace PCS.Infrastructure.Migrations
 
                     b.HasIndex("SuccessorId");
 
-                    b.HasIndex("PredecessorId", "SuccessorId")
+                    b.HasIndex("PredecessorId", "SuccessorId", "Type")
                         .IsUnique();
 
                     b.ToTable("ActivityRelationships", (string)null);
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProgressEntry", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProgressEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -508,7 +510,7 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("ProgressEntries", (string)null);
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProjectBaseline", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaseline", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -520,9 +522,6 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("TEXT");
 
@@ -530,7 +529,6 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
@@ -558,6 +556,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("PlannedValue")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("ProjectId")
@@ -581,10 +580,12 @@ namespace PCS.Infrastructure.Migrations
                     b.HasIndex("ProjectId", "Name")
                         .IsUnique();
 
+                    b.HasIndex("ProjectId", "Version");
+
                     b.ToTable("ProjectBaselines", (string)null);
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProjectCalendar", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -603,6 +604,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("FridayWorking")
@@ -664,19 +666,22 @@ namespace PCS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProjectId", "IsDefault");
+
                     b.HasIndex("ProjectId", "Name")
                         .IsUnique();
 
                     b.ToTable("ProjectCalendars", (string)null);
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.WbsNode", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.WbsNode", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
@@ -703,7 +708,16 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("EarnedValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalCode")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCostControlEnabled")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
@@ -725,7 +739,11 @@ namespace PCS.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("PlannedValue")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("Progress")
+                        .HasPrecision(5, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("ProjectId")
@@ -733,6 +751,11 @@ namespace PCS.Infrastructure.Migrations
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -742,6 +765,12 @@ namespace PCS.Infrastructure.Migrations
 
                     b.Property<decimal>("Weight")
                         .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("WeightFactor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("WeightValue")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -790,6 +819,9 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<string>("Contractor")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CostControlActivatedDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -814,6 +846,9 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCostControlEnabled")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
@@ -1115,6 +1150,7 @@ namespace PCS.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
@@ -1135,9 +1171,13 @@ namespace PCS.Infrastructure.Migrations
 
                     b.Property<string>("Scope")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -1257,6 +1297,64 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Company", b =>
+                {
+                    b.OwnsOne("PCS.Domain.Entities.CompanyTheme", "Theme", b1 =>
+                        {
+                            b1.Property<Guid>("CompanyId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("BorderColor")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("ThemeBorderColor");
+
+                            b1.Property<string>("DarkColor")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("ThemeDarkColor");
+
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("IsCustomTheme")
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("ThemeIsCustomTheme");
+
+                            b1.Property<string>("LogoPath")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("ThemeLogoPath");
+
+                            b1.Property<string>("PrimaryColor")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("ThemePrimaryColor");
+
+                            b1.Property<string>("SecondaryColor")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT")
+                                .HasColumnName("ThemeSecondaryColor");
+
+                            b1.HasKey("CompanyId");
+
+                            b1.ToTable("Companies");
+
+                            b1.WithOwner("Company")
+                                .HasForeignKey("CompanyId");
+
+                            b1.Navigation("Company");
+                        });
+
+                    b.Navigation("Theme")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.CompanyUser", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Company", "Company")
@@ -1283,19 +1381,19 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.Activity", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.Activity", b =>
                 {
-                    b.HasOne("PCS.Domain.Entities.PMS.ProjectCalendar", "Calendar")
+                    b.HasOne("PCS.Domain.Entities.Planning.ProjectCalendar", "Calendar")
                         .WithMany()
                         .HasForeignKey("CalendarId");
 
                     b.HasOne("PCS.Domain.Entities.Project", "Project")
-                        .WithMany()
+                        .WithMany("Activities")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PCS.Domain.Entities.PMS.WbsNode", "WbsNode")
+                    b.HasOne("PCS.Domain.Entities.Planning.WbsNode", "WbsNode")
                         .WithMany("Activities")
                         .HasForeignKey("WbsNodeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1308,15 +1406,15 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("WbsNode");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ActivityRelationship", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ActivityRelationship", b =>
                 {
-                    b.HasOne("PCS.Domain.Entities.PMS.Activity", "Predecessor")
+                    b.HasOne("PCS.Domain.Entities.Planning.Activity", "Predecessor")
                         .WithMany("Successors")
                         .HasForeignKey("PredecessorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PCS.Domain.Entities.PMS.Activity", "Successor")
+                    b.HasOne("PCS.Domain.Entities.Planning.Activity", "Successor")
                         .WithMany("Predecessors")
                         .HasForeignKey("SuccessorId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1327,9 +1425,9 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Successor");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProgressEntry", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProgressEntry", b =>
                 {
-                    b.HasOne("PCS.Domain.Entities.PMS.Activity", "Activity")
+                    b.HasOne("PCS.Domain.Entities.Planning.Activity", "Activity")
                         .WithMany()
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1338,10 +1436,10 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Activity");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProjectBaseline", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaseline", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Project", "Project")
-                        .WithMany()
+                        .WithMany("Baselines")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1349,10 +1447,10 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.ProjectCalendar", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Project", "Project")
-                        .WithMany()
+                        .WithMany("Calendars")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1360,15 +1458,15 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.WbsNode", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.WbsNode", b =>
                 {
-                    b.HasOne("PCS.Domain.Entities.PMS.WbsNode", "Parent")
+                    b.HasOne("PCS.Domain.Entities.Planning.WbsNode", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("PCS.Domain.Entities.Project", "Project")
-                        .WithMany()
+                        .WithMany("WbsNodes")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1499,18 +1597,29 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Users");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.Activity", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.Activity", b =>
                 {
                     b.Navigation("Predecessors");
 
                     b.Navigation("Successors");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.PMS.WbsNode", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.WbsNode", b =>
                 {
                     b.Navigation("Activities");
 
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Project", b =>
+                {
+                    b.Navigation("Activities");
+
+                    b.Navigation("Baselines");
+
+                    b.Navigation("Calendars");
+
+                    b.Navigation("WbsNodes");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Security.Permission", b =>

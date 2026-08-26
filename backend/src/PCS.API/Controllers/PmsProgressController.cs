@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PCS.Application.PMS.Interfaces;
+using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
 

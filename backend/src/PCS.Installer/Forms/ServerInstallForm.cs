@@ -2,10 +2,8 @@ using PCS.Installer.Models;
 
 namespace PCS.Installer.Forms;
 
-
 public class ServerInstallForm : Form
 {
-
     private TextBox installPathTextBox = null!;
     private TextBox serverNameTextBox = null!;
     private TextBox databaseNameTextBox = null!;
@@ -13,10 +11,7 @@ public class ServerInstallForm : Form
 
     private Button installButton = null!;
 
-
     private readonly InstallerContext context;
-
-
 
     public ServerInstallForm(
         InstallerContext context)
@@ -26,33 +21,24 @@ public class ServerInstallForm : Form
         InitializeComponent();
     }
 
-
-
-
-
-
-
     private void InitializeComponent()
     {
-
         Text =
             "PCS Server Installation";
-
 
         Width =
             600;
 
-
         Height =
             450;
-
 
         StartPosition =
             FormStartPosition.CenterScreen;
 
 
-
-
+        // ============================================================
+        // Title
+        // ============================================================
 
         var title = new Label
         {
@@ -73,9 +59,9 @@ public class ServerInstallForm : Form
         };
 
 
-
-
-
+        // ============================================================
+        // Installation Path
+        // ============================================================
 
         var installLabel = new Label
         {
@@ -88,8 +74,6 @@ public class ServerInstallForm : Form
 
             Width = 150
         };
-
-
 
 
         installPathTextBox = new TextBox
@@ -105,10 +89,9 @@ public class ServerInstallForm : Form
         };
 
 
-
-
-
-
+        // ============================================================
+        // Database Server
+        // ============================================================
 
         var serverLabel = new Label
         {
@@ -121,8 +104,6 @@ public class ServerInstallForm : Form
 
             Width = 150
         };
-
-
 
 
         serverNameTextBox = new TextBox
@@ -138,10 +119,9 @@ public class ServerInstallForm : Form
         };
 
 
-
-
-
-
+        // ============================================================
+        // Database Name
+        // ============================================================
 
         var dbLabel = new Label
         {
@@ -154,9 +134,6 @@ public class ServerInstallForm : Form
 
             Width = 150
         };
-
-
-
 
 
         databaseNameTextBox = new TextBox
@@ -172,10 +149,9 @@ public class ServerInstallForm : Form
         };
 
 
-
-
-
-
+        // ============================================================
+        // API URL
+        // ============================================================
 
         var apiLabel = new Label
         {
@@ -190,23 +166,25 @@ public class ServerInstallForm : Form
         };
 
 
-
-
-
         apiUrlTextBox = new TextBox
         {
             Left = 220,
 
             Top = 245,
 
-            Width = 300
+            Width = 300,
+
+            Text =
+                context.ApiUrl,
+
+            PlaceholderText =
+                "http://localhost:5000"
         };
 
 
-
-
-
-
+        // ============================================================
+        // Install Button
+        // ============================================================
 
         installButton = new Button
         {
@@ -227,16 +205,13 @@ public class ServerInstallForm : Form
         };
 
 
-
-
         installButton.Click +=
             InstallButton_Click;
 
 
-
-
-
-
+        // ============================================================
+        // Controls
+        // ============================================================
 
         Controls.AddRange(
         [
@@ -256,83 +231,123 @@ public class ServerInstallForm : Form
 
             installButton
         ]);
-
     }
-
-
-
-
-
-
-
-
 
     private void InstallButton_Click(
         object? sender,
         EventArgs e)
     {
+        // ============================================================
+        // Validate Installation Path
+        // ============================================================
 
-        if(string.IsNullOrWhiteSpace(
+        if (string.IsNullOrWhiteSpace(
             installPathTextBox.Text))
         {
-
             MessageBox.Show(
-                "Please enter installation path.");
+                "Please enter installation path.",
+                "PCS Installer",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
 
             return;
         }
 
 
+        // ============================================================
+        // Validate Server Name
+        // ============================================================
 
-
-        if(string.IsNullOrWhiteSpace(
+        if (string.IsNullOrWhiteSpace(
             serverNameTextBox.Text))
         {
-
             MessageBox.Show(
-                "Please enter server name.");
+                "Please enter server name.",
+                "PCS Installer",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
 
             return;
         }
 
 
+        // ============================================================
+        // Validate Database Name
+        // ============================================================
 
-
-        if(string.IsNullOrWhiteSpace(
+        if (string.IsNullOrWhiteSpace(
             databaseNameTextBox.Text))
         {
-
             MessageBox.Show(
-                "Please enter database name.");
+                "Please enter database name.",
+                "PCS Installer",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
 
             return;
         }
 
 
+        // ============================================================
+        // Validate API URL
+        // ============================================================
+
+        string apiUrl =
+            apiUrlTextBox.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(apiUrl))
+        {
+            MessageBox.Show(
+                "Please enter API URL.",
+                "PCS Installer",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+
+            return;
+        }
 
 
+        if (!Uri.TryCreate(
+                apiUrl,
+                UriKind.Absolute,
+                out Uri? parsedUri) ||
+            (parsedUri.Scheme != Uri.UriSchemeHttp &&
+             parsedUri.Scheme != Uri.UriSchemeHttps))
+        {
+            MessageBox.Show(
+                "Please enter a valid HTTP or HTTPS API URL.\n\n" +
+                "Example:\n" +
+                "http://localhost:5000",
+                "PCS Installer",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
 
+            return;
+        }
+
+
+        // ============================================================
+        // Update Installer Context
+        // ============================================================
 
         context.InstallPath =
             installPathTextBox.Text.Trim();
 
-
-
         context.DatabaseServer =
             serverNameTextBox.Text.Trim();
-
-
 
         context.DatabaseName =
             databaseNameTextBox.Text.Trim();
 
+        context.ApiUrl =
+            apiUrl;
 
 
-
+        // ============================================================
+        // Start Installation
+        // ============================================================
 
         Hide();
-
-
 
 
         var progressForm =
@@ -340,18 +355,13 @@ public class ServerInstallForm : Form
                 context);
 
 
-
-
         progressForm.FormClosed +=
-            (s,args)=>
+            (s, args) =>
             {
                 Close();
             };
 
 
-
         progressForm.ShowDialog();
-
     }
-
 }

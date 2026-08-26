@@ -9,8 +9,12 @@ using PCS.Application.Projects.Services;
 using PCS.Application.Projects.Commands.Create;
 using PCS.Application.Projects.Queries.GetAll;
 
-using PCS.Application.PMS.Interfaces;
-using PCS.Application.PMS.Services;
+using PCS.Application.Planning.Interfaces;
+using PCS.Application.Planning.Services;
+
+using PCS.Application.Planning.Export;
+using PCS.Application.Planning.Export.Excel;
+using PCS.Application.Planning.Export.Excel.Builders;
 
 namespace PCS.Application;
 
@@ -19,33 +23,118 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(
         this IServiceCollection services)
     {
-        // Register FluentValidation
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        // FluentValidation
+        services.AddValidatorsFromAssembly(
+            typeof(DependencyInjection).Assembly);
 
 
+
+        // ==========================
         // Companies
-        services.AddScoped<ICompanyService, CompanyService>();
+        // ==========================
+
+        services.AddScoped<
+            ICompanyService,
+            CompanyService>();
 
 
+
+        // ==========================
         // Projects
-        services.AddScoped<IProjectService, ProjectService>();
+        // ==========================
 
-        services.AddScoped<CreateProjectHandler>();
+        services.AddScoped<
+            IProjectService,
+            ProjectService>();
 
-        services.AddScoped<GetProjectsHandler>();
+
+        services.AddScoped<
+            CreateProjectHandler>();
 
 
-       // PMS
-        services.AddScoped<IPmsService, PmsService>();
-        services.AddScoped<IPmsExcelService, PmsExcelService>();
-        services.AddScoped<IPmsTemplateService, PmsTemplateService>();
-        services.AddScoped<IPmsProgressService, PmsProgressService>();
-        services.AddScoped<IProgressEntryService, ProgressEntryService>();
-        services.AddScoped<IPmsEvmService, PmsEvmService>();
-        services.AddScoped<IPmsDashboardService, PmsDashboardService>();
-        services.AddScoped<ICpmScheduler, CpmScheduler>();
-        services.AddScoped<IPmsGanttService, PmsGanttService>();
+        services.AddScoped<
+            GetProjectsHandler>();
 
+
+
+        // ==========================
+        // PMS
+        // ==========================
+
+        services.AddScoped<
+            IPmsService,
+            PmsService>();
+
+
+        services.AddScoped<
+            IPmsExcelService,
+            PmsExcelService>();
+
+
+        services.AddScoped<
+            IPmsTemplateService,
+            PmsTemplateService>();
+
+
+        services.AddScoped<
+            IPmsProgressService,
+            PmsProgressService>();
+
+
+        services.AddScoped<
+            IProgressEntryService,
+            ProgressEntryService>();
+
+
+        services.AddScoped<
+            IPmsEvmService,
+            PmsEvmService>();
+
+
+        services.AddScoped<
+            IPmsDashboardService,
+            PmsDashboardService>();
+
+        services.AddScoped<
+           IPmsCalculationService,
+           PmsCalculationService>();
+
+        services.AddScoped<
+            ICpmScheduler,
+            CpmScheduler>();
+
+
+        services.AddScoped<
+            IPmsGanttService,
+            PmsGanttService>();
+
+
+
+// ==========================
+// PMS Excel Export Builders
+// ==========================
+
+        services.AddScoped<CoverSheetBuilder>();
+
+        services.AddScoped<DashboardSheetBuilder>();
+
+        services.AddScoped<WbsSheetBuilder>();
+
+        services.AddScoped<ActivitiesSheetBuilder>();
+
+        services.AddScoped<ProgressSheetBuilder>();
+
+        services.AddScoped<EvmSheetBuilder>();
+
+        services.AddScoped<PmsSheetBuilder>();
+
+        services.AddScoped<
+         IWbsCalculationService,
+         WbsCalculationService>();
+
+        services.AddScoped<
+          IPcsProfessionalPmsExporter,
+          PcsProfessionalPmsExcelExporter>();
 
         return services;
     }

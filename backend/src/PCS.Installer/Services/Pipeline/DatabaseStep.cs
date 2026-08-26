@@ -1,18 +1,26 @@
-using Microsoft.EntityFrameworkCore;
-using PCS.Infrastructure.Persistence;
 using PCS.Installer.Models;
+using PCS.Installer.Services.Database;
 
 namespace PCS.Installer.Services.Pipeline;
 
-public class DatabaseStep : IInstallationStep
+public sealed class DatabaseStep : IInstallationStep
 {
+    private readonly DatabaseInstallerService databaseInstallerService;
+
+
+    public DatabaseStep()
+    {
+        databaseInstallerService =
+            new DatabaseInstallerService();
+    }
+
+
     public string Name =>
         "Configuring database";
 
 
     public int Progress =>
         80;
-
 
 
     public async Task ExecuteAsync(
@@ -23,84 +31,42 @@ public class DatabaseStep : IInstallationStep
             "Preparing database...");
 
 
-
-        if (context.DatabaseType != DatabaseType.SqlServer)
+        try
         {
-            await CreateSqliteDatabaseAsync(
-                context,
-                progress);
+            if (context.DatabaseType ==
+                DatabaseType.SQLite)
+            {
+                progress?.Report(
+                    "SQLite database selected.");
+            }
+            else
+            {
+                progress?.Report(
+                    "SQL Server database selected.");
+            }
+
+
+            progress?.Report(
+                "Creating database...");
+
+
+            await Task.Run(
+                () =>
+                {
+                    databaseInstallerService
+                        .CreateDatabase(context);
+                });
+
+
+            progress?.Report(
+                "Database configured successfully.");
         }
-        else
+        catch (Exception ex)
         {
             progress?.Report(
-                "SQL Server database selected.");
+                $"Database configuration failed: {ex.Message}");
 
-            await Task.CompletedTask;
+            throw;
         }
-
-
-
-        progress?.Report(
-            "Database configured successfully.");
-    }
-
-
-
-
-
-    private async Task CreateSqliteDatabaseAsync(
-        InstallerContext context,
-        IProgress<string>? progress)
-    {
-        Directory.CreateDirectory(
-            context.DatabasePath);
-
-
-
-        string databaseFile =
-            Path.Combine(
-                context.DatabasePath,
-                $"{context.DatabaseName}.db");
-
-
-
-        string connectionString =
-            $"Data Source={databaseFile}";
-
-
-
-        context.ConnectionString =
-            connectionString;
-
-
-
-        progress?.Report(
-            "Creating SQLite database...");
-
-
-
-        var options =
-            new DbContextOptionsBuilder<PCSDbContext>()
-                .UseSqlite(connectionString)
-                .Options;
-
-
-
-        await using var db =
-            new PCSDbContext(options);
-
-
-
-        progress?.Report(
-            "Applying database migrations...");
-
-
-
-        await db.Database.MigrateAsync();
-
-
-
-        progress?.Report(
-            "SQLite database created successfully.");
     }
 }

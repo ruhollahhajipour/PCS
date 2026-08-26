@@ -1,19 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- ============================================================
+       BASIC PROJECT SETTINGS
+       ============================================================ -->
+
   <PropertyGroup>
 
     <OutputType>WinExe</OutputType>
 
     <TargetFramework>net10.0-windows</TargetFramework>
 
-    <Nullable>enable</Nullable>
-
     <UseWindowsForms>true</UseWindowsForms>
+
+    <Nullable>enable</Nullable>
 
     <ImplicitUsings>enable</ImplicitUsings>
 
 
-    <!-- Installer Publish -->
+    <!-- ==========================================================
+         PUBLISH SETTINGS
+         ========================================================== -->
 
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
@@ -23,15 +29,16 @@
 
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+
     <PublishTrimmed>false</PublishTrimmed>
 
-
-    <!-- Application Icon -->
-
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
 
-    <!-- Version -->
+    <!-- ==========================================================
+         ASSEMBLY
+         ========================================================== -->
 
     <AssemblyName>PCS.Installer</AssemblyName>
 
@@ -41,48 +48,464 @@
 
     <FileVersion>1.0.0.0</FileVersion>
 
-    <InformationalVersion>PCS Installer 1.0.0</InformationalVersion>
 
+    <!-- ==========================================================
+         DEBUG
+         ========================================================== -->
+
+    <DebugType>none</DebugType>
+
+    <DebugSymbols>false</DebugSymbols>
+
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+
+    <!-- ==========================================================
+         APPLICATION MANIFEST
+         ========================================================== -->
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+
+    <!-- ==========================================================
+         SETUP OUTPUT PATHS
+         ========================================================== -->
+
+    <SetupFolder>$(MSBuildProjectDirectory)\Setup</SetupFolder>
+
+    <SetupResourcesFolder>$(SetupFolder)\Resources</SetupResourcesFolder>
+
+    <SetupPublishFolder>$(SetupResourcesFolder)\Publish</SetupPublishFolder>
+
+    <ApiPublishFolder>$(SetupPublishFolder)\API</ApiPublishFolder>
+
+    <FrontendPublishFolder>$(SetupPublishFolder)\Frontend</FrontendPublishFolder>
+
+    <LauncherPublishFolder>$(SetupPublishFolder)\Launcher</LauncherPublishFolder>
+
+    <SetupFile>$(SetupFolder)\PCSSetup.exe</SetupFile>
+
+
+    <!-- ==========================================================
+         SOURCE PATHS
+         ========================================================== -->
+
+    <ExistingApiPublish>$(MSBuildProjectDirectory)\..\PCS.API\bin\Publish</ExistingApiPublish>
+
+    <FrontendDist>$(MSBuildProjectDirectory)\..\..\..\frontend\dist</FrontendDist>
+
+    <ExistingLauncherPublish>$(MSBuildProjectDirectory)\..\PCS.Launcher\bin\Release\net10.0-windows\win-x64\publish</ExistingLauncherPublish>
+
+
+    <!-- ==========================================================
+         INSTALLER BRANDING
+         ========================================================== -->
+
+    <!-- Logo used inside the Installer UI -->
+    <InstallerLogo>$(MSBuildProjectDirectory)\Resources\Branding\logo.png</InstallerLogo>
+
+    <!-- Application icon used by Desktop / Start Menu shortcuts -->
+    <InstallerIcon>$(MSBuildProjectDirectory)\Resources\Branding\PCS.ico</InstallerIcon>
 
   </PropertyGroup>
 
 
+  <!-- ============================================================
+       PROJECT REFERENCES
+       ============================================================ -->
 
   <ItemGroup>
-
-    <ProjectReference Include="..\PCS.Infrastructure\PCS.Infrastructure.csproj" />
 
     <ProjectReference Include="..\PCS.Application\PCS.Application.csproj" />
 
-  </ItemGroup>
-
-
-
-  <ItemGroup>
-
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
-
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
-
-    <PackageReference Include="SQLitePCLRaw.core" Version="2.1.11" />
+    <ProjectReference Include="..\PCS.Infrastructure\PCS.Infrastructure.csproj" />
 
   </ItemGroup>
 
 
+  <!-- ============================================================
+       NUGET PACKAGES
+       ============================================================ -->
 
   <ItemGroup>
 
-    <Content Include="Resources\**\*">
+    <PackageReference
+      Include="Microsoft.EntityFrameworkCore"
+      Version="10.0.10" />
 
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <PackageReference
+      Include="Microsoft.EntityFrameworkCore.SqlServer"
+      Version="10.0.10" />
 
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    <PackageReference
+      Include="Newtonsoft.Json"
+      Version="13.0.3" />
 
+  </ItemGroup>
+
+   <ItemGroup>
+
+    <Content Include="$(InstallerIcon)">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    <Link>Resources\PCS.ico</Link>
     </Content>
 
+    </ItemGroup>
+  <!-- ============================================================
+       PREPARE SETUP PACKAGE
+       ============================================================ -->
 
-  </ItemGroup>
+  <Target
+    Name="PrepareSetupPackage"
+    BeforeTargets="Publish">
 
+    <Message
+      Importance="high"
+      Text="==================================================" />
+
+    <Message
+      Importance="high"
+      Text="Preparing PCS Setup Package..." />
+
+    <Message
+      Importance="high"
+      Text="API source: $(ExistingApiPublish)" />
+
+    <Message
+      Importance="high"
+      Text="Frontend source: $(FrontendDist)" />
+
+    <Message
+      Importance="high"
+      Text="Launcher source: $(ExistingLauncherPublish)" />
+
+    <Message
+      Importance="high"
+      Text="Installer logo: $(InstallerLogo)" />
+
+    <Message
+      Importance="high"
+      Text="Installer icon: $(InstallerIcon)" />
+
+
+    <!-- ==========================================================
+         VALIDATE SOURCE DIRECTORIES / FILES
+         ========================================================== -->
+
+    <Error
+      Condition="!Exists('$(ExistingApiPublish)')"
+      Text="PCS API publish folder was not found: $(ExistingApiPublish)" />
+
+    <Error
+      Condition="!Exists('$(ExistingApiPublish)\PCS.API.exe')"
+      Text="PCS API executable was not found: $(ExistingApiPublish)\PCS.API.exe" />
+
+
+    <Error
+      Condition="!Exists('$(FrontendDist)')"
+      Text="PCS Frontend dist folder was not found: $(FrontendDist)" />
+
+    <Error
+      Condition="!Exists('$(FrontendDist)\index.html')"
+      Text="PCS Frontend index.html was not found: $(FrontendDist)\index.html" />
+
+
+    <Error
+      Condition="!Exists('$(ExistingLauncherPublish)')"
+      Text="PCS Launcher publish folder was not found: $(ExistingLauncherPublish)" />
+
+    <Error
+      Condition="!Exists('$(ExistingLauncherPublish)\PCS.Launcher.exe')"
+      Text="PCS.Launcher.exe was not found: $(ExistingLauncherPublish)\PCS.Launcher.exe" />
+
+
+    <Error
+      Condition="!Exists('$(InstallerLogo)')"
+      Text="PCS installer logo was not found: $(InstallerLogo)" />
+
+    <Error
+      Condition="!Exists('$(InstallerIcon)')"
+      Text="PCS application icon was not found: $(InstallerIcon)" />
+
+
+    <!-- ==========================================================
+         CLEAN ONLY GENERATED SETUP CONTENT
+         ========================================================== -->
+
+    <RemoveDir
+      Directories="$(SetupPublishFolder)"
+      Condition="Exists('$(SetupPublishFolder)')" />
+
+
+    <!-- ==========================================================
+         CREATE SETUP DIRECTORIES
+         ========================================================== -->
+
+    <MakeDir
+      Directories="$(SetupFolder)" />
+
+    <MakeDir
+      Directories="$(SetupResourcesFolder)" />
+
+    <MakeDir
+      Directories="$(SetupPublishFolder)" />
+
+    <MakeDir
+      Directories="$(ApiPublishFolder)" />
+
+    <MakeDir
+      Directories="$(FrontendPublishFolder)" />
+
+    <MakeDir
+      Directories="$(LauncherPublishFolder)" />
+
+
+    <!-- ==========================================================
+         COPY API
+         PDB FILES EXCLUDED
+         ========================================================== -->
+
+    <ItemGroup>
+
+      <ApiFiles
+        Include="$(ExistingApiPublish)\**\*"
+        Exclude="$(ExistingApiPublish)\**\*.pdb" />
+
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(ApiFiles)"
+      DestinationFiles="@(ApiFiles->'$(ApiPublishFolder)\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="false" />
+
+
+    <!-- ==========================================================
+         COPY FRONTEND
+         ========================================================== -->
+
+    <ItemGroup>
+
+      <FrontendFiles
+        Include="$(FrontendDist)\**\*" />
+
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(FrontendFiles)"
+      DestinationFiles="@(FrontendFiles->'$(FrontendPublishFolder)\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="false" />
+
+
+    <!-- ==========================================================
+         COPY LAUNCHER
+         PDB FILES EXCLUDED
+         ========================================================== -->
+
+    <ItemGroup>
+
+      <LauncherFiles
+        Include="$(ExistingLauncherPublish)\**\*"
+        Exclude="$(ExistingLauncherPublish)\**\*.pdb" />
+
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(LauncherFiles)"
+      DestinationFiles="@(LauncherFiles->'$(LauncherPublishFolder)\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="false" />
+
+
+    <!-- ==========================================================
+         VALIDATE GENERATED PACKAGE
+         ========================================================== -->
+
+    <Error
+      Condition="!Exists('$(ApiPublishFolder)\PCS.API.exe')"
+      Text="PCS API packaging failed. Expected: $(ApiPublishFolder)\PCS.API.exe" />
+
+    <Error
+      Condition="!Exists('$(FrontendPublishFolder)\index.html')"
+      Text="PCS Frontend packaging failed. Expected: $(FrontendPublishFolder)\index.html" />
+
+    <Error
+      Condition="!Exists('$(LauncherPublishFolder)\PCS.Launcher.exe')"
+      Text="PCS Launcher packaging failed. Expected: $(LauncherPublishFolder)\PCS.Launcher.exe" />
+
+
+    <Message
+      Importance="high"
+      Text="PCS API packaged successfully." />
+
+    <Message
+      Importance="high"
+      Text="PCS Frontend packaged successfully." />
+
+    <Message
+      Importance="high"
+      Text="PCS Launcher packaged successfully." />
+
+    <Message
+      Importance="high"
+      Text="PCS resources prepared successfully." />
+
+    <Message
+      Importance="high"
+      Text="==================================================" />
+
+  </Target>
+
+
+  <!-- ============================================================
+       INCLUDE PCS RESOURCES IN SINGLE FILE BUNDLE
+       ============================================================ -->
+
+  <Target
+    Name="AddPCSResourcesToBundle"
+    BeforeTargets="GenerateSingleFileBundle"
+    DependsOnTargets="PrepareForBundle;PrepareSetupPackage">
+
+    <Message
+      Importance="high"
+      Text="Adding PCS resources to single-file bundle..." />
+
+
+    <!-- ==========================================================
+         BUILD PACKAGE FILE LIST
+         ========================================================== -->
+
+    <ItemGroup>
+
+      <PCSApiBundleFiles
+        Include="$(ApiPublishFolder)\**\*" />
+
+      <PCSFrontendBundleFiles
+        Include="$(FrontendPublishFolder)\**\*" />
+
+      <PCSLauncherBundleFiles
+        Include="$(LauncherPublishFolder)\**\*" />
+
+
+      <!-- ========================================================
+           API
+           ======================================================== -->
+
+      <FilesToBundle
+        Include="@(PCSApiBundleFiles)"
+        RelativePath="Resources\Publish\API\%(PCSApiBundleFiles.RecursiveDir)%(PCSApiBundleFiles.Filename)%(PCSApiBundleFiles.Extension)" />
+
+
+      <!-- ========================================================
+           FRONTEND
+           ======================================================== -->
+
+      <FilesToBundle
+        Include="@(PCSFrontendBundleFiles)"
+        RelativePath="Resources\Publish\Frontend\%(PCSFrontendBundleFiles.RecursiveDir)%(PCSFrontendBundleFiles.Filename)%(PCSFrontendBundleFiles.Extension)" />
+
+
+      <!-- ========================================================
+           LAUNCHER
+           ======================================================== -->
+
+      <FilesToBundle
+        Include="@(PCSLauncherBundleFiles)"
+        RelativePath="Resources\Publish\Launcher\%(PCSLauncherBundleFiles.RecursiveDir)%(PCSLauncherBundleFiles.Filename)%(PCSLauncherBundleFiles.Extension)" />
+
+
+      <!-- ========================================================
+           INSTALLER BRANDING
+           ======================================================== -->
+
+      <FilesToBundle
+        Include="$(InstallerLogo)"
+        RelativePath="Resources\Branding\logo.png" />
+
+
+      <!-- ========================================================
+           PCS APPLICATION ICON
+           ======================================================== -->
+
+      <FilesToBundle
+        Include="$(InstallerIcon)"
+        RelativePath="Resources\PCS.ico" />
+
+    </ItemGroup>
+
+
+    <!-- ==========================================================
+         DIAGNOSTIC OUTPUT
+         ========================================================== -->
+
+    <Message
+      Importance="high"
+      Text="PCS API bundle files: @(PCSApiBundleFiles->'%(Filename)%(Extension)', ', ')" />
+
+    <Message
+      Importance="high"
+      Text="PCS Frontend bundle files: @(PCSFrontendBundleFiles->'%(Filename)%(Extension)', ', ')" />
+
+    <Message
+      Importance="high"
+      Text="PCS Launcher bundle files: @(PCSLauncherBundleFiles->'%(Filename)%(Extension)', ', ')" />
+
+    <Message
+      Importance="high"
+      Text="PCS installer branding added: Resources\Branding\logo.png" />
+
+    <Message
+      Importance="high"
+      Text="PCS application icon added: Resources\PCS.ico" />
+
+    <Message
+      Importance="high"
+      Text="PCS resources added to FilesToBundle." />
+
+  </Target>
+
+
+  <!-- ============================================================
+       CREATE FINAL PCSSetup.exe
+       ============================================================ -->
+
+  <Target
+    Name="CreatePCSSetup"
+    AfterTargets="Publish">
+
+    <Message
+      Importance="high"
+      Text="Creating final PCSSetup.exe..." />
+
+
+    <Error
+      Condition="!Exists('$(PublishDir)PCS.Installer.exe')"
+      Text="Published PCS.Installer.exe was not found: $(PublishDir)PCS.Installer.exe" />
+
+
+    <MakeDir
+      Directories="$(SetupFolder)" />
+
+
+    <Copy
+      SourceFiles="$(PublishDir)PCS.Installer.exe"
+      DestinationFiles="$(SetupFile)"
+      SkipUnchangedFiles="false" />
+
+
+    <Error
+      Condition="!Exists('$(SetupFile)')"
+      Text="PCSSetup.exe could not be created: $(SetupFile)" />
+
+
+    <Message
+      Importance="high"
+      Text="PCSSetup.exe created successfully: $(SetupFile)" />
+
+    <Message
+      Importance="high"
+      Text="==================================================" />
+
+  </Target>
 
 
 </Project>

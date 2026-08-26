@@ -25,28 +25,42 @@ public class RoleConfiguration
         builder.HasKey(x => x.Id);
 
 
-
         // ==========================
         // Properties
         // ==========================
+
+        builder.Property(x => x.Code)
+            .HasMaxLength(100)
+            .IsRequired();
 
         builder.Property(x => x.Name)
             .HasMaxLength(100)
             .IsRequired();
 
-
         builder.Property(x => x.Description)
-            .HasMaxLength(500);
+            .HasMaxLength(500)
+            .IsRequired();
 
+        builder.Property(x => x.Scope)
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(x => x.IsSystemRole)
+            .IsRequired();
+
+        builder.Property(x => x.IsActive)
+            .IsRequired();
 
 
         // ==========================
-        // Index
+        // Indexes
         // ==========================
+
+        builder.HasIndex(x => x.Code)
+            .IsUnique();
 
         builder.HasIndex(x => x.Name)
             .IsUnique();
-
 
 
         // ==========================
@@ -57,7 +71,6 @@ public class RoleConfiguration
             .WithOne(x => x.Role)
             .HasForeignKey(x => x.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
-
 
 
         // ==========================

@@ -1,3 +1,4 @@
+using PCS.Domain.Entities.Planning;
 using PCS.Domain.Common;
 
 namespace PCS.Domain.Entities;
@@ -16,6 +17,7 @@ public class Project : AuditableEntity
 
     public string? Description { get; set; }
 
+
     // ==========================
     // Organization
     // ==========================
@@ -25,6 +27,7 @@ public class Project : AuditableEntity
     public Company Company { get; set; } = null!;
 
     public Guid? PlantId { get; set; }
+
 
     // ==========================
     // Contract
@@ -38,6 +41,7 @@ public class Project : AuditableEntity
 
     public string? Consultant { get; set; }
 
+
     // ==========================
     // Schedule
     // ==========================
@@ -45,6 +49,7 @@ public class Project : AuditableEntity
     public DateOnly StartDate { get; set; }
 
     public DateOnly? FinishDate { get; set; }
+
 
     // ==========================
     // Cost
@@ -56,6 +61,7 @@ public class Project : AuditableEntity
 
     public string Currency { get; set; } = "USD";
 
+
     // ==========================
     // Performance (EVM)
     // ==========================
@@ -65,6 +71,33 @@ public class Project : AuditableEntity
     public decimal SPI { get; set; } = 1;
 
     public decimal CPI { get; set; } = 1;
+
+
+    // ==========================
+    // Modules
+    // ==========================
+
+    public bool IsCostControlEnabled { get; set; } = false;
+
+    public DateTime? CostControlActivatedDate { get; set; }
+
+
+    // ==========================
+    // Planning Navigation
+    // ==========================
+
+    public ICollection<WbsNode> WbsNodes { get; set; }
+        = new List<WbsNode>();
+
+    public ICollection<Activity> Activities { get; set; }
+        = new List<Activity>();
+
+    public ICollection<ProjectBaseline> Baselines { get; set; }
+        = new List<ProjectBaseline>();
+
+    public ICollection<ProjectCalendar> Calendars { get; set; }
+        = new List<ProjectCalendar>();
+
 
     // ==========================
     // Status

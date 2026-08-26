@@ -2,7 +2,7 @@ using PCS.Installer.Models;
 
 namespace PCS.Installer.Services.Pipeline;
 
-public class ShortcutStep : IInstallationStep
+public sealed class ShortcutStep : IInstallationStep
 {
     private readonly ShortcutService shortcutService;
 
@@ -14,35 +14,59 @@ public class ShortcutStep : IInstallationStep
     }
 
 
-
     public string Name =>
         "Creating shortcuts...";
-
 
 
     public int Progress =>
         98;
 
 
-
     public Task ExecuteAsync(
         InstallerContext context,
         IProgress<string>? progress = null)
     {
-        progress?.Report(Name);
+        ArgumentNullException.ThrowIfNull(context);
+
+
+        // ========================================================
+        // DESKTOP SHORTCUT
+        // ========================================================
+
+        progress?.Report(
+            "Creating desktop shortcut...");
 
 
         shortcutService.CreateDesktopShortcut(
             context);
 
 
+        progress?.Report(
+            "Desktop shortcut created successfully.");
+
+
+        // ========================================================
+        // START MENU SHORTCUT
+        // ========================================================
+
+        progress?.Report(
+            "Creating Start Menu shortcut...");
+
+
         shortcutService.CreateStartMenuShortcut(
             context);
 
 
+        progress?.Report(
+            "Start Menu shortcut created successfully.");
+
+
+        // ========================================================
+        // COMPLETED
+        // ========================================================
 
         progress?.Report(
-            "Shortcuts created successfully.");
+            "Shortcut step completed.");
 
 
         return Task.CompletedTask;

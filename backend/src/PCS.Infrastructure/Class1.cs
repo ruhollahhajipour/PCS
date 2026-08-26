@@ -1,4 +1,4 @@
-﻿namespace PCS.Infrastructure;
+namespace PCS.Infrastructure;
 
 public class Class1
 {

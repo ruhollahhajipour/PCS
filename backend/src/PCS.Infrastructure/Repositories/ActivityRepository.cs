@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using PCS.Application.PMS.Interfaces;
-using PCS.Domain.Entities.PMS;
+using PCS.Application.Planning.Interfaces;
+using PCS.Domain.Entities.Planning;
 using PCS.Infrastructure.Persistence;
 
 namespace PCS.Infrastructure.Repositories;
 
-public class ActivityRepository : IActivityRepository
+public class ActivityRepository
+    : IActivityRepository
 {
     private readonly PCSDbContext _context;
 
@@ -21,22 +22,35 @@ public class ActivityRepository : IActivityRepository
     public async Task<List<Activity>> GetProjectActivitiesAsync(
         Guid projectId)
     {
-        return await _context.Set<Activity>()
+        return await _context
+            .Set<Activity>()
+
             .Include(x => x.Predecessors)
+
             .Include(x => x.Successors)
+
             .Include(x => x.WbsNode)
-            .Where(x => x.ProjectId == projectId)
+
+            .Where(x =>
+                x.ProjectId == projectId)
+
             .ToListAsync();
     }
+
+
 
 
 
     public async Task<Activity?> GetByIdAsync(
         Guid id)
     {
-        return await _context.Set<Activity>()
-            .FirstOrDefaultAsync(x => x.Id == id);
+        return await _context
+            .Set<Activity>()
+            .FirstOrDefaultAsync(
+                x => x.Id == id);
     }
+
+
 
 
 
@@ -45,6 +59,8 @@ public class ActivityRepository : IActivityRepository
     {
         _context.Update(activity);
     }
+
+
 
 
 

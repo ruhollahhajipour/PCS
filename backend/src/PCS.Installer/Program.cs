@@ -2,21 +2,31 @@ using PCS.Installer.Forms;
 
 namespace PCS.Installer;
 
-
 internal static class Program
 {
-
     [STAThread]
-    static void Main()
+    private static void Main()
     {
+        // =========================================================
+        // HIGH DPI / DISPLAY SCALING
+        // =========================================================
 
-        ApplicationConfiguration.Initialize();
+        global::System.Windows.Forms.Application.SetHighDpiMode(
+            global::System.Windows.Forms.HighDpiMode.PerMonitorV2);
 
 
-        System.Windows.Forms.Application.Run(
-            new MainInstallerForm()
-        );
+        global::System.Windows.Forms.Application.EnableVisualStyles();
 
+
+        global::System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(
+            false);
+
+
+        // =========================================================
+        // START INSTALLER
+        // =========================================================
+
+        global::System.Windows.Forms.Application.Run(
+            new MainInstallerForm());
     }
-
 }

@@ -28,7 +28,14 @@ public class HeaderPanel : Panel
     {
         Dock = DockStyle.Top;
 
-        Height = 95;
+        /*
+         * Increased from 95px to 145px.
+         *
+         * This gives the installer header considerably
+         * more vertical breathing room and prevents the
+         * title/subtitle/logo from looking compressed.
+         */
+        Height = 145;
 
         DoubleBuffered = true;
 
@@ -39,7 +46,8 @@ public class HeaderPanel : Panel
 
 
 
-    protected override void OnPaint(PaintEventArgs e)
+    protected override void OnPaint(
+        PaintEventArgs e)
     {
         base.OnPaint(e);
 
@@ -50,35 +58,66 @@ public class HeaderPanel : Panel
         g.SmoothingMode =
             SmoothingMode.AntiAlias;
 
+        g.InterpolationMode =
+            InterpolationMode.HighQualityBicubic;
+
+        g.PixelOffsetMode =
+            PixelOffsetMode.HighQuality;
+
 
         g.Clear(Color.White);
 
 
 
         using SolidBrush titleBrush =
-            new SolidBrush(Colors.TextPrimary);
+            new SolidBrush(
+                Colors.TextPrimary);
 
 
         using SolidBrush subBrush =
-            new SolidBrush(Colors.TextSecondary);
+            new SolidBrush(
+                Colors.TextSecondary);
 
 
 
         int x = 30;
 
 
-
+        /*
+         * Keep the logo visually centered vertically
+         * inside the enlarged header.
+         */
         if (Logo != null)
         {
+            const int logoSize = 72;
+
+            int logoY =
+                (Height - logoSize - 1) / 2;
+
             g.DrawImage(
                 Logo,
                 28,
-                18,
-                54,
-                54);
+                logoY,
+                logoSize,
+                logoSize);
 
-            x = 100;
+            x = 120;
         }
+
+
+
+        /*
+         * Center the title/subtitle block vertically
+         * relative to the larger header.
+         */
+        float titleY =
+            Logo != null
+                ? 42
+                : 38;
+
+
+        float subtitleY =
+            titleY + 38;
 
 
 
@@ -87,7 +126,7 @@ public class HeaderPanel : Panel
             Fonts.Header,
             titleBrush,
             x,
-            18);
+            titleY);
 
 
 
@@ -96,12 +135,13 @@ public class HeaderPanel : Panel
             Fonts.Body,
             subBrush,
             x,
-            52);
+            subtitleY);
 
 
 
         using Pen pen =
-            new Pen(Colors.Border);
+            new Pen(
+                Colors.Border);
 
 
         g.DrawLine(

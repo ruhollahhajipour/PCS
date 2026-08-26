@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PCS.Domain.Entities.PMS;
+using PCS.Domain.Entities.Planning;
 
 namespace PCS.Infrastructure.Persistence.Configurations;
 
-public class ProjectCalendarConfiguration : IEntityTypeConfiguration<ProjectCalendar>
+public class ProjectCalendarConfiguration 
+    : IEntityTypeConfiguration<ProjectCalendar>
 {
     public void Configure(EntityTypeBuilder<ProjectCalendar> builder)
     {
@@ -15,10 +16,26 @@ public class ProjectCalendarConfiguration : IEntityTypeConfiguration<ProjectCale
 
 
 
+        // ==========================================
+        // Calendar Information
+        // ==========================================
+
         builder.Property(x => x.Name)
             .HasMaxLength(200)
             .IsRequired();
 
+
+        builder.Property(x => x.Description)
+            .HasMaxLength(500);
+
+
+
+        // ==========================================
+        // Working Time
+        // ==========================================
+
+        builder.Property(x => x.WorkingDaysPerWeek)
+            .IsRequired();
 
 
         builder.Property(x => x.WorkingHoursPerDay)
@@ -26,12 +43,20 @@ public class ProjectCalendarConfiguration : IEntityTypeConfiguration<ProjectCale
 
 
 
+        // ==========================================
+        // Project Relationship
+        // ==========================================
+
         builder.HasOne(x => x.Project)
-            .WithMany()
-            .HasForeignKey(x => x.ProjectId)
-            .OnDelete(DeleteBehavior.Cascade);
+        .WithMany(x => x.Calendars)
+        .HasForeignKey(x => x.ProjectId)
+        .OnDelete(DeleteBehavior.Cascade);
 
 
+
+        // ==========================================
+        // Index
+        // ==========================================
 
         builder.HasIndex(x => new
         {
@@ -39,5 +64,17 @@ public class ProjectCalendarConfiguration : IEntityTypeConfiguration<ProjectCale
             x.Name
         })
         .IsUnique();
+
+
+
+        // ==========================================
+        // Default Calendar
+        // ==========================================
+
+        builder.HasIndex(x => new
+        {
+            x.ProjectId,
+            x.IsDefault
+        });
     }
 }

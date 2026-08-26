@@ -1,30 +1,54 @@
 using PCS.Installer.Models;
 
-namespace PCS.Installer.Services;
+namespace PCS.Installer.Services.Deployment;
 
-public class FrontendDeploymentService
+public sealed class FrontendDeploymentService
 {
+    private const int CopyRetryCount = 15;
+
+    private const int CopyRetryDelayMilliseconds = 500;
+
+
     public void Deploy(
         InstallerContext context)
     {
+        if (context == null)
+        {
+            throw new ArgumentNullException(
+                nameof(context));
+        }
+
+
         string source =
             Path.Combine(
-                AppContext.BaseDirectory,
-                "Publish",
+                context.PublishPath,
                 "Frontend");
 
+
         string destination =
-            Path.Combine(
-                context.InstallPath,
-                "Frontend");
+            context.FrontendPath;
+
 
         if (!Directory.Exists(source))
         {
             throw new DirectoryNotFoundException(
-                $"Frontend publish folder not found: {source}");
+                "Frontend publish folder not found."
+                + Environment.NewLine
+                + Environment.NewLine
+                + "Expected path:"
+                + Environment.NewLine
+                + source
+                + Environment.NewLine
+                + Environment.NewLine
+                + "Installer PublishPath:"
+                + Environment.NewLine
+                + context.PublishPath);
         }
 
-        Directory.CreateDirectory(destination);
+
+        Directory.CreateDirectory(
+            destination);
+
 
         foreach (string file in Directory.GetFiles(
                      source,
@@ -36,23 +60,90 @@ public class FrontendDeploymentService
                     source,
                     file);
 
+
             string target =
                 Path.Combine(
                     destination,
                     relativePath);
 
-            string? targetDirectory =
-                Path.GetDirectoryName(target);
 
-            if (!string.IsNullOrEmpty(targetDirectory))
+            string? targetDirectory =
+                Path.GetDirectoryName(
+                    target);
+
+
+            if (!string.IsNullOrEmpty(
+                    targetDirectory))
             {
-                Directory.CreateDirectory(targetDirectory);
+                Directory.CreateDirectory(
+                    targetDirectory);
             }
 
-            File.Copy(
+
+            CopyFileWithRetry(
                 file,
-                target,
-                true);
+                target);
         }
+    }
+
+
+    private static void CopyFileWithRetry(
+        string source,
+        string destination)
+    {
+        Exception? lastException = null;
+
+
+        for (int attempt = 1;
+             attempt <= CopyRetryCount;
+             attempt++)
+        {
+            try
+            {
+                File.Copy(
+                    source,
+                    destination,
+                    overwrite: true);
+
+
+                return;
+            }
+            catch (IOException ex)
+            {
+                lastException = ex;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                lastException = ex;
+            }
+
+
+            if (attempt < CopyRetryCount)
+            {
+                Thread.Sleep(
+                    CopyRetryDelayMilliseconds);
+            }
+        }
+
+
+        throw new IOException(
+            "Unable to deploy Frontend file because "
+            + "the destination file is locked or inaccessible."
+            + Environment.NewLine
+            + Environment.NewLine
+            + "Source:"
+            + Environment.NewLine
+            + source
+            + Environment.NewLine
+            + Environment.NewLine
+            + "Destination:"
+            + Environment.NewLine
+            + destination
+            + Environment.NewLine
+            + Environment.NewLine
+            + "Retry attempts:"
+            + Environment.NewLine
+            + CopyRetryCount,
+            lastException);
     }
 }
