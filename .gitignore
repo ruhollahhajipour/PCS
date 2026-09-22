@@ -1,22 +1,35 @@
 # ==========================
+
 # Node / Frontend
+
 # ==========================
 
 node_modules/
 dist/
 .vite/
 
+# ==========================
+
+# Legacy Frontend JavaScript / JSX
 
 # ==========================
+
+frontend/src/**/*.js
+frontend/src/**/*.jsx
+
+# ==========================
+
 # .NET Build
+
 # ==========================
 
 **/bin/
 **/obj/
 
-
 # ==========================
+
 # Visual Studio / Rider
+
 # ==========================
 
 .vs/
@@ -25,9 +38,10 @@ dist/
 *.user
 *.suo
 
-
 # ==========================
+
 # Database
+
 # ==========================
 
 *.db
@@ -36,45 +50,90 @@ dist/
 *.db-shm
 *.db-wal
 
-
 # ==========================
+
 # Logs
+
 # ==========================
 
 **/Logs/
 *.log
 
-
 # ==========================
+
 # Environment
+
 # ==========================
 
 .env
 .env.*
 
-
 # ==========================
+
 # Temporary
+
 # ==========================
 
 *.tmp
 *.temp
 *.bak
-# Build / Release artifacts
+
+# ==========================
+
+# Build / Release Artifacts
+
+# ==========================
+
 **/Release/
 **/Publish/
-# PCS Installer outputs
+**/publish/
+**/_bundle_test/
+
+# ==========================
+
+# PCS Installer Outputs
+
+# ==========================
+
 **/PCS-Setup*.exe
-**/PCS.Installer.exebackend/_bundle_test/
-backend/src/PCS.Installer/Publish/
+backend/src/PCS.Installer/Setup/PCSSetup.exe
 backend/src/PCS.Installer/Resources/Publish/
+
+# ==========================
+
+# Generated / Local Project Files
+
+# ==========================
+
 backend/pms-template-test.xlsx
 Backend_Structure.txt
 PCS_Runtime_Structure.txt
 backend/PCS_Install_Files.txt
 backend/PCS_Program.txt
-backend/src/PCS.Installer/Setup/PCSSetup.exe
 frontend/frontend_structure.txt
+
+# ==========================
+
+# Generated Installer Packages
+
+# ==========================
+
 backend/src/PCS.Application/Resources/Backend.zip
 backend/src/PCS.Application/Resources/Frontend.zip
+
+# ==========================
+
+# Local Database / Backup Files
+
+# ==========================
+
+*.backup
+*.backup-*
+
+# ==========================
+
+# Installer Local Test Data
+
+# ==========================
+
 backend/_bundle_test/
