@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using PCS.Domain.Entities;
+using PCS.Domain.Entities.Licensing;
 using PCS.Domain.Entities.Planning;
 using PCS.Domain.Entities.Security;
 
@@ -22,8 +23,22 @@ public class PCSDbContext : DbContext
     public DbSet<Company> Companies
         => Set<Company>();
 
+    public DbSet<Plant> Plants
+        => Set<Plant>();
+
     public DbSet<Project> Projects
         => Set<Project>();
+
+
+    // ==========================
+    // Licensing
+    // ==========================
+
+    public DbSet<License> Licenses
+        => Set<License>();
+
+    public DbSet<LicenseModule> LicenseModules
+        => Set<LicenseModule>();
 
 
     // ==========================
@@ -32,6 +47,9 @@ public class PCSDbContext : DbContext
 
     public DbSet<User> Users
         => Set<User>();
+
+    public DbSet<PasswordResetToken> PasswordResetTokens
+        => Set<PasswordResetToken>();
 
     public DbSet<Role> Roles
         => Set<Role>();
@@ -132,11 +150,5 @@ public class PCSDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(x => x.UserName)
             .IsUnique();
-
-
-        
-
-
-       
     }
 }

@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 
 import {
   Box,
@@ -6,11 +9,18 @@ import {
   Typography,
 } from "@mui/material";
 
+import {
+  type GridRenderCellParams,
+} from "@mui/x-data-grid";
+
 import PCSDataGrid from "../../../../components/Common/PCSDataGrid/PCSDataGrid";
+
 import StatusChip from "../../../../components/Common/StatusChip";
 
 import ReceiptDialog from "../dialogs/ReceiptDialog";
+
 import ReceiptToolbar from "../components/ReceiptToolbar";
+
 import ReceiptKPIs from "../components/ReceiptKPIs";
 
 import useReceipt from "../hooks/useReceipt";
@@ -18,7 +28,6 @@ import useReceipt from "../hooks/useReceipt";
 import type { Receipt } from "../types/receipt";
 
 export default function Receipt() {
-
   const {
     items,
     loading,
@@ -28,7 +37,8 @@ export default function Receipt() {
     remove,
   } = useReceipt();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
   const [selected, setSelected] =
     useState<Receipt | null>(null);
@@ -37,55 +47,56 @@ export default function Receipt() {
     useState("");
 
   const rows = useMemo(() => {
+    const q =
+      search.toLowerCase();
 
-    const q = search.toLowerCase();
-
-    return items.filter((x) =>
-
-      x.receiptNo.toLowerCase().includes(q) ||
-
-      x.poNo.toLowerCase().includes(q) ||
-
-      x.itemCode.toLowerCase().includes(q) ||
-
-      x.itemName.toLowerCase().includes(q) ||
-
-      x.supplier.toLowerCase().includes(q)
-
+    return items.filter(
+      (x) =>
+        x.receiptNo
+          .toLowerCase()
+          .includes(q) ||
+        x.poNo
+          .toLowerCase()
+          .includes(q) ||
+        x.itemCode
+          .toLowerCase()
+          .includes(q) ||
+        x.itemName
+          .toLowerCase()
+          .includes(q) ||
+        x.supplier
+          .toLowerCase()
+          .includes(q)
     );
-
   }, [items, search]);
 
-  async function handleSave(item: Receipt) {
-
+  async function handleSave(
+    item: Receipt
+  ) {
     if (selected) {
-
       await update(item);
-
     } else {
-
       await create(item);
-
     }
 
     setSelected(null);
-
+    setOpen(false);
   }
 
-  async function handleDelete(id: number) {
-
-    if (confirm("Delete Receipt ?")) {
-
+  async function handleDelete(
+    id: number
+  ) {
+    if (
+      window.confirm(
+        "Delete Receipt?"
+      )
+    ) {
       await remove(id);
-
     }
-
   }
 
   return (
-
     <Box>
-
       <Typography
         variant="h4"
         fontWeight={700}
@@ -94,7 +105,9 @@ export default function Receipt() {
         Warehouse Receipt
       </Typography>
 
-      <ReceiptKPIs items={items} />
+      <ReceiptKPIs
+        items={items}
+      />
 
       <ReceiptToolbar
         search={search}
@@ -112,7 +125,7 @@ export default function Receipt() {
           overflow: "hidden",
         }}
       >
-                <PCSDataGrid
+        <PCSDataGrid
           rows={rows}
           loading={loading}
           columns={[
@@ -121,65 +134,84 @@ export default function Receipt() {
               headerName: "Receipt No",
               flex: 1,
             },
+
             {
               field: "poNo",
               headerName: "PO No",
               flex: 1,
             },
+
             {
               field: "itemCode",
               headerName: "Item Code",
               flex: 1,
             },
+
             {
               field: "itemName",
               headerName: "Item Name",
               flex: 2,
             },
+
             {
               field: "supplier",
               headerName: "Supplier",
               flex: 2,
             },
+
             {
               field: "warehouse",
               headerName: "Warehouse",
               flex: 1.5,
             },
+
             {
               field: "location",
               headerName: "Location",
               flex: 1.2,
             },
+
             {
               field: "quantity",
               headerName: "Qty",
               flex: 0.8,
             },
+
             {
               field: "unit",
               headerName: "Unit",
               flex: 0.7,
             },
+
             {
               field: "receiveDate",
               headerName: "Receive Date",
               flex: 1.2,
             },
+
             {
               field: "status",
               headerName: "Status",
               flex: 1,
-              renderCell: (params: any) => (
-                <StatusChip value={params.value} />
+
+              renderCell: (
+                params: GridRenderCellParams<Receipt>
+              ) => (
+                <StatusChip
+                  value={params.value}
+                />
               ),
             },
+
             {
               field: "actions",
               headerName: "Actions",
               sortable: false,
               flex: 1.6,
-              renderCell: (params: any) => (
+
+              renderCell: (
+                params: GridRenderCellParams<Receipt>
+              ) => (
                 <Box
                   sx={{
                     display: "flex",
@@ -188,7 +220,9 @@ export default function Receipt() {
                 >
                   <button
                     onClick={() => {
-                      setSelected(params.row);
+                      setSelected(
+                        params.row
+                      );
                       setOpen(true);
                     }}
                   >
@@ -197,7 +231,9 @@ export default function Receipt() {
 
                   <button
                     onClick={() =>
-                      handleDelete(params.row.id)
+                      handleDelete(
+                        params.row.id
+                      )
                     }
                   >
                     Delete
@@ -207,7 +243,7 @@ export default function Receipt() {
             },
           ]}
         />
-              </Paper>
+      </Paper>
 
       <ReceiptDialog
         open={open}
@@ -218,9 +254,6 @@ export default function Receipt() {
         }}
         onSave={handleSave}
       />
-
     </Box>
-
   );
-
 }

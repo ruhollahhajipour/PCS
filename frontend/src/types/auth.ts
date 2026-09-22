@@ -1,6 +1,5 @@
 export interface LoginRequest {
   username: string;
-
   password: string;
 }
 
@@ -9,17 +8,23 @@ export interface LoginResponse {
 
   refreshToken?: string;
 
-  fullName: string;
-
   username: string;
 
-  role: string;
+  fullName: string;
+
+  userId: string;
+
+  roles: string[];
+
+  permissions: string[];
 
   expiresAt?: string;
+
+  mustChangePassword: boolean;
 }
 
 export interface AuthUser {
-  id: number;
+  id: string;
 
   username: string;
 
@@ -27,9 +32,13 @@ export interface AuthUser {
 
   email?: string;
 
-  role: string;
+  roles: string[];
+
+  permissions: string[];
 
   avatar?: string;
+
+  mustChangePassword: boolean;
 }
 
 export interface AuthState {

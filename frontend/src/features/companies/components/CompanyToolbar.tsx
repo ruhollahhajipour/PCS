@@ -1,34 +1,42 @@
 import {
   Box,
   Button,
+  InputAdornment,
   Paper,
   TextField,
-  InputAdornment,
 } from "@mui/material";
 
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import SearchRoundedIcon
+  from "@mui/icons-material/SearchRounded";
+
+import RefreshRoundedIcon
+  from "@mui/icons-material/RefreshRounded";
+
+import AddRoundedIcon
+  from "@mui/icons-material/AddRounded";
+
+import DownloadRoundedIcon
+  from "@mui/icons-material/DownloadRounded";
 
 type Props = {
   search: string;
   onSearch: (value: string) => void;
-  onNew: () => void;
   onRefresh: () => void;
+  onNew: () => void;
 };
 
 export default function CompanyToolbar({
   search,
   onSearch,
-  onNew,
   onRefresh,
+  onNew,
 }: Props) {
   return (
     <Paper
       elevation={0}
       sx={{
         p: 2,
+        mb: 3,
         borderRadius: 5,
         border: "1px solid #E2E8F0",
         background: "rgba(255,255,255,.82)",
@@ -46,9 +54,14 @@ export default function CompanyToolbar({
           size="small"
           value={search}
           placeholder="Search company..."
-          onChange={(e) => onSearch(e.target.value)}
+          onChange={(e) =>
+            onSearch(e.target.value)
+          }
           sx={{
-            width: 360,
+            width: {
+              xs: "100%",
+              sm: 360,
+            },
             "& .MuiOutlinedInput-root": {
               borderRadius: 3,
               height: 48,
@@ -70,28 +83,41 @@ export default function CompanyToolbar({
         >
           <Button
             variant="outlined"
-            startIcon={<RefreshRoundedIcon />}
+            startIcon={
+              <RefreshRoundedIcon />
+            }
             onClick={onRefresh}
-            sx={{ borderRadius: 3 }}
+            sx={{
+              borderRadius: 3,
+              minHeight: 42,
+            }}
           >
             Refresh
           </Button>
 
           <Button
             variant="outlined"
-            startIcon={<DownloadRoundedIcon />}
-            sx={{ borderRadius: 3 }}
+            startIcon={
+              <DownloadRoundedIcon />
+            }
+            sx={{
+              borderRadius: 3,
+              minHeight: 42,
+            }}
           >
             Export
           </Button>
 
           <Button
             variant="contained"
-            startIcon={<AddRoundedIcon />}
+            startIcon={
+              <AddRoundedIcon />
+            }
             onClick={onNew}
             sx={{
               borderRadius: 3,
               px: 3,
+              minHeight: 42,
             }}
           >
             New Company

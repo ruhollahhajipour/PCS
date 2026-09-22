@@ -216,6 +216,116 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("CompanyUsers", (string)null);
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Licensing.License", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LicenseKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId")
+                        .IsUnique();
+
+                    b.HasIndex("LicenseKey")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Licenses", (string)null);
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Licensing.LicenseModule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("LicenseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModuleId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LicenseId");
+
+                    b.HasIndex("ModuleId");
+
+                    b.HasIndex("LicenseId", "ModuleId")
+                        .IsUnique();
+
+                    b.ToTable("LicenseModules", (string)null);
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -783,6 +893,77 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("WbsNodes", (string)null);
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Plant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ShortName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Plants", (string)null);
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -890,6 +1071,8 @@ namespace PCS.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("PlantId");
 
                     b.ToTable("Projects", (string)null);
                 });
@@ -1096,6 +1279,39 @@ namespace PCS.Infrastructure.Migrations
                     b.ToTable("DigitalSignatures", (string)null);
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Security.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens", (string)null);
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Security.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1244,6 +1460,9 @@ namespace PCS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1381,6 +1600,28 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Licensing.License", b =>
+                {
+                    b.HasOne("PCS.Domain.Entities.Company", "Company")
+                        .WithOne()
+                        .HasForeignKey("PCS.Domain.Entities.Licensing.License", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Licensing.LicenseModule", b =>
+                {
+                    b.HasOne("PCS.Domain.Entities.Licensing.License", "License")
+                        .WithMany("Modules")
+                        .HasForeignKey("LicenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("License");
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Planning.Activity", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Planning.ProjectCalendar", "Calendar")
@@ -1476,7 +1717,7 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("PCS.Domain.Entities.Project", b =>
+            modelBuilder.Entity("PCS.Domain.Entities.Plant", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Company", "Company")
                         .WithMany()
@@ -1485,6 +1726,24 @@ namespace PCS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Project", b =>
+                {
+                    b.HasOne("PCS.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PCS.Domain.Entities.Plant", "Plant")
+                        .WithMany("Projects")
+                        .HasForeignKey("PlantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Plant");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Security.CompanyAdminRequest", b =>
@@ -1546,6 +1805,17 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Security.PasswordResetToken", b =>
+                {
+                    b.HasOne("PCS.Domain.Entities.Security.User", "User")
+                        .WithMany("PasswordResetTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Security.RolePermission", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Security.Permission", "Permission")
@@ -1597,6 +1867,11 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Licensing.License", b =>
+                {
+                    b.Navigation("Modules");
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Planning.Activity", b =>
                 {
                     b.Navigation("Predecessors");
@@ -1609,6 +1884,11 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Activities");
 
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Plant", b =>
+                {
+                    b.Navigation("Projects");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Project", b =>
@@ -1637,6 +1917,8 @@ namespace PCS.Infrastructure.Migrations
             modelBuilder.Entity("PCS.Domain.Entities.Security.User", b =>
                 {
                     b.Navigation("Companies");
+
+                    b.Navigation("PasswordResetTokens");
 
                     b.Navigation("UserRoles");
                 });

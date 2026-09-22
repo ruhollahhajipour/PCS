@@ -1,50 +1,66 @@
 import type { Plant } from "../../../models/plant";
 
+const now = new Date().toISOString();
+
 const plants: Plant[] = [
   {
-    id: "1",
-    companyId: 1,
+    id: "00000000-0000-0000-0000-000000000001",
+    companyId: "00000000-0000-0000-0000-000000000001",
+
     code: "ADISH-01",
-    shortName: "ADS",
     name: "South Adish Gas Condensate Refinery",
-    country: "Iran",
-    city: "Bushehr",
+    shortName: "ADS",
+
+    description: "South Adish Gas Condensate Refinery",
+
     address: "South Pars Phase 13",
-    timezone: "Asia/Tehran",
-    currency: "USD",
-    status: "Active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    phone: "",
+    email: "",
+
+    isActive: true,
+
+    createdAt: now,
+    updatedAt: now,
   },
+
   {
-    id: "2",
-    companyId: 1,
+    id: "00000000-0000-0000-0000-000000000002",
+    companyId: "00000000-0000-0000-0000-000000000001",
+
     code: "UTIL-01",
-    shortName: "UTL",
     name: "Utility Plant",
-    country: "Iran",
-    city: "Bushehr",
+    shortName: "UTL",
+
+    description: "Utility Plant",
+
     address: "South Pars",
-    timezone: "Asia/Tehran",
-    currency: "USD",
-    status: "Active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    phone: "",
+    email: "",
+
+    isActive: true,
+
+    createdAt: now,
+    updatedAt: now,
   },
+
   {
-    id: "3",
-    companyId: 2,
+    id: "00000000-0000-0000-0000-000000000003",
+    companyId: "00000000-0000-0000-0000-000000000002",
+
     code: "PETRO-01",
-    shortName: "PET",
     name: "Petrochemical Unit",
-    country: "Iran",
-    city: "Assaluyeh",
+    shortName: "PET",
+
+    description: "Petrochemical Unit",
+
     address: "Assaluyeh Industrial Zone",
-    timezone: "Asia/Tehran",
-    currency: "USD",
-    status: "Inactive",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    phone: "",
+    email: "",
+
+    isActive: false,
+
+    createdAt: now,
+    updatedAt: now,
   },
 ];
 

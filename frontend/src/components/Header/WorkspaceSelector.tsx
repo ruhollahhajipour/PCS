@@ -8,127 +8,348 @@ import {
 
 import { useWorkspace } from "../../context/WorkspaceContext";
 
-import {
-  companies,
-  plants,
-  projects,
-} from "../../data/workspace";
-
 export default function WorkspaceSelector() {
   const {
     workspace,
+    companies,
+    plants,
+    projects,
     setCompany,
     setPlant,
     setProject,
   } = useWorkspace();
 
-  const filteredPlants = plants.filter(
-    (p) => p.companyId === workspace.company.id
-  );
+  const filteredPlants =
+    plants.filter(
+      (plant) =>
+        plant.companyId ===
+        workspace.company.id
+    );
 
-  const filteredProjects = projects.filter(
-    (p) => p.plantId === workspace.plant.id
-  );
+  const filteredProjects =
+    projects.filter(
+      (project) =>
+        project.plantId ===
+        workspace.plant.id
+    );
 
   return (
     <Stack
       direction="row"
-      spacing={2}
+      spacing={1.25}
+      sx={{
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
-      <FormControl size="small" sx={{ minWidth: 220 }}>
-        <InputLabel>Company</InputLabel>
+      {/* =====================================================
+          COMPANY
+      ===================================================== */}
+
+      <FormControl
+        size="small"
+        sx={{
+          width: {
+            md: 185,
+            lg: 205,
+            xl: 220,
+          },
+          flexShrink: 1,
+
+          "& .MuiInputLabel-root": {
+            fontSize: 10.5,
+            fontWeight: 600,
+            color: "#64748B",
+            top: -1,
+          },
+
+          "& .MuiInputLabel-root.Mui-focused": {
+            color: "#2563EB",
+          },
+
+          "& .MuiOutlinedInput-root": {
+            height: 42,
+            borderRadius: 2,
+            bgcolor: "rgba(248,250,252,.72)",
+            fontSize: 12.5,
+            fontWeight: 650,
+            color: "#1E293B",
+            transition: "all .2s ease",
+
+            "& fieldset": {
+              borderColor: "#DCE4EE",
+              transition: "all .2s ease",
+            },
+
+            "&:hover fieldset": {
+              borderColor: "#B8C6D8",
+            },
+
+            "&.Mui-focused": {
+              bgcolor: "#FFFFFF",
+              boxShadow:
+                "0 4px 14px rgba(37,99,235,.08)",
+            },
+
+            "&.Mui-focused fieldset": {
+              borderColor: "#6B9AFD",
+              borderWidth: 1,
+            },
+          },
+
+          "& .MuiSelect-select": {
+            py: 1.15,
+          },
+        }}
+      >
+        <InputLabel>
+          Company
+        </InputLabel>
 
         <Select
           value={workspace.company.id}
           label="Company"
-          onChange={(e) => {
-            const company = companies.find(
-              (c) => c.id === Number(e.target.value)
-            );
+          onChange={(event) => {
+            const companyId =
+              String(
+                event.target.value
+              );
 
-            if (!company) return;
+            const company =
+              companies.find(
+                (item) =>
+                  item.id ===
+                  companyId
+              );
 
-            const plant = plants.find(
-              (p) => p.companyId === company.id
-            );
-
-            const project = projects.find(
-              (p) => p.plantId === plant?.id
-            );
+            if (!company) {
+              return;
+            }
 
             setCompany(company);
-
-            if (plant) setPlant(plant);
-
-            if (project) setProject(project);
           }}
         >
-          {companies.map((c) => (
-            <MenuItem
-              key={c.id}
-              value={c.id}
-            >
-              {c.name}
-            </MenuItem>
-          ))}
+          {companies.map(
+            (company) => (
+              <MenuItem
+                key={company.id}
+                value={company.id}
+                sx={{
+                  fontSize: 12.5,
+                  fontWeight: 550,
+                }}
+              >
+                {company.name}
+              </MenuItem>
+            )
+          )}
         </Select>
       </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: 240 }}>
-        <InputLabel>Plant</InputLabel>
+      {/* =====================================================
+          PLANT
+      ===================================================== */}
+
+      <FormControl
+        size="small"
+        sx={{
+          width: {
+            md: 200,
+            lg: 220,
+            xl: 235,
+          },
+          flexShrink: 1,
+
+          "& .MuiInputLabel-root": {
+            fontSize: 10.5,
+            fontWeight: 600,
+            color: "#64748B",
+            top: -1,
+          },
+
+          "& .MuiInputLabel-root.Mui-focused": {
+            color: "#2563EB",
+          },
+
+          "& .MuiOutlinedInput-root": {
+            height: 42,
+            borderRadius: 2,
+            bgcolor: "rgba(248,250,252,.72)",
+            fontSize: 12.5,
+            fontWeight: 650,
+            color: "#1E293B",
+            transition: "all .2s ease",
+
+            "& fieldset": {
+              borderColor: "#DCE4EE",
+              transition: "all .2s ease",
+            },
+
+            "&:hover fieldset": {
+              borderColor: "#B8C6D8",
+            },
+
+            "&.Mui-focused": {
+              bgcolor: "#FFFFFF",
+              boxShadow:
+                "0 4px 14px rgba(37,99,235,.08)",
+            },
+
+            "&.Mui-focused fieldset": {
+              borderColor: "#6B9AFD",
+              borderWidth: 1,
+            },
+          },
+
+          "& .MuiSelect-select": {
+            py: 1.15,
+          },
+        }}
+      >
+        <InputLabel>
+          Plant
+        </InputLabel>
 
         <Select
           value={workspace.plant.id}
           label="Plant"
-          onChange={(e) => {
-            const plant = filteredPlants.find(
-              (p) => p.id === Number(e.target.value)
-            );
+          onChange={(event) => {
+            const plantId =
+              String(
+                event.target.value
+              );
 
-            if (!plant) return;
+            const plant =
+              filteredPlants.find(
+                (item) =>
+                  item.id ===
+                  plantId
+              );
 
-            const project = projects.find(
-              (p) => p.plantId === plant.id
-            );
+            if (!plant) {
+              return;
+            }
 
             setPlant(plant);
-
-            if (project) setProject(project);
           }}
         >
-          {filteredPlants.map((p) => (
-            <MenuItem
-              key={p.id}
-              value={p.id}
-            >
-              {p.name}
-            </MenuItem>
-          ))}
+          {filteredPlants.map(
+            (plant) => (
+              <MenuItem
+                key={plant.id}
+                value={plant.id}
+                sx={{
+                  fontSize: 12.5,
+                  fontWeight: 550,
+                }}
+              >
+                {plant.name}
+              </MenuItem>
+            )
+          )}
         </Select>
       </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: 240 }}>
-        <InputLabel>Project</InputLabel>
+      {/* =====================================================
+          PROJECT
+      ===================================================== */}
+
+      <FormControl
+        size="small"
+        sx={{
+          width: {
+            md: 205,
+            lg: 225,
+            xl: 245,
+          },
+          flexShrink: 1,
+
+          "& .MuiInputLabel-root": {
+            fontSize: 10.5,
+            fontWeight: 600,
+            color: "#64748B",
+            top: -1,
+          },
+
+          "& .MuiInputLabel-root.Mui-focused": {
+            color: "#2563EB",
+          },
+
+          "& .MuiOutlinedInput-root": {
+            height: 42,
+            borderRadius: 2,
+            bgcolor: "rgba(248,250,252,.72)",
+            fontSize: 12.5,
+            fontWeight: 650,
+            color: "#1E293B",
+            transition: "all .2s ease",
+
+            "& fieldset": {
+              borderColor: "#DCE4EE",
+              transition: "all .2s ease",
+            },
+
+            "&:hover fieldset": {
+              borderColor: "#B8C6D8",
+            },
+
+            "&.Mui-focused": {
+              bgcolor: "#FFFFFF",
+              boxShadow:
+                "0 4px 14px rgba(37,99,235,.08)",
+            },
+
+            "&.Mui-focused fieldset": {
+              borderColor: "#6B9AFD",
+              borderWidth: 1,
+            },
+          },
+
+          "& .MuiSelect-select": {
+            py: 1.15,
+          },
+        }}
+      >
+        <InputLabel>
+          Project
+        </InputLabel>
 
         <Select
           value={workspace.project.id}
           label="Project"
-          onChange={(e) => {
-            const project = filteredProjects.find(
-              (p) => p.id === Number(e.target.value)
-            );
+          onChange={(event) => {
+            const projectId =
+              String(
+                event.target.value
+              );
 
-            if (project) setProject(project);
+            const project =
+              filteredProjects.find(
+                (item) =>
+                  item.id ===
+                  projectId
+              );
+
+            if (project) {
+              setProject(project);
+            }
           }}
         >
-          {filteredProjects.map((p) => (
-            <MenuItem
-              key={p.id}
-              value={p.id}
-            >
-              {p.name}
-            </MenuItem>
-          ))}
+          {filteredProjects.map(
+            (project) => (
+              <MenuItem
+                key={project.id}
+                value={project.id}
+                sx={{
+                  fontSize: 12.5,
+                  fontWeight: 550,
+                }}
+              >
+                {project.name}
+              </MenuItem>
+            )
+          )}
         </Select>
       </FormControl>
     </Stack>

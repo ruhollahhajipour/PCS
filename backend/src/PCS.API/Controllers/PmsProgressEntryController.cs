@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
+using PCS.API.Security;
+
+using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
@@ -17,8 +21,8 @@ public class PmsProgressEntryController : ControllerBase
     }
 
 
-
     [HttpPost]
+    [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Add(
         [FromBody] AddProgressEntryRequest request)
     {
@@ -31,14 +35,14 @@ public class PmsProgressEntryController : ControllerBase
 
         return Ok(new
         {
-            Message = "Progress entry added successfully"
+            Message =
+                "Progress entry added successfully"
         });
     }
 
 
-
-
     [HttpGet("activity/{activityId}")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
         Guid activityId)
     {
@@ -50,7 +54,6 @@ public class PmsProgressEntryController : ControllerBase
         return Ok(result);
     }
 }
-
 
 
 public class AddProgressEntryRequest

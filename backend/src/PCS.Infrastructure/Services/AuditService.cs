@@ -1,26 +1,49 @@
 using PCS.Application.Common.Interfaces;
 using PCS.Domain.Entities;
 using PCS.Infrastructure.Persistence;
-using PCS.Infrastructure.Services;
 
 namespace PCS.Infrastructure.Services;
 
-public sealed class AuditService
-    : IAuditService
+public sealed class AuditService : IAuditService
 {
-    private readonly PCSDbContext _context;
+    private readonly PCSDbContext _dbContext;
+
 
     public AuditService(
-        PCSDbContext context)
+        PCSDbContext dbContext)
     {
-        _context = context;
+        _dbContext = dbContext;
     }
+
+
+    // ============================================================
+    // Write Audit Log
+    // ============================================================
 
     public async Task WriteAsync(
         AuditLog log)
     {
-        await _context.AuditLogs.AddAsync(log);
+        ArgumentNullException.ThrowIfNull(log);
 
-        await _context.SaveChangesAsync();
+
+        if (log.Id == Guid.Empty)
+        {
+            log.Id =
+                Guid.NewGuid();
+        }
+
+
+        if (log.CreatedAt == default)
+        {
+            log.CreatedAt =
+                DateTime.UtcNow;
+        }
+
+
+        await _dbContext.AuditLogs.AddAsync(
+            log);
+
+
+        await _dbContext.SaveChangesAsync();
     }
 }

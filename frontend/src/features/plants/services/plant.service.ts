@@ -1,64 +1,140 @@
+import http from "../../../api/http";
+
 import type { Plant } from "../types/plant";
 
-import { plantMock } from "../data/plant.mock";
+export interface CreatePlantPayload {
+  code: string;
 
-const STORAGE_KEY = "PCS_PLANTS";
+  name: string;
+
+  shortName?: string | null;
+
+  description?: string | null;
+
+  companyId: string;
+
+  address?: string | null;
+
+  phone?: string | null;
+
+  email?: string | null;
+
+  isActive: boolean;
+}
 
 class PlantService {
-  private load(): Plant[] {
-    const raw =
-      localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(plantMock)
+  async getAll(): Promise<Plant[]> {
+    const response =
+      await http.get<Plant[]>(
+        "/Plants"
       );
 
-      return [...plantMock];
-    }
-
-    return JSON.parse(raw);
+    return response.data;
   }
 
-  private save(data: Plant[]) {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
+
+  async getByCompanyId(
+    companyId: string
+  ): Promise<Plant[]> {
+    const response =
+      await http.get<Plant[]>(
+        `/Plants/company/${companyId}`
+      );
+
+    return response.data;
+  }
+
+
+  async getById(
+    id: string
+  ): Promise<Plant> {
+    const response =
+      await http.get<Plant>(
+        `/Plants/${id}`
+      );
+
+    return response.data;
+  }
+
+
+  async create(
+    plant: Plant
+  ): Promise<string> {
+    const response =
+      await http.post<string>(
+        "/Plants",
+        {
+          code: plant.code,
+
+          name: plant.name,
+
+          shortName:
+            plant.shortName ?? null,
+
+          description:
+            plant.description ?? null,
+
+          companyId:
+            plant.companyId,
+
+          address:
+            plant.address ?? null,
+
+          phone:
+            plant.phone ?? null,
+
+          email:
+            plant.email ?? null,
+
+          isActive:
+            plant.isActive,
+        }
+      );
+
+    return response.data;
+  }
+
+
+  async update(
+    plant: Plant
+  ): Promise<void> {
+    await http.put(
+      `/Plants/${plant.id}`,
+      {
+        code: plant.code,
+
+        name: plant.name,
+
+        shortName:
+          plant.shortName ?? null,
+
+        description:
+          plant.description ?? null,
+
+        companyId:
+          plant.companyId,
+
+        address:
+          plant.address ?? null,
+
+        phone:
+          plant.phone ?? null,
+
+        email:
+          plant.email ?? null,
+
+        isActive:
+          plant.isActive,
+      }
     );
   }
 
-  async getAll() {
-    return this.load();
-  }
 
-  async create(plant: Plant) {
-    const data = this.load();
-
-    data.push(plant);
-
-    this.save(data);
-  }
-
-  async update(plant: Plant) {
-    const data = this.load();
-
-    this.save(
-      data.map((x) =>
-        x.id === plant.id
-          ? plant
-          : x
-      )
-    );
-  }
-
-  async delete(id: number) {
-    const data = this.load();
-
-    this.save(
-      data.filter(
-        (x) => x.id !== id
-      )
+  async delete(
+    id: string
+  ): Promise<void> {
+    await http.delete(
+      `/Plants/${id}`
     );
   }
 }

@@ -1,59 +1,145 @@
-import { Paper, Chip, IconButton } from "@mui/material";
+import {
+  Paper,
+  Chip,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 
 import {
   DataGrid,
   type GridColDef,
+  type GridRenderCellParams,
 } from "@mui/x-data-grid";
 
-import EditRoundedIcon from "@mui/icons-material/EditRounded";
-import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
-import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import VisibilityRoundedIcon
+  from "@mui/icons-material/VisibilityRounded";
 
-type Company = {
-  id: number;
-  code: string;
-  name: string;
-};
+import EditRoundedIcon
+  from "@mui/icons-material/EditRounded";
+
+import DeleteRoundedIcon
+  from "@mui/icons-material/DeleteRounded";
+
+import BusinessRoundedIcon
+  from "@mui/icons-material/BusinessRounded";
+
+import type { Company }
+  from "../../../models/company";
+
 
 type Props = {
   rows: Company[];
+
+  loading?: boolean;
+
+  onView?: (
+    company: Company
+  ) => void;
+
+  onEdit?: (
+    company: Company
+  ) => void;
+
+  onDelete?: (
+    id: string
+  ) => void;
 };
+
 
 export default function CompanyTable({
   rows,
+  loading = false,
+  onView,
+  onEdit,
+  onDelete,
 }: Props) {
 
   const columns: GridColDef[] = [
-
-    {
-      field: "id",
-      headerName: "ID",
-      width: 90,
-    },
-
     {
       field: "code",
       headerName: "Code",
-      width: 180,
+      width: 150,
 
-      renderCell: (params) => (
-
+      renderCell: (
+        params: GridRenderCellParams<Company>
+      ) => (
         <Chip
-          icon={<BusinessRoundedIcon />}
+          icon={
+            <BusinessRoundedIcon />
+          }
           label={params.value}
           color="primary"
           variant="outlined"
+          size="small"
         />
-
       ),
     },
+
 
     {
       field: "name",
       headerName: "Company Name",
-      flex: 1,
-      minWidth: 320,
+      flex: 2,
+      minWidth: 280,
     },
+
+
+    {
+      field: "shortName",
+      headerName: "Short Name",
+      flex: 1,
+      minWidth: 130,
+    },
+
+
+    {
+      field: "country",
+      headerName: "Country",
+      flex: 1,
+      minWidth: 120,
+    },
+
+
+    {
+      field: "city",
+      headerName: "City",
+      flex: 1,
+      minWidth: 120,
+    },
+
+
+    {
+      field: "phone",
+      headerName: "Phone",
+      flex: 1.2,
+      minWidth: 150,
+    },
+
+
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+
+      renderCell: (
+        params: GridRenderCellParams<Company>
+      ) => (
+        <Chip
+          size="small"
+          label={
+            params.value === "Active"
+              ? "Active"
+              : "Inactive"
+          }
+          color={
+            params.value === "Active"
+              ? "success"
+              : "default"
+          }
+        />
+      ),
+    },
+
 
     {
       field: "actions",
@@ -62,39 +148,83 @@ export default function CompanyTable({
       sortable: false,
       filterable: false,
 
-      renderCell: () => (
-
+      renderCell: (
+        params: GridRenderCellParams<Company>
+      ) => (
         <>
-          <IconButton color="primary">
-            <EditRoundedIcon />
-          </IconButton>
+          <Tooltip title="View">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() =>
+                onView?.(params.row)
+              }
+            >
+              <VisibilityRoundedIcon
+                fontSize="small"
+              />
+            </IconButton>
+          </Tooltip>
 
-          <IconButton color="error">
-            <DeleteRoundedIcon />
-          </IconButton>
+
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="warning"
+              onClick={() =>
+                onEdit?.(params.row)
+              }
+            >
+              <EditRoundedIcon
+                fontSize="small"
+              />
+            </IconButton>
+          </Tooltip>
+
+
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() =>
+                onDelete?.(
+                  params.row.id
+                )
+              }
+            >
+              <DeleteRoundedIcon
+                fontSize="small"
+              />
+            </IconButton>
+          </Tooltip>
         </>
-
       ),
     },
-
   ];
 
-  return (
 
+  return (
     <Paper
       elevation={0}
       sx={{
         borderRadius: 5,
         overflow: "hidden",
-        border: "1px solid #E2E8F0",
+        border:
+          "1px solid #E2E8F0",
         height: 650,
       }}
     >
-
       <DataGrid
         rows={rows}
         columns={columns}
-        pageSizeOptions={[10, 25, 50]}
+        loading={loading}
+        getRowId={(row) => row.id}
+        disableRowSelectionOnClick
+        pageSizeOptions={[
+          10,
+          25,
+          50,
+        ]}
         initialState={{
           pagination: {
             paginationModel: {
@@ -103,28 +233,28 @@ export default function CompanyTable({
             },
           },
         }}
-        disableRowSelectionOnClick
         sx={{
           border: 0,
 
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "#F8FAFC",
-            fontWeight: 700,
-            fontSize: 15,
-          },
+          "& .MuiDataGrid-columnHeaders":
+            {
+              bgcolor: "#F8FAFC",
+              fontWeight: 700,
+              fontSize: 14,
+            },
 
-          "& .MuiDataGrid-row:hover": {
-            bgcolor: "#F1F5F9",
-          },
+          "& .MuiDataGrid-row:hover":
+            {
+              bgcolor: "#F8FAFC",
+            },
 
-          "& .MuiDataGrid-cell": {
-            borderColor: "#EEF2F7",
-          },
+          "& .MuiDataGrid-cell":
+            {
+              borderColor:
+                "#EEF2F7",
+            },
         }}
       />
-
     </Paper>
-
   );
-
 }

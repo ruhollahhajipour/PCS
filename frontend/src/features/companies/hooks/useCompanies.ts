@@ -1,108 +1,69 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
-import CompanyService from "../services/company.service";
+import CompanyService
+  from "../services/company.service";
 
-import type { Company } from "../../../models/company";
+import type { Company }
+  from "../../../models/company";
 
+export default function useCompanies() {
+  const [companies, setCompanies] =
+    useState<Company[]>([]);
 
-export default function useCompanies(){
+  const [loading, setLoading] =
+    useState(true);
 
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
 
-const [companies,setCompanies]
-=
-useState<Company[]>([]);
+      const data =
+        await CompanyService.getAll();
 
+      setCompanies(data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-const [loading,setLoading]
-=
-useState(true);
+  async function create(
+    company: Company
+  ) {
+    await CompanyService.create(company);
 
+    await load();
+  }
 
+  async function update(
+    company: Company
+  ) {
+    await CompanyService.update(company);
 
-async function load(){
+    await load();
+  }
 
-setLoading(true);
+  async function remove(
+    id: string
+  ) {
+    await CompanyService.delete(id);
 
-const data =
-await CompanyService.getAll();
+    await load();
+  }
 
-
-setCompanies(data);
-
-
-setLoading(false);
-
-}
-
-
-
-useEffect(()=>{
-
-load();
-
-},[]);
-
-
-
-
-async function create(
-company:Company
-){
-
-await CompanyService.create(company);
-
-await load();
-
-}
-
-
-
-
-
-async function update(
-company:Company
-){
-
-await CompanyService.update(company);
-
-await load();
-
-}
-
-
-
-
-
-async function remove(
-id:string
-){
-
-await CompanyService.delete(id);
-
-await load();
-
-}
-
-
-
-
-
-return {
-
-companies,
-
-loading,
-
-reload:load,
-
-create,
-
-update,
-
-remove
-
-};
-
-
+  return {
+    companies,
+    loading,
+    reload: load,
+    create,
+    update,
+    remove,
+  };
 }

@@ -2,19 +2,22 @@ import {
   DataGrid,
   GridToolbar,
   type GridColDef,
+  type GridValidRowModel,
 } from "@mui/x-data-grid";
 
-type Props = {
-  rows: any[];
-  columns: GridColDef[];
+type Props<T extends GridValidRowModel> = {
+  rows: T[];
+  columns: GridColDef<T>[];
   loading?: boolean;
 };
 
-export default function PCSDataGrid({
+export default function PCSDataGrid<
+  T extends GridValidRowModel,
+>({
   rows,
   columns,
   loading = false,
-}: Props) {
+}: Props<T>) {
   return (
     <DataGrid
       rows={rows}

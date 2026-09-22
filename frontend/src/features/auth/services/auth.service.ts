@@ -5,7 +5,25 @@ import type {
   LoginResponse,
 } from "../../../types/auth";
 
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+
+  newPassword: string;
+}
+
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
+
 class AuthService {
+
+  // =========================================================
+  // Login
+  // =========================================================
+
   async login(
     request: LoginRequest
   ): Promise<LoginResponse> {
@@ -18,12 +36,23 @@ class AuthService {
     return data;
   }
 
-  async logout(): Promise<void> {
-    localStorage.removeItem("pcs-token");
-    localStorage.removeItem("pcs-refresh-token");
 
-    await http.post("/auth/logout");
+  // =========================================================
+  // Logout
+  // =========================================================
+
+  async logout(): Promise<void> {
+    await http.post(
+      "/auth/logout"
+    );
+
+    this.clearSession();
   }
+
+
+  // =========================================================
+  // Refresh Token
+  // =========================================================
 
   async refreshToken(): Promise<LoginResponse> {
     const { data } =
@@ -34,6 +63,11 @@ class AuthService {
     return data;
   }
 
+
+  // =========================================================
+  // Current User
+  // =========================================================
+
   async me(): Promise<LoginResponse> {
     const { data } =
       await http.get<LoginResponse>(
@@ -43,13 +77,34 @@ class AuthService {
     return data;
   }
 
-  // ==========================
+
+  // =========================================================
+  // Change Password
+  // =========================================================
+
+  async changePassword(
+    request: ChangePasswordRequest
+  ): Promise<ChangePasswordResponse> {
+    const { data } =
+      await http.post<ChangePasswordResponse>(
+        "/auth/change-password",
+        request
+      );
+
+    return data;
+  }
+
+
+  // =========================================================
   // Session Helpers
-  // ==========================
+  // =========================================================
 
   getToken(): string | null {
-    return localStorage.getItem("pcs-token");
+    return localStorage.getItem(
+      "pcs-token"
+    );
   }
+
 
   getRefreshToken(): string | null {
     return localStorage.getItem(
@@ -57,28 +112,44 @@ class AuthService {
     );
   }
 
+
   saveSession(
     response: LoginResponse
-  ) {
+  ): void {
     localStorage.setItem(
       "pcs-token",
       response.token
     );
 
-    localStorage.setItem(
-      "pcs-refresh-token",
-      response.refreshToken ?? ""
-    );
+
+    if (response.refreshToken) {
+      localStorage.setItem(
+        "pcs-refresh-token",
+        response.refreshToken
+      );
+    }
+    else {
+      localStorage.removeItem(
+        "pcs-refresh-token"
+      );
+    }
   }
 
-  clearSession() {
-    localStorage.removeItem("pcs-token");
+
+  clearSession(): void {
+    localStorage.removeItem(
+      "pcs-token"
+    );
+
     localStorage.removeItem(
       "pcs-refresh-token"
     );
   }
 }
 
-const authService = new AuthService();
+
+const authService =
+  new AuthService();
+
 
 export default authService;

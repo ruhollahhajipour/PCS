@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
+using PCS.API.Security;
+
+using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
@@ -17,15 +21,16 @@ public class PmsSchedulingController : ControllerBase
     }
 
 
-
     [HttpPost("{projectId:guid}/run")]
+    [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Run(
         Guid projectId)
     {
         var result =
-    await _scheduler.ScheduleProjectAsync(projectId);
+            await _scheduler
+                .ScheduleProjectAsync(projectId);
 
 
-return Ok(result);
+        return Ok(result);
     }
 }

@@ -4,16 +4,21 @@ import {
   MenuItem,
 } from "@mui/material";
 
-import PCSDialog from "../../../../components/Common/PCSDialog";
+import {
+  useState,
+  useEffect,
+} from "react";
 
-import { useState, useEffect } from "react";
+import PCSDialog from "../../../../components/Common/PCSDialog";
 
 import type { TransferMaterial } from "../types/transfer";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSave: (item: TransferMaterial) => void;
+  onSave: (
+    item: TransferMaterial
+  ) => void;
   initialData?: TransferMaterial | null;
 };
 
@@ -31,7 +36,8 @@ const emptyItem: TransferMaterial = {
   approvedBy: "",
   status: "Pending",
   description: "",
-  createdAt: new Date().toISOString(),
+  createdAt:
+    new Date().toISOString(),
 };
 
 export default function TransferDialog({
@@ -40,34 +46,35 @@ export default function TransferDialog({
   onSave,
   initialData,
 }: Props) {
-
   const [form, setForm] =
-    useState<TransferMaterial>(emptyItem);
+    useState<TransferMaterial>(
+      emptyItem
+    );
 
   useEffect(() => {
-
-    if (initialData)
+    if (initialData) {
       setForm(initialData);
-    else
+    } else {
       setForm({
         ...emptyItem,
         id: Date.now(),
       });
-
+    }
   }, [initialData, open]);
 
-  function change(
-    key: keyof TransferMaterial,
-    value: any
+  function change<
+    K extends keyof TransferMaterial
+  >(
+    key: K,
+    value: TransferMaterial[K]
   ) {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       [key]: value,
     }));
   }
 
   return (
-
     <PCSDialog
       open={open}
       title="Transfer Material"
@@ -75,16 +82,17 @@ export default function TransferDialog({
       onSave={() => onSave(form)}
       maxWidth="md"
     >
-
       <Grid container spacing={2}>
-
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             fullWidth
             label="Transfer No"
             value={form.transferNo}
             onChange={(e) =>
-              change("transferNo", e.target.value)
+              change(
+                "transferNo",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -95,9 +103,14 @@ export default function TransferDialog({
             label="Transfer Date"
             type="date"
             value={form.transferDate}
-            InputLabelProps={{ shrink: true }}
+            InputLabelProps={{
+              shrink: true,
+            }}
             onChange={(e) =>
-              change("transferDate", e.target.value)
+              change(
+                "transferDate",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -108,7 +121,10 @@ export default function TransferDialog({
             label="From Warehouse"
             value={form.fromWarehouse}
             onChange={(e) =>
-              change("fromWarehouse", e.target.value)
+              change(
+                "fromWarehouse",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -119,7 +135,10 @@ export default function TransferDialog({
             label="To Warehouse"
             value={form.toWarehouse}
             onChange={(e) =>
-              change("toWarehouse", e.target.value)
+              change(
+                "toWarehouse",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -130,7 +149,10 @@ export default function TransferDialog({
             label="Material Code"
             value={form.materialCode}
             onChange={(e) =>
-              change("materialCode", e.target.value)
+              change(
+                "materialCode",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -141,7 +163,10 @@ export default function TransferDialog({
             label="Material Name"
             value={form.materialName}
             onChange={(e) =>
-              change("materialName", e.target.value)
+              change(
+                "materialName",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -153,7 +178,10 @@ export default function TransferDialog({
             type="number"
             value={form.quantity}
             onChange={(e) =>
-              change("quantity", Number(e.target.value))
+              change(
+                "quantity",
+                Number(e.target.value)
+              )
             }
           />
         </Grid>
@@ -164,7 +192,10 @@ export default function TransferDialog({
             label="Unit"
             value={form.unit}
             onChange={(e) =>
-              change("unit", e.target.value)
+              change(
+                "unit",
+                e.target.value
+              )
             }
           />
         </Grid>
@@ -176,7 +207,10 @@ export default function TransferDialog({
             label="Status"
             value={form.status}
             onChange={(e) =>
-              change("status", e.target.value)
+              change(
+                "status",
+                e.target.value as TransferMaterial["status"]
+              )
             }
           >
             <MenuItem value="Pending">
@@ -194,7 +228,6 @@ export default function TransferDialog({
             <MenuItem value="Rejected">
               Rejected
             </MenuItem>
-
           </TextField>
         </Grid>
 
@@ -206,15 +239,14 @@ export default function TransferDialog({
             label="Description"
             value={form.description}
             onChange={(e) =>
-              change("description", e.target.value)
+              change(
+                "description",
+                e.target.value
+              )
             }
           />
         </Grid>
-
       </Grid>
-
     </PCSDialog>
-
   );
-
 }

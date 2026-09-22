@@ -6,11 +6,14 @@ namespace PCS.Infrastructure.Persistence.Configurations;
 
 public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
-    public void Configure(EntityTypeBuilder<Project> builder)
+    public void Configure(
+        EntityTypeBuilder<Project> builder)
     {
         builder.ToTable("Projects");
 
+
         builder.HasKey(x => x.Id);
+
 
         builder.Property(x => x.Code)
             .HasMaxLength(50)
@@ -23,13 +26,34 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Description)
             .HasMaxLength(1000);
 
+
         builder.Property(x => x.Budget)
             .HasPrecision(18, 2);
+
+
+        // ==========================
+        // Company
+        // ==========================
 
         builder.HasOne(x => x.Company)
             .WithMany()
             .HasForeignKey(x => x.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
+
+
+        // ==========================
+        // Plant
+        // ==========================
+
+        builder.HasOne(x => x.Plant)
+        .WithMany(x => x.Projects)
+        .HasForeignKey(x => x.PlantId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+
+        // ==========================
+        // Indexes
+        // ==========================
 
         builder.HasIndex(x => x.Code)
             .IsUnique();

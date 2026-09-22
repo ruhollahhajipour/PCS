@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import { Grid } from "@mui/material";
 
@@ -9,97 +12,156 @@ import PCSSelect from "../../../components/Common/Form/PCSSelect";
 
 import type { Plant } from "../types/plant";
 
+
+const EMPTY_GUID =
+  "00000000-0000-0000-0000-000000000000";
+
+
 const initialForm: Plant = {
-  id: 0,
+  id: EMPTY_GUID,
 
   code: "",
 
   name: "",
 
-  companyId: 1,
-
-  country: "",
-
-  city: "",
-
-  area: "",
-
-  manager: "",
-
-  phone: "",
+  shortName: "",
 
   description: "",
 
-  status: "Active",
+  companyId: EMPTY_GUID,
+
+  address: "",
+
+  phone: "",
+
+  email: "",
+
+  isActive: true,
 
   createdAt: "",
 
   updatedAt: "",
 };
 
+
 type Props = {
   open: boolean;
+
   plant: Plant | null;
+
   onClose: () => void;
-  onSave: (plant: Plant) => Promise<void>;
+
+  onSave: (
+    plant: Plant
+  ) => Promise<void>;
 };
+
 
 export default function PlantDialog({
   open,
+
   plant,
+
   onClose,
+
   onSave,
 }: Props) {
   const [loading, setLoading] =
     useState(false);
 
+
   const [form, setForm] =
     useState<Plant>(initialForm);
 
-  useEffect(() => {
-    if (!open) return;
 
-    if (plant)
-      setForm(plant);
-    else
+  useEffect(() => {
+    if (!open)
+      return;
+
+
+    if (plant) {
+      setForm({
+        ...plant,
+
+        shortName:
+          plant.shortName ?? "",
+
+        description:
+          plant.description ?? "",
+
+        address:
+          plant.address ?? "",
+
+        phone:
+          plant.phone ?? "",
+
+        email:
+          plant.email ?? "",
+      });
+    }
+    else {
       setForm(initialForm);
+    }
   }, [plant, open]);
+
 
   function change(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const {
+      name,
+      value,
+    } = e.target;
+
+
+    setForm((current) => ({
+      ...current,
+
+      [name]: value,
+    }));
   }
+
 
   async function submit(
     e: React.FormEvent
   ) {
     e.preventDefault();
 
+
     setLoading(true);
 
-    await onSave({
-      ...form,
 
-      id:
-        form.id ||
-        Date.now(),
+    try {
+      await onSave({
+        ...form,
 
-      createdAt:
-        form.createdAt ||
-        new Date().toISOString(),
+        shortName:
+          form.shortName || null,
 
-      updatedAt:
-        new Date().toISOString(),
-    });
+        description:
+          form.description || null,
 
-    setLoading(false);
+        address:
+          form.address || null,
 
-    onClose();
+        phone:
+          form.phone || null,
+
+        email:
+          form.email || null,
+
+        isActive:
+          form.isActive,
+      });
+
+
+      onClose();
+    }
+    finally {
+      setLoading(false);
+    }
   }
+
 
   return (
     <PCSDialog
@@ -114,99 +176,175 @@ export default function PlantDialog({
     >
       <form onSubmit={submit}>
 
-        <Grid container spacing={2}>
+        <Grid
+          container
+          spacing={2}
+        >
 
-          <Grid size={{ xs: 12, md: 4 }}>
+          {/* Code */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
             <PCSTextField
               label="Code"
               name="code"
               value={form.code}
               onChange={change}
+              required
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 8 }}>
+
+          {/* Name */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 8,
+            }}
+          >
             <PCSTextField
               label="Plant Name"
               name="name"
               value={form.name}
               onChange={change}
+              required
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
+
+          {/* Short Name */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 6,
+            }}
+          >
             <PCSTextField
-              label="Country"
-              name="country"
-              value={form.country}
+              label="Short Name"
+              name="shortName"
+              value={
+                form.shortName ?? ""
+              }
               onChange={change}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
+
+          {/* Company ID */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 6,
+            }}
+          >
             <PCSTextField
-              label="City"
-              name="city"
-              value={form.city}
+              label="Company ID"
+              name="companyId"
+              value={
+                form.companyId
+              }
               onChange={change}
+              required
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <PCSTextField
-              label="Area"
-              name="area"
-              value={form.area}
-              onChange={change}
-            />
-          </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <PCSTextField
-              label="Manager"
-              name="manager"
-              value={form.manager}
-              onChange={change}
-            />
-          </Grid>
-
+          {/* Address */}
           <Grid size={12}>
+            <PCSTextField
+              label="Address"
+              name="address"
+              value={
+                form.address ?? ""
+              }
+              onChange={change}
+            />
+          </Grid>
+
+
+          {/* Phone */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 6,
+            }}
+          >
             <PCSTextField
               label="Phone"
               name="phone"
-              value={form.phone}
+              value={
+                form.phone ?? ""
+              }
               onChange={change}
             />
           </Grid>
 
+
+          {/* Email */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 6,
+            }}
+          >
+            <PCSTextField
+              label="Email"
+              name="email"
+              value={
+                form.email ?? ""
+              }
+              onChange={change}
+            />
+          </Grid>
+
+
+          {/* Description */}
           <Grid size={12}>
             <PCSTextField
               label="Description"
               name="description"
-              value={form.description}
+              value={
+                form.description ?? ""
+              }
               onChange={change}
             />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 4 }}>
+
+          {/* Status */}
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
             <PCSSelect
               label="Status"
-              name="status"
-              value={form.status}
+              name="isActive"
+              value={
+                form.isActive
+                  ? "true"
+                  : "false"
+              }
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  status:
-                    e.target.value as Plant["status"],
-                })
+                setForm((current) => ({
+                  ...current,
+
+                  isActive:
+                    e.target.value ===
+                    "true",
+                }))
               }
               options={[
                 {
-                  value: "Active",
+                  value: "true",
                   label: "Active",
                 },
                 {
-                  value: "Inactive",
+                  value: "false",
                   label: "Inactive",
                 },
               ]}
@@ -214,6 +352,7 @@ export default function PlantDialog({
           </Grid>
 
         </Grid>
+
 
         <PCSFormActions
           loading={loading}

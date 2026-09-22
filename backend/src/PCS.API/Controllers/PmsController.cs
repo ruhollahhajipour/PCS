@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
+using PCS.API.Security;
+
+using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
@@ -15,11 +19,9 @@ public class PmsController : ControllerBase
         ".xltm"
     };
 
-
     private readonly IPmsExcelService _excelService;
     private readonly IPmsService _pmsService;
     private readonly IPmsTemplateService _templateService;
-
 
     public PmsController(
         IPmsExcelService excelService,
@@ -31,33 +33,27 @@ public class PmsController : ControllerBase
         _templateService = templateService;
     }
 
-
-
-    // =====================================================
-    // IMPORT PMS EXCEL
-    // =====================================================
-
     [HttpPost("import")]
+    [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Import(
         IFormFile file,
         [FromQuery] Guid projectId)
     {
         if (projectId == Guid.Empty)
+        {
             return BadRequest(
                 "ProjectId is required.");
-
+        }
 
         if (file == null || file.Length == 0)
+        {
             return BadRequest(
                 "Excel file is empty.");
-
-
+        }
 
         var extension =
             Path.GetExtension(file.FileName)
-            .ToLowerInvariant();
-
-
+                .ToLowerInvariant();
 
         if (!AllowedExtensions.Contains(extension))
         {
@@ -65,14 +61,10 @@ public class PmsController : ControllerBase
                 $"Extension '{extension}' is not supported.");
         }
 
-
-
         var tempPath =
             Path.Combine(
                 Path.GetTempPath(),
                 $"{Guid.NewGuid()}{extension}");
-
-
 
         try
         {
@@ -82,41 +74,30 @@ public class PmsController : ControllerBase
                 await file.CopyToAsync(stream);
             }
 
-
-
             var dto =
                 await _excelService.ReadPmsExcelAsync(
                     tempPath);
 
-
-
             dto.ProjectId = projectId;
 
-
-
             await _pmsService.ImportPmsAsync(dto);
-
-
 
             return Ok(new
             {
                 Success = true,
-
                 Message =
                     "PMS imported successfully.",
-
                 FileName =
                     file.FileName
             });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return BadRequest(new
             {
                 Success = false,
-
-                Message = ex.Message,
-
+                Message =
+                    ex.Message,
                 Inner =
                     ex.InnerException?.Message
             });
@@ -130,35 +111,24 @@ public class PmsController : ControllerBase
         }
     }
 
-
-
-
-
-    // =====================================================
-    // EXPORT PMS EXCEL
-    // =====================================================
-
     [HttpGet("export/{projectId}")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Export(
         Guid projectId)
     {
-        if(projectId == Guid.Empty)
+        if (projectId == Guid.Empty)
+        {
             return BadRequest(
                 "ProjectId is required.");
-
-
+        }
 
         var dto =
             await _pmsService.ExportPmsAsync(
                 projectId);
 
-
-
         var file =
             await _excelService.GeneratePmsExcelAsync(
                 dto);
-
-
 
         return File(
             file,
@@ -166,48 +136,48 @@ public class PmsController : ControllerBase
             "PCS-PMS-Report.xlsx");
     }
 
-
-
-
-
-    // =====================================================
-    // ACTIVITIES
-    // =====================================================
-
     [HttpGet("{projectId}/activities")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> GetActivities(
         Guid projectId)
     {
-        if(projectId == Guid.Empty)
+        if (projectId == Guid.Empty)
+        {
             return BadRequest(
                 "ProjectId is required.");
-
-
+        }
 
         var result =
             await _pmsService.GetActivitiesAsync(
                 projectId);
 
+        return Ok(result);
+    }
 
+    [HttpGet("{projectId}/wbs")]
+    [Permission(Permissions.ProjectView)]
+    public async Task<IActionResult> GetWbs(
+        Guid projectId)
+    {
+        if (projectId == Guid.Empty)
+        {
+            return BadRequest(
+                "ProjectId is required.");
+        }
+
+        var result =
+            await _pmsService.GetWbsTreeAsync(
+                projectId);
 
         return Ok(result);
     }
 
-
-
-
-
-    // =====================================================
-    // DOWNLOAD TEMPLATE
-    // =====================================================
-
     [HttpGet("template")]
+    [Permission(Permissions.ProjectView)]
     public IActionResult DownloadTemplate()
     {
         var file =
             _templateService.GenerateTemplate();
-
-
 
         return File(
             file,

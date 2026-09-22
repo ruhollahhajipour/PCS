@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- ============================================================
        BASIC PROJECT SETTINGS
@@ -90,7 +90,7 @@
          SOURCE PATHS
          ========================================================== -->
 
-    <ExistingApiPublish>$(MSBuildProjectDirectory)\..\PCS.API\bin\Publish</ExistingApiPublish>
+    <ExistingApiPublish>$(MSBuildProjectDirectory)\..\..\publish\PCS.API</ExistingApiPublish>
 
     <FrontendDist>$(MSBuildProjectDirectory)\..\..\..\frontend\dist</FrontendDist>
 
@@ -269,8 +269,13 @@
     <ItemGroup>
 
       <ApiFiles
-        Include="$(ExistingApiPublish)\**\*"
-        Exclude="$(ExistingApiPublish)\**\*.pdb" />
+       Include="$(ExistingApiPublish)\**\*"
+       Exclude="
+       $(ExistingApiPublish)\**\*.pdb;
+       $(ExistingApiPublish)\**\pcs.db-shm;
+       $(ExistingApiPublish)\**\pcs.db-wal;
+       $(ExistingApiPublish)\**\Logs\**\*;
+      " />
 
     </ItemGroup>
 

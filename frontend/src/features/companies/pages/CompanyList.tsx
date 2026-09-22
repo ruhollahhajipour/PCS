@@ -14,31 +14,38 @@ import {
   type GridColDef,
 } from "@mui/x-data-grid";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-import CompanyService from "../../../services/company.service";
+import CompanyService from "../services/company.service";
 
-import type { Company } from "../../../models/company";
+import type { Company }
+  from "../../../models/company";
 
 
 export default function CompanyList() {
 
-  const [rows, setRows] = useState<Company[]>([]);
-
-
-  useEffect(() => {
-    loadCompanies();
-  }, []);
+  const [rows, setRows] =
+    useState<Company[]>([]);
 
 
   const loadCompanies = async () => {
-    const data = await CompanyService.getAll();
+
+    const data =
+      await CompanyService.getAll();
 
     setRows(data);
   };
 
 
-  const columns: GridColDef[] = [
+  useEffect(() => {
+    void loadCompanies();
+  }, []);
+
+
+  const columns: GridColDef<Company>[] = [
 
     {
       field: "code",
@@ -75,7 +82,6 @@ export default function CompanyList() {
       width: 130,
 
       renderCell: (params) => (
-
         <Chip
           label={params.value}
           color={
@@ -85,7 +91,6 @@ export default function CompanyList() {
           }
           size="small"
         />
-
       ),
     },
 
@@ -93,7 +98,6 @@ export default function CompanyList() {
 
 
   return (
-
     <Stack spacing={3}>
 
       <Box
@@ -111,10 +115,7 @@ export default function CompanyList() {
             Companies
           </Typography>
 
-
-          <Typography
-            color="text.secondary"
-          >
+          <Typography color="text.secondary">
             Enterprise Company Management
           </Typography>
 
@@ -128,9 +129,7 @@ export default function CompanyList() {
           New Company
         </Button>
 
-
       </Box>
-
 
 
       <Paper
@@ -142,43 +141,25 @@ export default function CompanyList() {
       >
 
         <DataGrid
-
           rows={rows}
-
           columns={columns}
-
           disableRowSelectionOnClick
-
-
           pageSizeOptions={[
             10,
             25,
             50,
           ]}
-
-
           initialState={{
-
             pagination: {
-
               paginationModel: {
-
                 pageSize: 10,
-
               },
-
             },
-
           }}
-
         />
-
 
       </Paper>
 
-
     </Stack>
-
   );
-
 }

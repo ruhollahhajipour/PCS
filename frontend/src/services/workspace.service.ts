@@ -2,36 +2,36 @@ import type {
   Workspace,
 } from "../types/workspace";
 
-let workspace: Workspace = {
+const defaultWorkspace: Workspace = {
   company: {
-    id: 1,
-    code: "COMP-001",
-    name: "Default Company",
+    id: "1",
+    code: "KGN",
+    name: "Kousha Gaman Namavar",
   },
 
   plant: {
-    id: 1,
-    companyId: 1,
-    code: "PLANT-001",
-    name: "Default Plant",
+    id: "1",
+    companyId: "1",
+    code: "ADISH-01",
+    name: "South Adish Gas Condensate Refinery",
   },
 
   project: {
-    id: 1,
-    plantId: 1,
-    code: "PROJECT-001",
-    name: "Default Project",
+    id: "1",
+    plantId: "1",
+    code: "PCS-001",
+    name: "Project Cost System",
   },
 };
+
+let workspace: Workspace = defaultWorkspace;
 
 class WorkspaceService {
   async get(): Promise<Workspace> {
     return Promise.resolve(workspace);
   }
 
-  async set(
-    data: Workspace
-  ): Promise<void> {
+  async set(data: Workspace): Promise<void> {
     workspace = data;
     return Promise.resolve();
   }
@@ -39,23 +39,15 @@ class WorkspaceService {
   async reset(): Promise<void> {
     workspace = {
       company: {
-        id: 1,
-        code: "COMP-001",
-        name: "Default Company",
+        ...defaultWorkspace.company,
       },
 
       plant: {
-        id: 1,
-        companyId: 1,
-        code: "PLANT-001",
-        name: "Default Plant",
+        ...defaultWorkspace.plant,
       },
 
       project: {
-        id: 1,
-        plantId: 1,
-        code: "PROJECT-001",
-        name: "Default Project",
+        ...defaultWorkspace.project,
       },
     };
 

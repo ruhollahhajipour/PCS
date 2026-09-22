@@ -1,20 +1,22 @@
-import {
+﻿import {
   BrowserRouter,
   Navigate,
   Route,
   Routes,
 } from "react-router-dom";
 
-
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
 
+import { useWorkspace } from "../context/WorkspaceContext";
+
+import Login from "../pages/Login";
+import ChangePassword from "../pages/ChangePassword";
 
 // =====================
 // Dashboard
 // =====================
 import Dashboard from "../features/dashboard/pages/Dashboard";
-
 
 // =====================
 // Companies
@@ -22,25 +24,32 @@ import Dashboard from "../features/dashboard/pages/Dashboard";
 import Companies from "../features/companies/pages/Companies";
 import CompanyDetails from "../features/companies/pages/CompanyDetails";
 
+// =====================
+// Plants
+// =====================
+import Plants from "../features/plants/pages/Plants";
 
 // =====================
 // Projects
 // =====================
 import Projects from "../features/projects/pages/Projects";
 import ProjectDetails from "../features/projects/pages/ProjectDetails";
-
+import ProjectWbs from "../features/projects/pages/ProjectWbs";
 
 // =====================
 // PMS
 // =====================
 import ProjectSchedule from "../features/pms/pages/ProjectSchedule";
 
+// =====================
+// Project Setup
+// =====================
+import ProjectSetup from "../features/setup/pages/ProjectSetup";
 
 // =====================
 // Cost Control
 // =====================
 import CostControl from "../features/cost-control/pages/CostControl";
-
 
 // =====================
 // Warehouse
@@ -52,316 +61,353 @@ import {
   ReorderPage,
 } from "../features/warehouse";
 
-
 // =====================
 // Procurement
 // =====================
-import {
-  Procurement,
-} from "../features/procurement";
-
-import ProcurementDashboard
-from "../features/procurement/pages/ProcurementDashboard";
-
-
-// =====================
-// Documents
-// =====================
-import Documents from "../features/documents/pages/Documents";
-
+import { Procurement } from "../features/procurement";
+import ProcurementDashboard from
+  "../features/procurement/pages/ProcurementDashboard";
 
 // =====================
 // Materials
 // =====================
 import Materials from "../features/materials/pages/Materials";
 
-
 // =====================
 // Vendors
 // =====================
 import Vendors from "../features/vendors/pages/Vendors";
 
+// =====================
+// Documents
+// =====================
+import Documents from "../features/documents/pages/Documents";
 
 // =====================
 // Reports
 // =====================
 import Reports from "../features/reports/pages/Reports";
 
-import Plants from "../features/plants/pages/Plants";
-
-
 // =====================
-// Project Setup
+// Settings
 // =====================
-import ProjectSetup from "../features/setup/pages/ProjectSetup";
-
 import Settings from "../features/settings/pages/Settings";
+
+// =====================
+// Administration
+// =====================
+import Administration from
+  "../features/administration/pages/Administration";
+
+import Users from
+  "../features/administration/pages/Users";
+
+import RolesPermissions from
+  "../features/administration/pages/RolesPermissions";
+
+
+/* =========================================================
+   PMS ENTRY ROUTE
+
+   Sidebar uses /pms as the entry point for
+   Schedule & Planning.
+
+   The actual PMS schedule requires a project ID,
+   so we resolve the currently selected workspace
+   project and redirect to its schedule.
+========================================================= */
+
+function PmsEntryRoute() {
+  const { workspace } = useWorkspace();
+
+  const projectId =
+    workspace.project.id;
+
+  if (!projectId) {
+    return (
+      <Navigate
+        to="/projects"
+        replace
+      />
+    );
+  }
+
+  return (
+    <Navigate
+      to={`/projects/${projectId}/schedule`}
+      replace
+    />
+  );
+}
 
 
 export default function AppRoutes() {
-
   return (
-
     <BrowserRouter>
-
       <Routes>
 
+        {/* =====================================================
+            LOGIN
+        ===================================================== */}
 
         <Route
-
           path="/"
+          element={
+            <Navigate
+              to="/login"
+              replace
+            />
+          }
+        />
 
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* =====================================================
+            PROTECTED APPLICATION
+        ===================================================== */}
+
+        <Route
           element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }
-
         >
 
+          {/* ===================================================
+              DEFAULT
+          =================================================== */}
 
           <Route
-
-            index
-
-            element={
-              <Navigate
-                to="/dashboard"
-                replace
-              />
-            }
-
-          />
-
-
-
-          {/* Dashboard */}
-
-          <Route
-
-            path="dashboard"
-
+            path="/dashboard"
             element={<Dashboard />}
-
           />
 
 
-
-          {/* Companies */}
+          {/* ===================================================
+              COMPANIES
+          =================================================== */}
 
           <Route
-
-            path="companies"
-
+            path="/companies"
             element={<Companies />}
-
-          />
-
-         {/* Plants */}
-
-         <Route
-           path="plants"
-          element={<Plants />}
           />
 
           <Route
-
-            path="companies/:id"
-
+            path="/companies/:id"
             element={<CompanyDetails />}
-
           />
 
 
-
-          {/* Projects */}
+          {/* ===================================================
+              PLANTS
+          =================================================== */}
 
           <Route
+            path="/plants"
+            element={<Plants />}
+          />
 
-            path="projects"
 
+          {/* ===================================================
+              PMS
+          =================================================== */}
+
+          <Route
+            path="/pms"
+            element={<PmsEntryRoute />}
+          />
+
+
+          {/* ===================================================
+              PROJECTS
+          =================================================== */}
+
+          <Route
+            path="/projects"
             element={<Projects />}
-
           />
 
+          {/* IMPORTANT:
+              Static route must come before /projects/:id
+          */}
 
           <Route
+            path="/projects/wbs"
+            element={<ProjectWbs />}
+          />
 
-            path="projects/:id"
-
+          <Route
+            path="/projects/:id"
             element={<ProjectDetails />}
-
           />
 
-
           <Route
-
-            path="projects/:id/schedule"
-
+            path="/projects/:id/schedule"
             element={<ProjectSchedule />}
-
           />
 
 
-
-          {/* Project Setup */}
+          {/* ===================================================
+              PROJECT SETUP
+          =================================================== */}
 
           <Route
-
-            path="setup"
-
+            path="/setup"
             element={<ProjectSetup />}
-
           />
 
 
-
-          {/* Cost Control */}
+          {/* ===================================================
+              COST CONTROL
+          =================================================== */}
 
           <Route
-
-            path="cost-control"
-
+            path="/cost-control"
             element={<CostControl />}
-
           />
 
 
-
-          {/* Warehouse */}
+          {/* ===================================================
+              WAREHOUSE
+          =================================================== */}
 
           <Route
-
-            path="warehouse"
-
+            path="/warehouse"
             element={<WarehousePage />}
-
           />
 
-
           <Route
-
-            path="warehouse/dashboard"
-
+            path="/warehouse/dashboard"
             element={<WarehouseDashboard />}
-
           />
 
-
           <Route
-
-            path="warehouse/stock"
-
+            path="/warehouse/stock"
             element={<StockPage />}
-
           />
 
-
           <Route
-
-            path="warehouse/reorder"
-
+            path="/warehouse/reorder"
             element={<ReorderPage />}
-
           />
 
 
-
-          {/* Procurement */}
+          {/* ===================================================
+              PROCUREMENT
+          =================================================== */}
 
           <Route
-
-            path="procurement"
-
+            path="/procurement"
             element={<Procurement />}
-
           />
 
-
           <Route
-
-            path="procurement/dashboard"
-
+            path="/procurement/dashboard"
             element={<ProcurementDashboard />}
-
           />
 
 
-
-          {/* Materials */}
+          {/* ===================================================
+              MATERIALS
+          =================================================== */}
 
           <Route
-
-            path="materials"
-
+            path="/materials"
             element={<Materials />}
-
           />
 
 
-
-          {/* Vendors */}
+          {/* ===================================================
+              VENDORS
+          =================================================== */}
 
           <Route
-
-            path="vendors"
-
+            path="/vendors"
             element={<Vendors />}
-
           />
 
-         <Route
-           path="settings"
+
+          {/* ===================================================
+              SETTINGS
+          =================================================== */}
+
+          <Route
+            path="/settings"
             element={<Settings />}
           />
 
-          {/* Documents */}
+
+          {/* ===================================================
+              ADMINISTRATION
+          =================================================== */}
 
           <Route
+            path="/administration"
+            element={<Administration />}
+          />
 
-            path="documents"
+          <Route
+            path="/administration/users"
+            element={<Users />}
+          />
 
+          <Route
+            path="/administration/roles"
+            element={<RolesPermissions />}
+          />
+
+
+          {/* ===================================================
+              DOCUMENTS
+          =================================================== */}
+
+          <Route
+            path="/documents"
             element={<Documents />}
-
           />
 
 
-
-          {/* Reports */}
+          {/* ===================================================
+              REPORTS
+          =================================================== */}
 
           <Route
-
-            path="reports"
-
+            path="/reports"
             element={<Reports />}
-
           />
-
 
         </Route>
 
 
-
-        {/* 404 */}
+        {/* =====================================================
+            404
+        ===================================================== */}
 
         <Route
-
           path="*"
-
           element={
             <Navigate
               to="/dashboard"
               replace
             />
           }
-
         />
 
-
       </Routes>
-
-
     </BrowserRouter>
-
   );
 }

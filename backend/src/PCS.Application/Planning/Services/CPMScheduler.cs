@@ -9,7 +9,6 @@ public class CpmScheduler : ICpmScheduler
     private readonly IActivityRepository _activityRepository;
     private readonly IActivityRelationshipRepository _relationshipRepository;
 
-
     public CpmScheduler(
         IActivityRepository activityRepository,
         IActivityRelationshipRepository relationshipRepository)
@@ -18,8 +17,6 @@ public class CpmScheduler : ICpmScheduler
         _relationshipRepository = relationshipRepository;
     }
 
-
-
     private async Task<List<Activity>> LoadActivities(
         Guid projectId)
     {
@@ -27,16 +24,49 @@ public class CpmScheduler : ICpmScheduler
             .GetProjectActivitiesAsync(projectId);
     }
 
-
-
     private async Task<List<ActivityRelationship>> LoadRelationships(
         Guid projectId)
     {
-        return await _relationshipRepository
-            .GetByProjectAsync(projectId);
+        var relationships =
+            await _relationshipRepository
+                .GetByProjectAsync(projectId);
+
+        return relationships
+            .Where(IsUsableRelationship)
+            .ToList();
     }
 
+    private static bool IsUsableRelationship(
+        ActivityRelationship relationship)
+    {
+        if (!relationship.IsActive)
+        {
+            return false;
+        }
 
+        if (relationship.PredecessorId == Guid.Empty ||
+            relationship.SuccessorId == Guid.Empty)
+        {
+            return false;
+        }
+
+        return relationship.Type.Trim().ToUpperInvariant() switch
+        {
+            "FS" => true,
+            "SS" => true,
+            "FF" => true,
+            "SF" => true,
+            _ => false
+        };
+    }
+
+    private static string NormalizeRelationshipType(
+        ActivityRelationship relationship)
+    {
+        return relationship.Type
+            .Trim()
+            .ToUpperInvariant();
+    }
 
     public async Task<CpmResultDto> ScheduleProjectAsync(
         Guid projectId)
@@ -49,27 +79,20 @@ public class CpmScheduler : ICpmScheduler
 
         await DetectCriticalPathAsync(projectId);
 
-
-
         var activities =
             await LoadActivities(projectId);
 
-
+        var projectDuration =
+            activities.Any()
+                ? activities.Max(x => x.EarlyFinish)
+                : 0;
 
         var result = new CpmResultDto
         {
             ProjectId = projectId,
-
-            ProjectDuration =
-                activities.Any()
-                ? activities.Max(x => x.EarlyFinish)
-                : 0,
-
-            TotalActivities =
-                activities.Count
+            ProjectDuration = Math.Max(0, projectDuration),
+            TotalActivities = activities.Count
         };
-
-
 
         foreach (var activity in activities)
         {
@@ -77,49 +100,33 @@ public class CpmScheduler : ICpmScheduler
                 new CpmActivityDto
                 {
                     Id = activity.Id,
-
                     Code = activity.Code,
-
                     Name = activity.Name,
-
-                    Duration = activity.Duration,
-
+                    Duration = Math.Max(0, activity.Duration),
                     EarlyStart = activity.EarlyStart,
-
                     EarlyFinish = activity.EarlyFinish,
-
                     LateStart = activity.LateStart,
-
                     LateFinish = activity.LateFinish,
-
                     TotalFloat = activity.TotalFloat,
-
                     FreeFloat = activity.FreeFloat,
-
                     IsCritical = activity.IsCritical
                 });
         }
 
-
-
         result.CriticalPath =
             activities
-            .Where(x => x.IsCritical)
-            .OrderBy(x => x.EarlyStart)
-            .Select(x => x.Code)
-            .ToList();
-
-
+                .Where(x => x.IsCritical)
+                .OrderBy(x => x.EarlyStart)
+                .ThenBy(x => x.EarlyFinish)
+                .ThenBy(x => x.Code)
+                .Select(x => x.Code)
+                .ToList();
 
         result.CriticalActivitiesCount =
             result.CriticalPath.Count;
 
-
-
         return result;
     }
-
-
 
     public async Task<List<Activity>> TopologicalSortAsync(
         Guid projectId)
@@ -127,64 +134,62 @@ public class CpmScheduler : ICpmScheduler
         var activities =
             await LoadActivities(projectId);
 
-
         var relationships =
             await LoadRelationships(projectId);
 
-
-
         var activityMap =
-            activities.ToDictionary(
-                x => x.Id);
+            activities.ToDictionary(x => x.Id);
 
-
+        var validRelationships =
+            relationships
+                .Where(x =>
+                    activityMap.ContainsKey(x.PredecessorId) &&
+                    activityMap.ContainsKey(x.SuccessorId))
+                .ToList();
 
         var indegree =
             activities.ToDictionary(
                 x => x.Id,
                 _ => 0);
 
-
-
-        foreach (var relation in relationships)
+        foreach (var relation in validRelationships)
         {
-            if (indegree.ContainsKey(
-                relation.SuccessorId))
-            {
-                indegree[relation.SuccessorId]++;
-            }
+            indegree[relation.SuccessorId]++;
         }
-
-
 
         var queue =
             new Queue<Activity>(
-                activities.Where(
-                    x => indegree[x.Id] == 0));
-
-
+                activities
+                    .Where(x => indegree[x.Id] == 0)
+                    .OrderBy(x => x.Code));
 
         var result =
-            new List<Activity>();
+            new List<Activity>(activities.Count);
 
-
+        var outgoing =
+            validRelationships
+                .GroupBy(x => x.PredecessorId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList());
 
         while (queue.Count > 0)
         {
             var current =
                 queue.Dequeue();
 
-
             result.Add(current);
 
+            if (!outgoing.TryGetValue(
+                    current.Id,
+                    out var successors))
+            {
+                continue;
+            }
 
-
-            foreach (var relation in relationships
-                .Where(x =>
-                    x.PredecessorId == current.Id))
+            foreach (var relation in successors)
             {
                 indegree[relation.SuccessorId]--;
-
 
                 if (indegree[relation.SuccessorId] == 0)
                 {
@@ -194,20 +199,14 @@ public class CpmScheduler : ICpmScheduler
             }
         }
 
-
-
         if (result.Count != activities.Count)
         {
             throw new InvalidOperationException(
                 "CPM calculation failed. Activity network contains cycle.");
         }
 
-
-
         return result;
     }
-
-
 
     public async Task ForwardPassAsync(
         Guid projectId)
@@ -215,55 +214,97 @@ public class CpmScheduler : ICpmScheduler
         var orderedActivities =
             await TopologicalSortAsync(projectId);
 
-
-
         var relationships =
             await LoadRelationships(projectId);
 
+        var activityMap =
+            orderedActivities.ToDictionary(x => x.Id);
 
+        var incoming =
+            relationships
+                .Where(x =>
+                    activityMap.ContainsKey(x.PredecessorId) &&
+                    activityMap.ContainsKey(x.SuccessorId))
+                .GroupBy(x => x.SuccessorId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList());
 
         foreach (var activity in orderedActivities)
         {
-            var predecessors =
-                relationships
-                .Where(x =>
-                    x.SuccessorId == activity.Id)
-                .ToList();
+            var duration =
+                Math.Max(0, activity.Duration);
 
-
-
-            if (!predecessors.Any())
+            if (!incoming.TryGetValue(
+                    activity.Id,
+                    out var predecessors))
             {
                 activity.EarlyStart = 0;
+                activity.EarlyFinish = duration;
+
+                _activityRepository.Update(activity);
+                continue;
             }
-            else
+
+            var earliestStart = 0;
+
+            foreach (var relationship in predecessors)
             {
-                activity.EarlyStart =
-                    predecessors.Max(x =>
-                        x.Predecessor.EarlyFinish
-                        +
-                        x.Lag);
+                var predecessor =
+                    activityMap[relationship.PredecessorId];
+
+                var lag =
+                    relationship.Lag;
+
+                var type =
+                    NormalizeRelationshipType(
+                        relationship);
+
+                var candidateStart =
+                    type switch
+                    {
+                        // Successor Start >= Predecessor Finish + Lag
+                        "FS" =>
+                            predecessor.EarlyFinish + lag,
+
+                        // Successor Start >= Predecessor Start + Lag
+                        "SS" =>
+                            predecessor.EarlyStart + lag,
+
+                        // Successor Finish >= Predecessor Finish + Lag
+                        "FF" =>
+                            predecessor.EarlyFinish
+                            + lag
+                            - duration,
+
+                        // Successor Finish >= Predecessor Start + Lag
+                        "SF" =>
+                            predecessor.EarlyStart
+                            + lag
+                            - duration,
+
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported relationship type '{relationship.Type}'.")
+                    };
+
+                earliestStart =
+                    Math.Max(
+                        earliestStart,
+                        candidateStart);
             }
 
-
+            activity.EarlyStart =
+                Math.Max(0, earliestStart);
 
             activity.EarlyFinish =
-                activity.EarlyStart
-                +
-                activity.Duration;
-
-
+                activity.EarlyStart + duration;
 
             _activityRepository.Update(activity);
         }
 
-
-
         await _activityRepository
             .SaveChangesAsync();
     }
-
-
 
     public async Task BackwardPassAsync(
         Guid projectId)
@@ -271,27 +312,29 @@ public class CpmScheduler : ICpmScheduler
         var orderedActivities =
             await TopologicalSortAsync(projectId);
 
-
-
         var activities =
             await LoadActivities(projectId);
-
-
-
-        var projectFinish =
-            activities.Any()
-            ?
-            activities.Max(
-                x => x.EarlyFinish)
-            :
-            0;
-
-
 
         var relationships =
             await LoadRelationships(projectId);
 
+        var activityMap =
+            activities.ToDictionary(x => x.Id);
 
+        var projectFinish =
+            activities.Any()
+                ? activities.Max(x => x.EarlyFinish)
+                : 0;
+
+        var outgoing =
+            relationships
+                .Where(x =>
+                    activityMap.ContainsKey(x.PredecessorId) &&
+                    activityMap.ContainsKey(x.SuccessorId))
+                .GroupBy(x => x.PredecessorId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList());
 
         var reversedActivities =
             orderedActivities
@@ -299,51 +342,89 @@ public class CpmScheduler : ICpmScheduler
                 .Reverse()
                 .ToList();
 
-
-
         foreach (var activity in reversedActivities)
         {
-            var successors =
-                relationships
-                .Where(x =>
-                    x.PredecessorId == activity.Id)
-                .ToList();
+            var duration =
+                Math.Max(0, activity.Duration);
 
-
-
-            if (!successors.Any())
+            if (!outgoing.TryGetValue(
+                    activity.Id,
+                    out var successors))
             {
                 activity.LateFinish =
                     projectFinish;
+
+                activity.LateStart =
+                    activity.LateFinish - duration;
+
+                _activityRepository.Update(activity);
+                continue;
             }
-            else
+
+            var latestFinish =
+                int.MaxValue;
+
+            foreach (var relationship in successors)
             {
-                activity.LateFinish =
-                    successors.Min(x =>
-                        x.Successor.LateStart
-                        -
-                        x.Lag);
+                var successor =
+                    activityMap[relationship.SuccessorId];
+
+                var lag =
+                    relationship.Lag;
+
+                var type =
+                    NormalizeRelationshipType(
+                        relationship);
+
+                var candidateFinish =
+                    type switch
+                    {
+                        // Predecessor Finish <= Successor Start - Lag
+                        "FS" =>
+                            successor.LateStart - lag,
+
+                        // Predecessor Start <= Successor Start - Lag
+                        // LF = LS + Duration
+                        "SS" =>
+                            successor.LateStart
+                            - lag
+                            + duration,
+
+                        // Predecessor Finish <= Successor Finish - Lag
+                        "FF" =>
+                            successor.LateFinish - lag,
+
+                        // Predecessor Start <= Successor Finish - Lag
+                        // LF = LS + Duration
+                        "SF" =>
+                            successor.LateFinish
+                            - lag
+                            + duration,
+
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported relationship type '{relationship.Type}'.")
+                    };
+
+                latestFinish =
+                    Math.Min(
+                        latestFinish,
+                        candidateFinish);
             }
 
-
+            activity.LateFinish =
+                latestFinish == int.MaxValue
+                    ? projectFinish
+                    : latestFinish;
 
             activity.LateStart =
-                activity.LateFinish
-                -
-                activity.Duration;
-
-
+                activity.LateFinish - duration;
 
             _activityRepository.Update(activity);
         }
 
-
-
         await _activityRepository
             .SaveChangesAsync();
     }
-
-
 
     public async Task CalculateFloatAsync(
         Guid projectId)
@@ -351,56 +432,109 @@ public class CpmScheduler : ICpmScheduler
         var activities =
             await LoadActivities(projectId);
 
-
-
         var relationships =
             await LoadRelationships(projectId);
 
+        var activityMap =
+            activities.ToDictionary(x => x.Id);
 
+        var outgoing =
+            relationships
+                .Where(x =>
+                    activityMap.ContainsKey(x.PredecessorId) &&
+                    activityMap.ContainsKey(x.SuccessorId))
+                .GroupBy(x => x.PredecessorId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList());
 
         foreach (var activity in activities)
         {
             activity.TotalFloat =
                 activity.LateStart
-                -
-                activity.EarlyStart;
+                - activity.EarlyStart;
 
-
-
-            var successors =
-                relationships
-                .Where(x =>
-                    x.PredecessorId == activity.Id)
-                .ToList();
-
-
-
-            if (successors.Any())
-            {
-                activity.FreeFloat =
-                    successors.Min(x =>
-                        x.Successor.EarlyStart
-                        -
-                        activity.EarlyFinish);
-            }
-            else
+            if (!outgoing.TryGetValue(
+                    activity.Id,
+                    out var successors))
             {
                 activity.FreeFloat =
                     activity.TotalFloat;
+
+                activity.DrivingFloat =
+                    activity.TotalFloat;
+
+                _activityRepository.Update(activity);
+                continue;
             }
 
+            var freeFloatCandidates =
+                new List<int>();
 
+            foreach (var relationship in successors)
+            {
+                var successor =
+                    activityMap[relationship.SuccessorId];
+
+                var lag =
+                    relationship.Lag;
+
+                var type =
+                    NormalizeRelationshipType(
+                        relationship);
+
+                var candidateFreeFloat =
+                    type switch
+                    {
+                        // Successor ES >= Predecessor EF + Lag
+                        "FS" =>
+                            successor.EarlyStart
+                            - activity.EarlyFinish
+                            - lag,
+
+                        // Successor ES >= Predecessor ES + Lag
+                        "SS" =>
+                            successor.EarlyStart
+                            - activity.EarlyStart
+                            - lag,
+
+                        // Successor EF >= Predecessor EF + Lag
+                        "FF" =>
+                            successor.EarlyFinish
+                            - activity.EarlyFinish
+                            - lag,
+
+                        // Successor EF >= Predecessor ES + Lag
+                        "SF" =>
+                            successor.EarlyFinish
+                            - activity.EarlyStart
+                            - lag,
+
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported relationship type '{relationship.Type}'.")
+                    };
+
+                freeFloatCandidates.Add(
+                    candidateFreeFloat);
+            }
+
+            activity.FreeFloat =
+                freeFloatCandidates.Min();
+
+            /*
+             * Driving Float represents the tightest active
+             * successor relationship. A negative value therefore
+             * identifies a driving negative-float relationship.
+             */
+            activity.DrivingFloat =
+                freeFloatCandidates.Min();
 
             _activityRepository.Update(activity);
         }
 
-
-
         await _activityRepository
             .SaveChangesAsync();
     }
-
-
 
     public async Task DetectCriticalPathAsync(
         Guid projectId)
@@ -408,19 +542,20 @@ public class CpmScheduler : ICpmScheduler
         var activities =
             await LoadActivities(projectId);
 
-
-
         foreach (var activity in activities)
         {
+            /*
+             * Zero and negative total float are treated as critical.
+             *
+             * TF =  5  -> Non-critical
+             * TF =  0  -> Critical
+             * TF = -3  -> Critical / Negative Float
+             */
             activity.IsCritical =
-                Math.Abs(activity.TotalFloat) < 0.001;
-
-
+                activity.TotalFloat <= 0;
 
             _activityRepository.Update(activity);
         }
-
-
 
         await _activityRepository
             .SaveChangesAsync();

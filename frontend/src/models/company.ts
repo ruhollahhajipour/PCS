@@ -1,34 +1,13 @@
 import type { BaseEntity } from "./base";
 
-
 export interface Company extends BaseEntity {
+  name: string;
 
-  shortName?: string;
+  nationalId?: string;
 
-  name:string;
+  address?: string;
 
-  country?:string;
+  phone?: string;
 
-  city?:string;
-
-  address?:string;
-
-  currency?:string;
-
-  registrationNumber?:string;
-
-  taxNumber?:string;
-
-  nationalId?:string;
-
-  phone?:string;
-
-  email?:string;
-
-  website?:string;
-
-  description?:string;
-
-  logo?:string;
-
+  email?: string;
 }

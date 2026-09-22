@@ -20,13 +20,15 @@ public class Project : AuditableEntity
 
     // ==========================
     // Organization
-    // ==========================
+   // ==========================
 
-    public Guid CompanyId { get; set; }
+  public Guid CompanyId { get; set; }
 
-    public Company Company { get; set; } = null!;
+  public Company Company { get; set; } = null!;
 
-    public Guid? PlantId { get; set; }
+  public Guid? PlantId { get; set; }
+
+  public Plant? Plant { get; set; }
 
 
     // ==========================

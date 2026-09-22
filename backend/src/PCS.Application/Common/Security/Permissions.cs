@@ -2,29 +2,51 @@ namespace PCS.Application.Common.Security;
 
 public static class Permissions
 {
-    public static class Projects
-    {
-        public const string Read = "Projects.Read";
+    // ==========================
+    // Security
+    // ==========================
 
-        public const string Create = "Projects.Create";
+    public const string UsersManage =
+        "SECURITY_USERS_MANAGE";
 
-        public const string Update = "Projects.Update";
+    public const string RolesManage =
+        "SECURITY_ROLES_MANAGE";
 
-        public const string Delete = "Projects.Delete";
 
-        public const string Import = "Projects.Import";
+    // ==========================
+    // Company
+    // ==========================
 
-        public const string Export = "Projects.Export";
-    }
+    public const string CompanyAdminChange =
+        "COMPANY_ADMIN_CHANGE";
 
-    public static class Companies
-    {
-        public const string Read = "Companies.Read";
+    public const string CompanyUsersManage =
+        "COMPANY_USERS_MANAGE";
 
-        public const string Create = "Companies.Create";
 
-        public const string Update = "Companies.Update";
+    // ==========================
+    // PMS
+    // ==========================
 
-        public const string Delete = "Companies.Delete";
-    }
+    public const string ProjectView =
+        "PMS_PROJECT_VIEW";
+
+    public const string ProjectEdit =
+        "PMS_PROJECT_EDIT";
+
+
+    // ==========================
+    // Cost Control
+    // ==========================
+
+    public const string CostControlView =
+        "COST_CONTROL_VIEW";
+
+
+    // ==========================
+    // Document
+    // ==========================
+
+    public const string DocumentApprove =
+        "DOCUMENT_APPROVE";
 }

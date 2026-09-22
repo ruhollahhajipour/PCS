@@ -1,4 +1,4 @@
-using PCS.Installer.Models;
+﻿using PCS.Installer.Models;
 using System.Text.Json;
 
 namespace PCS.Installer.Services.Configuration;
@@ -15,17 +15,23 @@ public class ConfigurationService
         }
 
 
+        // ==================================================
+        // Required directories
+        // ==================================================
+
         Directory.CreateDirectory(
             context.ConfigPath);
-
 
         Directory.CreateDirectory(
             context.BackendPath);
 
 
+        // ==================================================
+        // Database configuration
+        // ==================================================
+
         string connectionString =
             context.ConnectionString;
-
 
         if (string.IsNullOrWhiteSpace(
                 connectionString))
@@ -72,18 +78,9 @@ public class ConfigurationService
             };
 
 
-        string pcsConfigJson =
-            JsonSerializer.Serialize(
-                pcsConfig,
-                new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-
-        File.WriteAllText(
+        WriteJsonFile(
             pcsConfigFile,
-            pcsConfigJson);
+            pcsConfig);
 
 
         // ==================================================
@@ -99,12 +96,73 @@ public class ConfigurationService
         var appSettings =
             new
             {
+                // --------------------------------------------------
+                // Database
+                // --------------------------------------------------
+
                 ConnectionStrings =
                     new
                     {
                         DefaultConnection =
                             connectionString
                     },
+
+
+                // --------------------------------------------------
+                // JWT Authentication
+                // --------------------------------------------------
+
+                Jwt =
+                    new
+                    {
+                        Secret =
+                            "PCS-Development-Only-Secret-Change-Before-Release-2026",
+
+                        Issuer =
+                            "PCS",
+
+                        Audience =
+                            "PCS",
+
+                        ExpirationMinutes =
+                            480
+                    },
+
+
+                // --------------------------------------------------
+                // Initial Administrator
+                //
+                // IMPORTANT:
+                // This is intentionally the installer default.
+                // SecuritySeed sets MustChangePassword = true
+                // for a newly-created administrator.
+                // Existing administrator passwords are NEVER
+                // overwritten by SecuritySeed.
+                // --------------------------------------------------
+
+                InitialAdmin =
+                    new
+                    {
+                        Username =
+                            "admin",
+
+                        Password =
+                            "admin123",
+
+                        FirstName =
+                            "PCS",
+
+                        LastName =
+                            "Administrator",
+
+                        Email =
+                            "admin@pcs.local"
+                    },
+
+
+                // --------------------------------------------------
+                // Logging
+                // --------------------------------------------------
 
                 Logging =
                     new
@@ -120,14 +178,33 @@ public class ConfigurationService
                             }
                     },
 
+
+                // --------------------------------------------------
+                // ASP.NET Core
+                // --------------------------------------------------
+
                 AllowedHosts =
                     "*"
             };
 
 
-        string appSettingsJson =
+        WriteJsonFile(
+            appSettingsFile,
+            appSettings);
+    }
+
+
+    // ==========================================================
+    // JSON helper
+    // ==========================================================
+
+    private static void WriteJsonFile<T>(
+        string filePath,
+        T value)
+    {
+        string json =
             JsonSerializer.Serialize(
-                appSettings,
+                value,
                 new JsonSerializerOptions
                 {
                     WriteIndented = true
@@ -135,7 +212,7 @@ public class ConfigurationService
 
 
         File.WriteAllText(
-            appSettingsFile,
-            appSettingsJson);
+            filePath,
+            json);
     }
 }

@@ -17,7 +17,8 @@ public class CompanyService : ICompanyService
 
     public async Task<IEnumerable<CompanyDto>> GetAllAsync()
     {
-        var companies = await _repository.GetAllAsync();
+        var companies =
+            await _repository.GetAllAsync();
 
         return companies.Select(x => new CompanyDto
         {
@@ -34,7 +35,8 @@ public class CompanyService : ICompanyService
 
     public async Task<CompanyDto?> GetByIdAsync(Guid id)
     {
-        var company = await _repository.GetByIdAsync(id);
+        var company =
+            await _repository.GetByIdAsync(id);
 
         if (company is null)
             return null;
@@ -52,17 +54,18 @@ public class CompanyService : ICompanyService
         };
     }
 
-    public async Task<Guid> CreateAsync(CreateCompanyDto dto)
+    public async Task<Guid> CreateAsync(
+        CreateCompanyDto dto)
     {
         var company = new Company
         {
-            Code = dto.Code,
-            Name = dto.Name,
-            NationalId = dto.NationalId,
-            Address = dto.Address,
-            Phone = dto.Phone,
-            Email = dto.Email,
-            IsActive = true
+            Code = dto.Code.Trim(),
+            Name = dto.Name.Trim(),
+            NationalId = dto.NationalId?.Trim(),
+            Address = dto.Address?.Trim(),
+            Phone = dto.Phone?.Trim(),
+            Email = dto.Email?.Trim(),
+            IsActive = dto.IsActive
         };
 
         await _repository.AddAsync(company);
@@ -71,19 +74,36 @@ public class CompanyService : ICompanyService
         return company.Id;
     }
 
-    public async Task UpdateAsync(Guid id, CreateCompanyDto dto)
+    public async Task UpdateAsync(
+        Guid id,
+        CreateCompanyDto dto)
     {
-        var company = await _repository.GetByIdAsync(id);
+        var company =
+            await _repository.GetByIdAsync(id);
 
         if (company is null)
             throw new Exception("Company not found.");
 
-        company.Code = dto.Code;
-        company.Name = dto.Name;
-        company.NationalId = dto.NationalId;
-        company.Address = dto.Address;
-        company.Phone = dto.Phone;
-        company.Email = dto.Email;
+        company.Code =
+            dto.Code.Trim();
+
+        company.Name =
+            dto.Name.Trim();
+
+        company.NationalId =
+            dto.NationalId?.Trim();
+
+        company.Address =
+            dto.Address?.Trim();
+
+        company.Phone =
+            dto.Phone?.Trim();
+
+        company.Email =
+            dto.Email?.Trim();
+
+        company.IsActive =
+            dto.IsActive;
 
         _repository.Update(company);
 
@@ -92,7 +112,8 @@ public class CompanyService : ICompanyService
 
     public async Task DeleteAsync(Guid id)
     {
-        var company = await _repository.GetByIdAsync(id);
+        var company =
+            await _repository.GetByIdAsync(id);
 
         if (company is null)
             throw new Exception("Company not found.");

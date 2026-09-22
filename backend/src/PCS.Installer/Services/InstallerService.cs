@@ -36,9 +36,9 @@ public class InstallerService
          *      ↓
          * Database
          *      ↓
-         * Configuration
-         *      ↓
          * API Deployment
+         *      ↓
+         * Configuration
          *      ↓
          * Frontend Deployment
          *      ↓
@@ -47,6 +47,16 @@ public class InstallerService
          * Startup Configuration
          *      ↓
          * Desktop / Start Menu Shortcuts
+         *
+         * IMPORTANT:
+         *
+         * API files are deployed before the final
+         * appsettings.json is generated.
+         *
+         * This guarantees that the installer-generated
+         * configuration cannot be overwritten by the
+         * appsettings.json contained in the API publish
+         * package.
          */
 
         installPipeline =
@@ -54,8 +64,8 @@ public class InstallerService
                 .Add(new ValidationStep())
                 .Add(new DirectoryStep())
                 .Add(new DatabaseStep())
-                .Add(new ConfigurationStep())
                 .Add(new ApiDeploymentStep())
+                .Add(new ConfigurationStep())
                 .Add(new FrontendDeploymentStep())
                 .Add(new LauncherDeploymentStep())
                 .Add(new StartupStep())

@@ -2,14 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+
 using PCS.Application.Common.Interfaces;
+using PCS.Application.Identity.Interfaces;
 using PCS.Application.Projects.Interfaces;
 using PCS.Application.Planning.Interfaces;
+using PCS.Application.Licensing.Interfaces;
 
 using PCS.Infrastructure.BackgroundJobs;
 using PCS.Infrastructure.Persistence;
 using PCS.Infrastructure.Repositories;
 using PCS.Infrastructure.Services;
+using PCS.Infrastructure.Services.Identity;
 
 namespace PCS.Infrastructure;
 
@@ -81,12 +85,40 @@ public static class DependencyInjection
 
 
         // ==========================
+        // Identity / Security
+        // ==========================
+
+        services.AddScoped<
+         IPasswordHasher,
+         PasswordHasher>();
+
+
+        services.AddScoped<
+         IJwtService,
+         JwtService>();
+
+
+        services.AddScoped<
+         IAuthService,
+         AuthService>();
+
+
+        // ==========================
         // Services
         // ==========================
 
         services.AddScoped<
             IAuditService,
             AuditService>();
+
+
+        // ==========================
+        // Licensing
+        // ==========================
+
+        services.AddScoped<
+            ILicenseService,
+            LicenseService>();
 
 
         // ==========================

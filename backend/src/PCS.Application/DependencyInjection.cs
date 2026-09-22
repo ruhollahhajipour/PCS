@@ -16,6 +16,9 @@ using PCS.Application.Planning.Export;
 using PCS.Application.Planning.Export.Excel;
 using PCS.Application.Planning.Export.Excel.Builders;
 
+using PCS.Application.Plants.Interfaces;
+using PCS.Application.Plants.Services; 
+
 namespace PCS.Application;
 
 public static class DependencyInjection
@@ -30,22 +33,31 @@ public static class DependencyInjection
 
 
         // ==========================
-        // Companies
-        // ==========================
+// Companies
+// ==========================
 
-        services.AddScoped<
-            ICompanyService,
-            CompanyService>();
+services.AddScoped<
+    ICompanyService,
+    CompanyService>();
 
 
+// ==========================
+// Plants
+// ==========================
 
-        // ==========================
-        // Projects
-        // ==========================
+services.AddScoped<
+    IPlantService,
+    PlantService>();
 
-        services.AddScoped<
-            IProjectService,
-            ProjectService>();
+
+// ==========================
+// Projects
+// ==========================
+
+services.AddScoped<
+    IProjectService,
+    ProjectService>();
+
 
 
         services.AddScoped<

@@ -6,17 +6,18 @@ public static class PermissionProvider
     {
         return
         [
-            Permissions.Projects.Read,
-            Permissions.Projects.Create,
-            Permissions.Projects.Update,
-            Permissions.Projects.Delete,
-            Permissions.Projects.Import,
-            Permissions.Projects.Export,
+            Permissions.UsersManage,
+            Permissions.RolesManage,
 
-            Permissions.Companies.Read,
-            Permissions.Companies.Create,
-            Permissions.Companies.Update,
-            Permissions.Companies.Delete
+            Permissions.CompanyAdminChange,
+            Permissions.CompanyUsersManage,
+
+            Permissions.ProjectView,
+            Permissions.ProjectEdit,
+
+            Permissions.CostControlView,
+
+            Permissions.DocumentApprove
         ];
     }
 }

@@ -24,11 +24,9 @@ public sealed class ShortcutService
     {
         ArgumentNullException.ThrowIfNull(context);
 
-
         string desktop =
             Environment.GetFolderPath(
                 Environment.SpecialFolder.DesktopDirectory);
-
 
         if (string.IsNullOrWhiteSpace(desktop))
         {
@@ -36,16 +34,12 @@ public sealed class ShortcutService
                 "Windows Desktop directory could not be determined.");
         }
 
-
-        Directory.CreateDirectory(
-            desktop);
-
+        Directory.CreateDirectory(desktop);
 
         string shortcutPath =
             Path.Combine(
                 desktop,
                 ShortcutFileName);
-
 
         CreateLauncherShortcut(
             shortcutPath,
@@ -62,11 +56,9 @@ public sealed class ShortcutService
     {
         ArgumentNullException.ThrowIfNull(context);
 
-
         string startMenu =
             Environment.GetFolderPath(
                 Environment.SpecialFolder.Programs);
-
 
         if (string.IsNullOrWhiteSpace(startMenu))
         {
@@ -74,22 +66,17 @@ public sealed class ShortcutService
                 "Windows Start Menu directory could not be determined.");
         }
 
-
         string folder =
             Path.Combine(
                 startMenu,
                 context.ProductName);
 
-
-        Directory.CreateDirectory(
-            folder);
-
+        Directory.CreateDirectory(folder);
 
         string shortcutPath =
             Path.Combine(
                 folder,
                 ShortcutFileName);
-
 
         CreateLauncherShortcut(
             shortcutPath,
@@ -107,7 +94,6 @@ public sealed class ShortcutService
     {
         ArgumentNullException.ThrowIfNull(context);
 
-
         // --------------------------------------------------------
         // Installed launcher
         // --------------------------------------------------------
@@ -117,7 +103,6 @@ public sealed class ShortcutService
                 context.InstallPath,
                 "Launcher",
                 LauncherFileName);
-
 
         if (!File.Exists(launcherPath))
         {
@@ -129,11 +114,6 @@ public sealed class ShortcutService
 
         // --------------------------------------------------------
         // Installed icon
-        //
-        // The icon is intentionally kept inside the user's
-        // PCS installation directory so the shortcut does not
-        // depend on PCSSetup.exe or its temporary extraction
-        // directory.
         // --------------------------------------------------------
 
         string iconDirectory =
@@ -141,27 +121,43 @@ public sealed class ShortcutService
                 context.InstallPath,
                 "Resources");
 
-
-        Directory.CreateDirectory(
-            iconDirectory);
-
+        Directory.CreateDirectory(iconDirectory);
 
         string iconPath =
             Path.Combine(
                 iconDirectory,
                 ProductIconFileName);
 
-
-        EnsureInstalledIcon(
+        // Always refresh the installed icon so a new branding
+        // icon is used after an update/reinstall.
+        InstallIcon(
             context,
             iconPath);
-
 
         if (!File.Exists(iconPath))
         {
             throw new FileNotFoundException(
                 "PCS application icon could not be installed.",
                 iconPath);
+        }
+
+
+        // --------------------------------------------------------
+        // Remove old shortcut
+        // --------------------------------------------------------
+
+        if (File.Exists(shortcutPath))
+        {
+            try
+            {
+                File.Delete(shortcutPath);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException(
+                    $"Unable to remove the existing PCS shortcut: {shortcutPath}",
+                    ex);
+            }
         }
 
 
@@ -173,18 +169,15 @@ public sealed class ShortcutService
             Type.GetTypeFromProgID(
                 "WScript.Shell");
 
-
         if (shellType == null)
         {
             throw new InvalidOperationException(
                 "Windows Script Host is not available.");
         }
 
-
         object? shellObject =
             Activator.CreateInstance(
                 shellType);
-
 
         if (shellObject == null)
         {
@@ -192,17 +185,19 @@ public sealed class ShortcutService
                 "Unable to create Windows Script Host.");
         }
 
+        object? shortcutObject = null;
 
         try
         {
             dynamic shell =
                 shellObject;
 
-
-            dynamic shortcut =
+            shortcutObject =
                 shell.CreateShortcut(
                     shortcutPath);
 
+            dynamic shortcut =
+                shortcutObject;
 
             // ----------------------------------------------------
             // Target
@@ -210,7 +205,6 @@ public sealed class ShortcutService
 
             shortcut.TargetPath =
                 launcherPath;
-
 
             // ----------------------------------------------------
             // Working directory
@@ -221,24 +215,19 @@ public sealed class ShortcutService
                     launcherPath)
                 ?? context.InstallPath;
 
-
             // ----------------------------------------------------
-            // Display name / description
+            // Description
             // ----------------------------------------------------
 
             shortcut.Description =
                 "Project Control Suite";
 
-
             // ----------------------------------------------------
-            // PCS application icon
-            //
-            // Explicitly use the installed PCS.ico.
+            // Icon
             // ----------------------------------------------------
 
             shortcut.IconLocation =
                 $"{iconPath},0";
-
 
             // ----------------------------------------------------
             // Save
@@ -248,18 +237,39 @@ public sealed class ShortcutService
         }
         finally
         {
-            if (shellObject is IDisposable disposable)
+            // Release shortcut COM object first.
+            if (shortcutObject != null &&
+                Marshal.IsComObject(shortcutObject))
             {
-                disposable.Dispose();
+                try
+                {
+                    Marshal.FinalReleaseComObject(
+                        shortcutObject);
+                }
+                catch
+                {
+                    // Ignore COM cleanup errors.
+                }
             }
 
-            Marshal.FinalReleaseComObject(
-                shellObject);
+            // Release WScript.Shell COM object.
+            if (Marshal.IsComObject(shellObject))
+            {
+                try
+                {
+                    Marshal.FinalReleaseComObject(
+                        shellObject);
+                }
+                catch
+                {
+                    // Ignore COM cleanup errors.
+                }
+            }
         }
 
 
         // --------------------------------------------------------
-        // Verify shortcut
+        // Verify file exists
         // --------------------------------------------------------
 
         if (!File.Exists(shortcutPath))
@@ -267,6 +277,16 @@ public sealed class ShortcutService
             throw new IOException(
                 $"PCS shortcut could not be created: {shortcutPath}");
         }
+
+
+        // --------------------------------------------------------
+        // Verify actual shortcut contents
+        // --------------------------------------------------------
+
+        VerifyShortcut(
+            shortcutPath,
+            launcherPath,
+            iconPath);
     }
 
 
@@ -274,21 +294,57 @@ public sealed class ShortcutService
     // INSTALL ICON
     // ============================================================
 
-    private static void EnsureInstalledIcon(
+    private static void InstallIcon(
         InstallerContext context,
         string destinationPath)
     {
-        if (File.Exists(destinationPath))
+        string? sourceIcon =
+            FindIconSource(context);
+
+        if (string.IsNullOrWhiteSpace(sourceIcon))
         {
-            return;
+            throw new FileNotFoundException(
+                "PCS.ico could not be found in the installer package.");
         }
+
+        File.Copy(
+            sourceIcon,
+            destinationPath,
+            overwrite: true);
 
 
         // --------------------------------------------------------
+        // Validate copied icon
+        // --------------------------------------------------------
+
+        if (!File.Exists(destinationPath))
+        {
+            throw new FileNotFoundException(
+                "PCS.ico could not be installed.",
+                destinationPath);
+        }
+
+        FileInfo iconInfo =
+            new(destinationPath);
+
+        if (iconInfo.Length <= 0)
+        {
+            throw new IOException(
+                "PCS.ico was copied but is empty.");
+        }
+    }
+
+
+    // ============================================================
+    // FIND ICON SOURCE
+    // ============================================================
+
+    private static string? FindIconSource(
+        InstallerContext context)
+    {
+        // --------------------------------------------------------
         // Candidate 1
-        //
-        // Bundled resource extracted by the .NET single-file
-        // application.
+        // Resources\PCS.ico beside installer executable
         // --------------------------------------------------------
 
         string bundledIcon =
@@ -297,24 +353,16 @@ public sealed class ShortcutService
                 "Resources",
                 ProductIconFileName);
 
-
-        if (File.Exists(bundledIcon))
+        if (File.Exists(bundledIcon) &&
+            new FileInfo(bundledIcon).Length > 0)
         {
-            File.Copy(
-                bundledIcon,
-                destinationPath,
-                overwrite: true);
-
-            return;
+            return bundledIcon;
         }
 
 
         // --------------------------------------------------------
         // Candidate 2
-        //
-        // Branding folder in the installer package.
-        // This is useful when running the installer from a normal
-        // publish/package directory.
+        // Resources\Branding\PCS.ico
         // --------------------------------------------------------
 
         string brandingIcon =
@@ -324,38 +372,26 @@ public sealed class ShortcutService
                 "Branding",
                 ProductIconFileName);
 
-
-        if (File.Exists(brandingIcon))
+        if (File.Exists(brandingIcon) &&
+            new FileInfo(brandingIcon).Length > 0)
         {
-            File.Copy(
-                brandingIcon,
-                destinationPath,
-                overwrite: true);
-
-            return;
+            return brandingIcon;
         }
 
 
         // --------------------------------------------------------
         // Candidate 3
-        //
-        // The physical PCSSetup.exe directory.
-        //
-        // This is intentionally only a fallback. The normal
-        // single-file bundled resource remains the preferred
-        // source.
+        // Physical installer directory
         // --------------------------------------------------------
 
         string? processPath =
             Environment.ProcessPath;
-
 
         if (!string.IsNullOrWhiteSpace(processPath))
         {
             string? processDirectory =
                 Path.GetDirectoryName(
                     processPath);
-
 
             if (!string.IsNullOrWhiteSpace(processDirectory))
             {
@@ -365,26 +401,154 @@ public sealed class ShortcutService
                         "Resources",
                         ProductIconFileName);
 
-
-                if (File.Exists(physicalIcon))
+                if (File.Exists(physicalIcon) &&
+                    new FileInfo(physicalIcon).Length > 0)
                 {
-                    File.Copy(
-                        physicalIcon,
-                        destinationPath,
-                        overwrite: true);
+                    return physicalIcon;
+                }
 
-                    return;
+
+                // Also check physical Branding directory.
+                string physicalBrandingIcon =
+                    Path.Combine(
+                        processDirectory,
+                        "Resources",
+                        "Branding",
+                        ProductIconFileName);
+
+                if (File.Exists(physicalBrandingIcon) &&
+                    new FileInfo(physicalBrandingIcon).Length > 0)
+                {
+                    return physicalBrandingIcon;
                 }
             }
         }
 
+        return null;
+    }
 
-        // --------------------------------------------------------
-        // No icon found
-        // --------------------------------------------------------
 
-        throw new FileNotFoundException(
-            "PCS.ico could not be found in the installer package.",
-            bundledIcon);
+    // ============================================================
+    // VERIFY SHORTCUT
+    // ============================================================
+
+    private static void VerifyShortcut(
+        string shortcutPath,
+        string expectedTarget,
+        string expectedIcon)
+    {
+        Type? shellType =
+            Type.GetTypeFromProgID(
+                "WScript.Shell");
+
+        if (shellType == null)
+        {
+            throw new InvalidOperationException(
+                "Windows Script Host is not available for shortcut verification.");
+        }
+
+        object? shellObject =
+            Activator.CreateInstance(
+                shellType);
+
+        if (shellObject == null)
+        {
+            throw new InvalidOperationException(
+                "Unable to create Windows Script Host for shortcut verification.");
+        }
+
+        object? shortcutObject = null;
+
+        try
+        {
+            dynamic shell =
+                shellObject;
+
+            shortcutObject =
+                shell.CreateShortcut(
+                    shortcutPath);
+
+            dynamic shortcut =
+                shortcutObject;
+
+            string actualTarget =
+                Convert.ToString(
+                    shortcut.TargetPath)
+                ?? string.Empty;
+
+            string actualIcon =
+                Convert.ToString(
+                    shortcut.IconLocation)
+                ?? string.Empty;
+
+            string normalizedExpectedTarget =
+                Path.GetFullPath(
+                    expectedTarget);
+
+            string normalizedActualTarget =
+                string.IsNullOrWhiteSpace(actualTarget)
+                    ? string.Empty
+                    : Path.GetFullPath(actualTarget);
+
+            string normalizedExpectedIcon =
+                Path.GetFullPath(
+                    expectedIcon);
+
+            string normalizedActualIcon =
+                actualIcon
+                    .Split(',')[0]
+                    .Trim();
+
+            if (!string.Equals(
+                    normalizedActualTarget,
+                    normalizedExpectedTarget,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException(
+                    $"PCS shortcut target verification failed. " +
+                    $"Expected: {normalizedExpectedTarget} " +
+                    $"Actual: {actualTarget}");
+            }
+
+            if (!string.Equals(
+                    normalizedActualIcon,
+                    normalizedExpectedIcon,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException(
+                    $"PCS shortcut icon verification failed. " +
+                    $"Expected: {normalizedExpectedIcon} " +
+                    $"Actual: {actualIcon}");
+            }
+        }
+        finally
+        {
+            if (shortcutObject != null &&
+                Marshal.IsComObject(shortcutObject))
+            {
+                try
+                {
+                    Marshal.FinalReleaseComObject(
+                        shortcutObject);
+                }
+                catch
+                {
+                    // Ignore COM cleanup errors.
+                }
+            }
+
+            if (Marshal.IsComObject(shellObject))
+            {
+                try
+                {
+                    Marshal.FinalReleaseComObject(
+                        shellObject);
+                }
+                catch
+                {
+                    // Ignore COM cleanup errors.
+                }
+            }
+        }
     }
 }

@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
+using PCS.API.Security;
+
+using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
@@ -17,8 +21,8 @@ public class PmsEvmController : ControllerBase
     }
 
 
-
     [HttpGet("{projectId}")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
         Guid projectId,
         [FromQuery] DateTime reportDate)

@@ -5,6 +5,10 @@ import {
   Paper,
 } from "@mui/material";
 
+import {
+  type GridRenderCellParams,
+} from "@mui/x-data-grid";
+
 import PCSDataGrid from "../../../../components/Common/PCSDataGrid/PCSDataGrid";
 
 import useIssue from "../hooks/useIssue";
@@ -18,7 +22,6 @@ import IssueKPIs from "../components/IssueKPIs";
 import type { Issue } from "../types/issue";
 
 export default function Issue() {
-
   const {
     items,
     loading,
@@ -36,45 +39,38 @@ export default function Issue() {
   async function handleSave(
     item: Issue
   ) {
-
-    if (selected)
+    if (selected) {
       await update(item);
-    else
+    } else {
       await create(item);
+    }
 
+    setOpen(false);
+    setSelected(null);
   }
 
   async function handleDelete(
     id: number
   ) {
-
     if (
       window.confirm(
         "Delete this Issue?"
       )
     ) {
-
       await remove(id);
-
     }
-
   }
 
   return (
-
     <Box>
-
       <IssueKPIs
         items={items}
       />
 
       <IssueToolbar
         onNew={() => {
-
           setSelected(null);
-
           setOpen(true);
-
         }}
       />
 
@@ -83,12 +79,10 @@ export default function Issue() {
           mt: 2,
         }}
       >
-
         <PCSDataGrid
           loading={loading}
           rows={items}
           columns={[
-
             {
               field: "issueNo",
               headerName: "Issue No",
@@ -141,25 +135,23 @@ export default function Issue() {
               field: "actions",
               headerName: "Actions",
               flex: 1,
-
               sortable: false,
 
-              renderCell: (params: any) => (
-
+              renderCell: (
+                params: GridRenderCellParams<Issue>
+              ) => (
                 <Box
                   sx={{
                     display: "flex",
                     gap: 1,
                   }}
                 >
-
                   <button
                     onClick={() => {
-
-                      setSelected(params.row);
-
+                      setSelected(
+                        params.row
+                      );
                       setOpen(true);
-
                     }}
                   >
                     Edit
@@ -174,33 +166,22 @@ export default function Issue() {
                   >
                     Delete
                   </button>
-
                 </Box>
-
               ),
-
             },
-
           ]}
         />
-
       </Paper>
 
       <IssueDialog
         open={open}
         issue={selected}
         onClose={() => {
-
           setOpen(false);
-
           setSelected(null);
-
         }}
         onSave={handleSave}
       />
-
     </Box>
-
   );
-
 }

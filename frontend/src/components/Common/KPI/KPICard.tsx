@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 import {
   Card,
@@ -42,44 +42,31 @@ export default function KPICard({
       elevation={0}
       sx={{
         position: "relative",
-
-        minHeight: 180,
-
         height: "100%",
-
-        borderRadius: 4,
-
+        minHeight: 142,
+        borderRadius: 3,
         overflow: "hidden",
-
-        border:
-          "1px solid rgba(148,163,184,.18)",
-
+        border: "1px solid #E2E8F0",
         background:
-          "linear-gradient(180deg,#FFFFFF 0%,#F8FAFC 100%)",
+          "linear-gradient(180deg,#FFFFFF 0%,#FAFCFF 100%)",
 
         transition:
-          "transform .25s ease, box-shadow .25s ease",
+          "transform .2s ease, box-shadow .2s ease, border-color .2s ease",
 
         "&:hover": {
-          transform: "translateY(-3px)",
-
+          transform: "translateY(-2px)",
+          borderColor: "#CBD5E1",
           boxShadow:
-            "0 12px 24px rgba(15,23,42,.08)",
+            "0 10px 24px rgba(15,23,42,.07)",
         },
 
         "&::before": {
           content: '""',
-
           position: "absolute",
-
           top: 0,
-
           left: 0,
-
-          right: 0,
-
-          height: 4,
-
+          width: 4,
+          height: "100%",
           background: color,
         },
       }}
@@ -87,33 +74,36 @@ export default function KPICard({
       <CardContent
         sx={{
           height: "100%",
-
-          display: "flex",
-
-          flexDirection: "column",
-
-          justifyContent: "space-between",
-
-          p: 3,
-
+          p: 2.25,
+          pl: 2.5,
           "&:last-child": {
-            pb: 3,
+            pb: 2.25,
           },
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 1.5,
         }}
       >
         <Box
           display="flex"
           justifyContent="space-between"
           alignItems="flex-start"
-          gap={2}
+          gap={1.5}
         >
-          <Box flex={1} minWidth={0}>
+          <Box
+            sx={{
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             <Typography
-              variant="body2"
               sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                mb: 1,
+                fontSize: 11.5,
+                lineHeight: 1.25,
+                color: "#64748B",
+                fontWeight: 650,
+                mb: 0.8,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -124,10 +114,14 @@ export default function KPICard({
 
             <Typography
               sx={{
-                fontSize: 32,
+                fontSize: {
+                  xs: 25,
+                  sm: 27,
+                },
+                lineHeight: 1.05,
                 fontWeight: 800,
-                lineHeight: 1.1,
-                color: "text.primary",
+                letterSpacing: "-0.025em",
+                color: "#0F172A",
                 wordBreak: "break-word",
               }}
             >
@@ -135,86 +129,97 @@ export default function KPICard({
             </Typography>
           </Box>
 
-          <Box
-            sx={{
-              width: 56,
-
-              height: 56,
-
-              flexShrink: 0,
-
-              borderRadius: 3,
-
-              display: "flex",
-
-              alignItems: "center",
-
-              justifyContent: "center",
-
-              bgcolor: `${color}15`,
-
-              color,
-            }}
-          >
-            {icon}
-          </Box>
+          {icon && (
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                borderRadius: 2.25,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: `${color}12`,
+                color,
+              }}
+            >
+              {icon}
+            </Box>
+          )}
         </Box>
-                <Box
+
+        <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          gap={2}
+          gap={1}
           flexWrap="wrap"
         >
           <Box
             display="flex"
             alignItems="center"
-            gap={1}
-            flexWrap="wrap"
+            gap={0.55}
           >
             {positive && (
               <TrendingUpRoundedIcon
-                color="success"
-                fontSize="small"
+                sx={{
+                  fontSize: 16,
+                  color: "#16A34A",
+                }}
               />
             )}
 
             {negative && (
               <TrendingDownRoundedIcon
-                color="error"
-                fontSize="small"
+                sx={{
+                  fontSize: 16,
+                  color: "#DC2626",
+                }}
               />
             )}
 
             {neutral && (
               <TrendingFlatRoundedIcon
-                color="disabled"
-                fontSize="small"
+                sx={{
+                  fontSize: 16,
+                  color: "#94A3B8",
+                }}
               />
             )}
 
             <Chip
               label={change}
               size="small"
-              color={
-                positive
-                  ? "success"
-                  : negative
-                  ? "error"
-                  : "default"
-              }
               sx={{
-                fontWeight: 700,
-                borderRadius: 2,
-                minWidth: 62,
+                height: 22,
+                minWidth: 52,
+                borderRadius: 1.5,
+                fontSize: 10,
+                fontWeight: 750,
+
+                bgcolor: positive
+                  ? "#ECFDF5"
+                  : negative
+                  ? "#FEF2F2"
+                  : "#F1F5F9",
+
+                color: positive
+                  ? "#15803D"
+                  : negative
+                  ? "#B91C1C"
+                  : "#64748B",
+
+                "& .MuiChip-label": {
+                  px: 0.8,
+                },
               }}
             />
           </Box>
 
           <Typography
-            variant="caption"
             sx={{
-              color: "text.secondary",
+              fontSize: 9.5,
+              color: "#94A3B8",
               fontWeight: 500,
               whiteSpace: "nowrap",
             }}

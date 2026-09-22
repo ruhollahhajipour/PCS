@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import PlantService from "../services/plant.service";
 
 import type { Plant } from "../types/plant";
+
 
 export default function usePlants() {
   const [plants, setPlants] =
@@ -11,19 +15,26 @@ export default function usePlants() {
   const [loading, setLoading] =
     useState(true);
 
+
   async function load() {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    setPlants(
-      await PlantService.getAll()
-    );
+      const data =
+        await PlantService.getAll();
 
-    setLoading(false);
+      setPlants(data);
+    }
+    finally {
+      setLoading(false);
+    }
   }
+
 
   useEffect(() => {
     load();
   }, []);
+
 
   async function create(
     plant: Plant
@@ -35,6 +46,7 @@ export default function usePlants() {
     await load();
   }
 
+
   async function update(
     plant: Plant
   ) {
@@ -45,13 +57,17 @@ export default function usePlants() {
     await load();
   }
 
+
   async function remove(
-    id: number
+    id: string
   ) {
-    await PlantService.delete(id);
+    await PlantService.delete(
+      id
+    );
 
     await load();
   }
+
 
   return {
     plants,

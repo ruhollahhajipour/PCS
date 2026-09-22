@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+
+using PCS.API.Security;
+
+using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
 namespace PCS.API.Controllers;
@@ -17,8 +21,8 @@ public class PmsProgressController : ControllerBase
     }
 
 
-
     [HttpGet("project/{projectId}")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> GetProjectProgress(
         Guid projectId)
     {
@@ -35,10 +39,8 @@ public class PmsProgressController : ControllerBase
     }
 
 
-
-
-
     [HttpGet("wbs/{wbsId}")]
+    [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> GetWbsProgress(
         Guid wbsId)
     {

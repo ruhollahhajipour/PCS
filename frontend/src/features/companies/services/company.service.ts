@@ -1,104 +1,131 @@
+import http from "../../../api/http";
+
 import type { Company } from "../../../models/company";
 
+type CompanyApiDto = {
+  id: string;
+  code: string;
+  name: string;
+  nationalId?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  isActive: boolean;
+};
 
-const companies: Company[] = [
+type CreateCompanyDto = {
+  code: string;
+  name: string;
+  nationalId?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  isActive: boolean;
+};
 
-{
- id: crypto.randomUUID(),
-
- code:"ADISH",
-
- name:"South Adish Gas Condensate Refinery",
-
- nationalId:"0000000000",
-
- address:"Iran",
-
- phone:"",
-
- email:"",
-
- logo:"",
-
- status:"Active",
-
- createdAt:new Date().toISOString(),
-
- updatedAt:new Date().toISOString()
-
+function mapFromApi(
+  dto: CompanyApiDto
+): Company {
+  return {
+    id: dto.id,
+    code: dto.code,
+    name: dto.name,
+    nationalId: dto.nationalId ?? "",
+    address: dto.address ?? "",
+    phone: dto.phone ?? "",
+    email: dto.email ?? "",
+    status: dto.isActive
+      ? "Active"
+      : "Inactive",
+    createdAt: "",
+    updatedAt: "",
+  };
 }
 
-];
+function mapToApi(
+  company: Company
+): CreateCompanyDto {
+  return {
+    code: company.code.trim(),
+    name: company.name.trim(),
 
+    nationalId:
+      company.nationalId?.trim() || null,
 
+    address:
+      company.address?.trim() || null,
+
+    phone:
+      company.phone?.trim() || null,
+
+    email:
+      company.email?.trim() || null,
+
+    isActive:
+      company.status === "Active",
+  };
+}
 
 class CompanyService {
+  async getAll(): Promise<Company[]> {
+    const response =
+      await http.get<CompanyApiDto[]>(
+        "/Companies"
+      );
 
+    return response.data.map(mapFromApi);
+  }
 
-async getAll(){
+  async getById(
+    id: string
+  ): Promise<Company | undefined> {
+    try {
+      const response =
+        await http.get<CompanyApiDto>(
+          `/Companies/${id}`
+        );
 
- return companies;
+      return mapFromApi(response.data);
+    }
+    catch (error: any) {
+      if (
+        error?.response?.status === 404
+      ) {
+        return undefined;
+      }
 
+      throw error;
+    }
+  }
+
+  async create(
+    company: Company
+  ): Promise<string> {
+    const response =
+      await http.post<string>(
+        "/Companies",
+        mapToApi(company)
+      );
+
+    return response.data;
+  }
+
+  async update(
+    company: Company
+  ): Promise<void> {
+    await http.put(
+      `/Companies/${company.id}`,
+      mapToApi(company)
+    );
+  }
+
+  async delete(
+    id: string
+  ): Promise<void> {
+    await http.delete(
+      `/Companies/${id}`
+    );
+  }
 }
-
-
-
-async getById(
- id:string
-){
-
- return companies.find(
-  x=>x.id===id
- );
-
-}
-
-
-
-async create(
- company:Company
-){
-
- companies.push(company);
-
-}
-
-
-
-async update(
- company:Company
-){
-
- const index =
- companies.findIndex(
-  x=>x.id===company.id
- );
-
-
- if(index>=0)
-  companies[index]=company;
-
-}
-
-
-
-async delete(
- id:string
-){
-
- const index =
- companies.findIndex(
-  x=>x.id===id
- );
-
-
- if(index>=0)
-  companies.splice(index,1);
-
-}
-
-
-}
-
 
 export default new CompanyService();
