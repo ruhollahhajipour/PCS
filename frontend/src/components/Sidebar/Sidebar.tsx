@@ -10,13 +10,6 @@ import {
   AssessmentRounded,
   SettingsRounded,
 } from "@mui/icons-material";
-<Box
-    component="img"
-    src="/kgn-logo.png"
-    sx={{
-        width:120
-    }}
-/>
 import {
   Box,
   Divider,

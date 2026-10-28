@@ -12,8 +12,14 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 export default function Header() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <AppBar
       position="sticky"
@@ -43,7 +49,7 @@ export default function Header() {
               color: "#16355B",
             }}
           >
-            Good Evening, Ruhollah 👋
+            Good Evening, {user} 👋
           </Typography>
 
           <Typography
@@ -108,8 +114,19 @@ export default function Header() {
               fontWeight: 700,
             }}
           >
-            R
+            {user?.[0]?.toUpperCase()}
           </Avatar>
+
+          <IconButton
+            title="Logout"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+            sx={{ bgcolor: "#F8FAFC" }}
+          >
+            <LogoutRoundedIcon />
+          </IconButton>
         </Box>
       </Toolbar>
     </AppBar>
