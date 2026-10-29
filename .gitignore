@@ -137,3 +137,6 @@ backend/src/PCS.Application/Resources/Frontend.zip
 # ==========================
 
 backend/_bundle_test/
+
+# Local PCS development process state and logs
+.pcs-dev/
