@@ -59,7 +59,7 @@ try {
     $api = Start-Process -FilePath "dotnet" -ArgumentList @("run", "--project", $apiProjectPath, "--launch-profile", "http") -WorkingDirectory $apiContentRoot -PassThru -RedirectStandardOutput $apiOut -RedirectStandardError $apiErr
     Start-Sleep -Seconds 2
     if ($api.HasExited) { throw "API exited during startup. Review $apiErr and $apiOut. Frontend was not started." }
-    $web = Start-Process -FilePath "npm" -ArgumentList @("run", "dev", "--", "--host", "127.0.0.1") -WorkingDirectory $frontendPath -PassThru -RedirectStandardOutput $webOut -RedirectStandardError $webErr
+    $web = Start-Process -FilePath "npm.cmd" -ArgumentList @("run", "dev", "--", "--host", "127.0.0.1") -WorkingDirectory $frontendPath -PassThru -RedirectStandardOutput $webOut -RedirectStandardError $webErr
     Set-Content -Path (Join-Path $stateDir "api.pid") -Value $api.Id
     Set-Content -Path (Join-Path $stateDir "frontend.pid") -Value $web.Id
     Write-Host ""
