@@ -532,9 +532,7 @@ var activityDtos =
                     x.Budget *
                     (x.Progress / 100m),
 
-                PlannedValue =
-                    x.Budget *
-                    0.5m
+                PlannedValue = 0
             })
         .ToList();
 
@@ -767,9 +765,7 @@ await _unitOfWork
 
 
 
-                    var pv =
-                        x.Budget *
-                        0.5m;
+                    var pv = 0m; // Activity-level baseline PV is not modeled yet.
 
 
 
@@ -1099,233 +1095,97 @@ await _unitOfWork
         List<Activity> activities,
         decimal totalProjectBudget)
     {
-
-        var budgetLookup =
-            activities
-            .GroupBy(
-                x => x.WbsNodeId)
-            .ToDictionary(
-                x => x.Key,
-                x => x.Sum(
-                    a => a.Budget));
-
-
-
-        var lookup =
-            nodes.ToDictionary(
-                x => x.Id,
-                x =>
-                new WbsNodeDto
-                {
-                    Id =
-                        x.Id,
-
-
-                    ParentId =
-                        x.ParentId,
-
-
-                    Code =
-                        x.Code,
-
-
-                    ParentCode =
-                        nodes
-                        .FirstOrDefault(
-                            p =>
-                                p.Id ==
-                                x.ParentId)
-                        ?.Code,
-
-
-                    Path =
-                        x.Path,
-
-
-                    Name =
-                        x.Name,
-
-
-                    Level =
-                        x.Level,
-
-
-                    SortOrder =
-                        x.SortOrder
-                });
-
-
-
-        // ==========================================
-        // Bottom-Up Budget Calculation
-        // ==========================================
-
-        foreach(var node in nodes
-            .OrderByDescending(
-                x => x.Level))
-        {
-
-            var dto =
-                lookup[node.Id];
-
-
-            decimal budget = 0;
-
-
-
-            if(budgetLookup.TryGetValue(
-                    node.Id,
-                    out var activityBudget))
+        var lookup = nodes.ToDictionary(
+            node => node.Id,
+            node => new WbsNodeDto
             {
-                budget += activityBudget;
-            }
+                Id = node.Id,
+                ParentId = node.ParentId,
+                Code = node.Code,
+                ParentCode = nodes.FirstOrDefault(parent => parent.Id == node.ParentId)?.Code,
+                Path = node.Path,
+                Name = node.Name,
+                Level = node.Level,
+                SortOrder = node.SortOrder
+            });
 
+        // Aggregate direct activity values first. PlannedValue is intentionally
+        // zero: the current Activity entity has no baseline/time-phased PV field.
+        foreach (var activity in activities)
+        {
+            if (!lookup.TryGetValue(activity.WbsNodeId, out var node))
+                continue;
 
-
-            budget +=
-                dto.Children
-                .Sum(
-                    x => x.Budget);
-
-
-
-            dto.Budget =
-                budget;
+            node.Budget += activity.Budget;
+            node.ActualCost += activity.ActualCost;
+            node.EarnedValue += activity.Budget * (activity.Progress / 100m);
         }
 
-
-
-
-
-        // ==========================================
-        // W.V Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        // Roll up each node once, from leaves to roots.
+        foreach (var node in nodes.OrderByDescending(item => item.Level))
         {
-            item.WeightValue =
-                totalProjectBudget == 0
+            if (!node.ParentId.HasValue ||
+                !lookup.TryGetValue(node.ParentId.Value, out var parent))
+                continue;
+
+            var child = lookup[node.Id];
+            parent.Budget += child.Budget;
+            parent.ActualCost += child.ActualCost;
+            parent.EarnedValue += child.EarnedValue;
+            parent.PlannedValue += child.PlannedValue;
+        }
+
+        foreach (var item in lookup.Values)
+        {
+            item.WeightValue = totalProjectBudget <= 0
                 ? 0
-                :
-                (item.Budget /
-                 totalProjectBudget)
-                 * 100m;
+                : item.Budget / totalProjectBudget * 100m;
+
+            item.WeightFactor = item.ParentId.HasValue &&
+                lookup.TryGetValue(item.ParentId.Value, out var parent) &&
+                parent.Budget > 0
+                    ? item.Budget / parent.Budget * 100m
+                    : item.ParentId.HasValue ? 0 : (item.Budget > 0 ? 100m : 0m);
+
+            item.Progress = item.Budget <= 0
+                ? 0
+                : item.EarnedValue / item.Budget * 100m;
         }
 
-
-
-
-
-        // ==========================================
-        // W.F Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        var roots = new List<WbsNodeDto>();
+        foreach (var node in nodes.OrderBy(item => item.SortOrder).ThenBy(item => item.Code))
         {
-            if(item.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    item.ParentId.Value,
-                    out var parent))
-            {
-                item.WeightFactor =
-                    parent.Budget == 0
-                    ? 0
-                    :
-                    (item.Budget /
-                     parent.Budget)
-                     * 100m;
-            }
-            else
-            {
-                item.WeightFactor =
-                    item.WeightValue;
-            }
-        }
-
-
-
-
-
-        var roots =
-            new List<WbsNodeDto>();
-
-
-        foreach(var node in nodes)
-        {
-            var item =
-                lookup[node.Id];
-
-
-            if(node.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    node.ParentId.Value,
-                    out var parent))
-            {
+            var item = lookup[node.Id];
+            if (node.ParentId.HasValue && lookup.TryGetValue(node.ParentId.Value, out var parent))
                 parent.Children.Add(item);
-            }
             else
-            {
                 roots.Add(item);
-            }
         }
-
 
         return roots;
     }
-
-
-
-
-
-
 
 
     // =====================================================
     // GET WBS TREE
     // =====================================================
 
-    public async Task<List<WbsNodeDto>>
-        GetWbsTreeAsync(
-            Guid projectId)
+    public async Task<List<WbsNodeDto>> GetWbsTreeAsync(Guid projectId)
     {
-
-        var nodes =
-            (await _wbsRepository
-                .GetAllAsync())
-            .Where(x =>
-                x.ProjectId == projectId)
-            .OrderBy(x =>
-                x.Path)
+        var nodes = (await _wbsRepository.GetAllAsync())
+            .Where(item => item.ProjectId == projectId)
+            .OrderBy(item => item.Level)
+            .ThenBy(item => item.SortOrder)
+            .ThenBy(item => item.Code)
             .ToList();
 
-
-
-        var activities =
-            (await _activityRepository
-                .GetAllAsync())
-            .Where(x =>
-                x.ProjectId == projectId)
+        var activities = (await _activityRepository.GetAllAsync())
+            .Where(item => item.ProjectId == projectId)
             .ToList();
 
-
-
-        var totalBudget =
-            activities.Sum(
-                x => x.Budget);
-
-
-
-        return BuildWbsTree(
-            nodes,
-            activities,
-            totalBudget);
+        var totalBudget = activities.Sum(item => item.Budget);
+        return BuildWbsTree(nodes, activities, totalBudget);
     }
-
-
-
-
-
-
 
 
     // =====================================================
@@ -1425,9 +1285,7 @@ await _unitOfWork
                         (x.Progress / 100m),
 
 
-                    PlannedValue =
-                        x.Budget *
-                        0.5m,
+                    PlannedValue = 0,
 
 
                     IsCritical =
