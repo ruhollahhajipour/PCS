@@ -6,7 +6,7 @@ public sealed class InitialAdminSettings
 
     public string Username { get; set; } = "admin";
 
-    public string Password { get; set; } = "admin123";
+    public string Password { get; set; } = string.Empty;
 
     public string FirstName { get; set; } = "PCS";
 

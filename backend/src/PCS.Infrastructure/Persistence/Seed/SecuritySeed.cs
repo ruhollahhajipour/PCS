@@ -460,28 +460,14 @@ public static class SecuritySeed
                 .Get<InitialAdminSettings>()
             ?? new InitialAdminSettings();
 
-        if (string.IsNullOrWhiteSpace(
-                initialAdmin.Username))
+        string normalizedUsername =
+            initialAdmin.Username?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(normalizedUsername))
         {
             throw new InvalidOperationException(
                 "PCS initial administrator username is not configured.");
         }
-
-        if (string.IsNullOrWhiteSpace(
-                initialAdmin.Password))
-        {
-            throw new InvalidOperationException(
-                "PCS initial administrator password is not configured.");
-        }
-
-        if (initialAdmin.Password.Length < 8)
-        {
-            throw new InvalidOperationException(
-                "PCS initial administrator password must contain at least 8 characters.");
-        }
-
-        string normalizedUsername =
-            initialAdmin.Username.Trim();
 
         var userSet =
             context.Set<User>();
@@ -489,8 +475,24 @@ public static class SecuritySeed
         var existingUser =
             await userSet
                 .SingleOrDefaultAsync(
-                    x =>
-                        x.UserName == normalizedUsername);
+                    x => x.UserName == normalizedUsername);
+
+        // A configured bootstrap password is required only when
+        // the initial administrator does not already exist.
+        if (existingUser == null)
+        {
+            if (string.IsNullOrWhiteSpace(initialAdmin.Password))
+            {
+                throw new InvalidOperationException(
+                    "PCS initial administrator password is not configured.");
+            }
+
+            if (initialAdmin.Password.Length < 12)
+            {
+                throw new InvalidOperationException(
+                    "PCS initial administrator password must contain at least 12 characters.");
+            }
+        }
 
         User adminUser;
 
