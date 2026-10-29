@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -817,6 +817,14 @@ app.UseSwagger();
 
 
 app.UseSwaggerUI();
+
+
+// ============================================================
+// API Health Endpoint
+// ============================================================
+// Lightweight liveness check; does not expose database or configuration details.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
+    .AllowAnonymous();
 
 
 // ============================================================
