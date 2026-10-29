@@ -11,6 +11,22 @@ The script starts the API on `http://localhost:5201` and Vite on
 `http://localhost:5173`. Open the Vite URL. Vite proxies `/api` to port
 5201.
 
+## Frontend-only visual preview
+
+For a no-backend preview, start only Vite:
+
+```powershell
+npm install --prefix frontend
+npm run dev --prefix frontend
+```
+
+Then open `http://localhost:5173/preview`.
+
+The public `/preview` route renders a separate read-only dashboard with
+fictional sample data. It does not call the API, authenticate a user, or access
+PCS database records. It does not unlock or bypass any protected application
+route. Use the normal `/` or `/login` routes for the authenticated application.
+
 ## Database safety
 
 API startup currently runs EF Core `MigrateAsync()` and `SecuritySeed.SeedAsync()`.
@@ -51,9 +67,8 @@ The stop script terminates the recorded process trees. If startup fails, inspect
 - This is a development launcher, not the Windows installer or production launcher.
 - The API still performs migrations and security seeding, but only after the
   explicit confirmation and against the isolated development database.
-- The frontend currently requires a successful API for authenticated,
-  data-backed workflows. A dedicated no-API interactive demo mode has not yet
-  been implemented.
+- The `/preview` page is a static visual preview only; authenticated,
+  data-backed workflows still require the API.
 - The lockfile currently omits the declared `vitest` dependency. Regenerate
   `frontend/package-lock.json` with the repository's supported npm version
   before relying on clean `npm ci` test setup.
