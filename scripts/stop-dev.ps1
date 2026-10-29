@@ -7,7 +7,7 @@ foreach ($name in @("frontend", "api")) {
     $processId = 0
     if ([int]::TryParse((Get-Content $pidFile -Raw).Trim(), [ref]$processId)) {
         $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
-        if ($process) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue; Write-Host "Stopped $name process (PID $processId)." }
+        if ($process) { & taskkill.exe /PID $processId /T /F | Out-Null; Write-Host "Stopped $name process tree (PID $processId)." }
     }
     Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
 }
