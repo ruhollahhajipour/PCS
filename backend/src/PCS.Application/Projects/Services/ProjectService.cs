@@ -234,17 +234,8 @@ public class ProjectService : IProjectService
             dto.Progress;
 
 
-        project.SPI =
-            dto.SPI == 0
-                ? 1
-                : dto.SPI;
-
-
-
-        project.CPI =
-            dto.CPI == 0
-                ? 1
-                : dto.CPI;
+        project.SPI = dto.SPI;
+        project.CPI = dto.CPI;
 
 
 
