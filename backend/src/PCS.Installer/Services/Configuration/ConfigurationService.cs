@@ -15,11 +15,7 @@ public class ConfigurationService
                 nameof(context));
         }
 
-
-        // ==================================================
         // Required directories
-        // ==================================================
-
         Directory.CreateDirectory(
             context.ConfigPath);
 
@@ -29,194 +25,105 @@ public class ConfigurationService
         string appSettingsFile =
             Path.Combine(context.BackendPath, "appsettings.json");
 
-        // Repair and upgrade must not replace existing security
-        // material or bootstrap credentials.
-        if (context.Mode != InstallationMode.NewInstall)
-        {
-            if (!File.Exists(appSettingsFile))
-            {
-                throw new FileNotFoundException(
-                    "Existing PCS API configuration was not found; refusing to regenerate security settings.",
-                    appSettingsFile);
-            }
+        bool isNewInstall =
+            context.Mode == InstallationMode.NewInstall;
 
-            return;
+        // Repair and upgrade must preserve the existing API
+        // configuration, including JWT signing material.
+        if (!isNewInstall && !File.Exists(appSettingsFile))
+        {
+            throw new FileNotFoundException(
+                "Existing PCS API configuration was not found; refusing to regenerate security settings.",
+                appSettingsFile);
         }
 
-        context.JwtSecret =
-            Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-
-        context.InitialAdminPassword =
-            Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
-
-        // ==================================================
-        // Database configuration
-        // ==================================================
-
+        // Validate and persist installer/database configuration
+        // for all installation modes.
         string connectionString =
             context.ConnectionString;
 
-        if (string.IsNullOrWhiteSpace(
-                connectionString))
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
                 "PCS database connection string was not configured.");
         }
-
-
-        // ==================================================
-        // PCS installer configuration
-        // ==================================================
 
         string pcsConfigFile =
             Path.Combine(
                 context.ConfigPath,
                 "pcs.config.json");
 
-
-        var pcsConfig =
-            new
+        var pcsConfig = new
+        {
+            ConnectionString = connectionString,
+            Installation = new
             {
-                ConnectionString =
-                    connectionString,
-
-                Installation =
-                    new
-                    {
-                        Product =
-                            context.ProductName,
-
-                        Version =
-                            context.Version,
-
-                        Type =
-                            context.InstallationType.ToString(),
-
-                        InstalledAt =
-                            DateTime.Now,
-
-                        ApiUrl =
-                            context.ApiUrl
-                    }
-            };
-
+                Product = context.ProductName,
+                Version = context.Version,
+                Type = context.InstallationType.ToString(),
+                InstalledAt = DateTime.Now,
+                ApiUrl = context.ApiUrl
+            }
+        };
 
         WriteJsonFile(
             pcsConfigFile,
             pcsConfig);
 
+        // Security credentials are generated only for a new install.
+        // Never regenerate or overwrite them during repair/upgrade.
+        if (!isNewInstall)
+        {
+            return;
+        }
 
-        // ==================================================
-        // ASP.NET Core API configuration
-        // ==================================================
+        context.JwtSecret =
+            Convert.ToBase64String(
+                RandomNumberGenerator.GetBytes(64));
 
-        var appSettings =
-            new
+        context.InitialAdminPassword =
+            Convert.ToBase64String(
+                RandomNumberGenerator.GetBytes(24))
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
+
+        var appSettings = new
+        {
+            ConnectionStrings = new
             {
-                // --------------------------------------------------
-                // Database
-                // --------------------------------------------------
-
-                ConnectionStrings =
-                    new
-                    {
-                        DefaultConnection =
-                            connectionString
-                    },
-
-
-                // --------------------------------------------------
-                // JWT Authentication
-                // --------------------------------------------------
-
-                Jwt =
-                    new
-                    {
-                        Secret =
-                            context.JwtSecret,
-
-                        Issuer =
-                            "PCS",
-
-                        Audience =
-                            "PCS",
-
-                        ExpirationMinutes =
-                            480
-                    },
-
-
-                // --------------------------------------------------
-                // Initial Administrator
-                //
-                // IMPORTANT:
-                // This is intentionally the installer default.
-                // SecuritySeed sets MustChangePassword = true
-                // for a newly-created administrator.
-                // Existing administrator passwords are NEVER
-                // overwritten by SecuritySeed.
-                // --------------------------------------------------
-
-                InitialAdmin =
-                    new
-                    {
-                        Username =
-                            "admin",
-
-                        Password =
-                            context.InitialAdminPassword,
-
-                        FirstName =
-                            "PCS",
-
-                        LastName =
-                            "Administrator",
-
-                        Email =
-                            "admin@pcs.local"
-                    },
-
-
-                // --------------------------------------------------
-                // Logging
-                // --------------------------------------------------
-
-                Logging =
-                    new
-                    {
-                        LogLevel =
-                            new
-                            {
-                                Default =
-                                    "Information",
-
-                                MicrosoftAspNetCore =
-                                    "Warning"
-                            }
-                    },
-
-
-                // --------------------------------------------------
-                // ASP.NET Core
-                // --------------------------------------------------
-
-                AllowedHosts =
-                    "*"
-            };
-
+                DefaultConnection = connectionString
+            },
+            Jwt = new
+            {
+                Secret = context.JwtSecret,
+                Issuer = "PCS",
+                Audience = "PCS",
+                ExpirationMinutes = 480
+            },
+            InitialAdmin = new
+            {
+                Username = "admin",
+                Password = context.InitialAdminPassword,
+                FirstName = "PCS",
+                LastName = "Administrator",
+                Email = "admin@pcs.local"
+            },
+            Logging = new
+            {
+                LogLevel = new
+                {
+                    Default = "Information",
+                    MicrosoftAspNetCore = "Warning"
+                }
+            },
+            AllowedHosts = "*"
+        };
 
         WriteJsonFile(
             appSettingsFile,
             appSettings);
     }
-
-
-    // ==========================================================
-    // JSON helper
-    // ==========================================================
 
     private static void WriteJsonFile<T>(
         string filePath,
@@ -229,7 +136,6 @@ public class ConfigurationService
                 {
                     WriteIndented = true
                 });
-
 
         File.WriteAllText(
             filePath,
