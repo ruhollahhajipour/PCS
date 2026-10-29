@@ -1,5 +1,6 @@
 ﻿using PCS.Installer.Models;
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace PCS.Installer.Services.Configuration;
 
@@ -25,6 +26,31 @@ public class ConfigurationService
         Directory.CreateDirectory(
             context.BackendPath);
 
+        string appSettingsFile =
+            Path.Combine(context.BackendPath, "appsettings.json");
+
+        // Repair and upgrade must not replace existing security
+        // material or bootstrap credentials.
+        if (context.Mode != InstallationMode.NewInstall)
+        {
+            if (!File.Exists(appSettingsFile))
+            {
+                throw new FileNotFoundException(
+                    "Existing PCS API configuration was not found; refusing to regenerate security settings.",
+                    appSettingsFile);
+            }
+
+            return;
+        }
+
+        context.JwtSecret =
+            Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        context.InitialAdminPassword =
+            Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
 
         // ==================================================
         // Database configuration
@@ -87,12 +113,6 @@ public class ConfigurationService
         // ASP.NET Core API configuration
         // ==================================================
 
-        string appSettingsFile =
-            Path.Combine(
-                context.BackendPath,
-                "appsettings.json");
-
-
         var appSettings =
             new
             {
@@ -116,7 +136,7 @@ public class ConfigurationService
                     new
                     {
                         Secret =
-                            "PCS-Development-Only-Secret-Change-Before-Release-2026",
+                            context.JwtSecret,
 
                         Issuer =
                             "PCS",
@@ -147,7 +167,7 @@ public class ConfigurationService
                             "admin",
 
                         Password =
-                            "admin123",
+                            context.InitialAdminPassword,
 
                         FirstName =
                             "PCS",
