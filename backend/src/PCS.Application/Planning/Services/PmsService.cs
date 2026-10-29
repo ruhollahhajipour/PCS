@@ -688,13 +688,9 @@ await _unitOfWork
 
 
 
-        // فعلاً Baseline پیش فرض 50%
-        // بعداً از Schedule Baseline خوانده می‌شود
-        var plannedValue =
-            activities.Sum(
-                x =>
-                    x.Budget *
-                    0.5m);
+        // Activity-level time-phased baseline values are not modeled.
+        // Do not fabricate PV from a fixed percentage of budget.
+        var plannedValue = 0m;
 
 
 
