@@ -10,7 +10,6 @@ public class PmsEvmService : IPmsEvmService
     private readonly IGenericRepository<Activity> _activityRepository;
     private readonly IGenericRepository<ProgressEntry> _progressRepository;
 
-
     public PmsEvmService(
         IGenericRepository<Activity> activityRepository,
         IGenericRepository<ProgressEntry> progressRepository)
@@ -19,99 +18,48 @@ public class PmsEvmService : IPmsEvmService
         _progressRepository = progressRepository;
     }
 
-
-
     public async Task<EvmResultDto> CalculateAsync(
         Guid projectId,
         DateTime reportDate)
     {
-        var activities =
-            await _activityRepository.GetAllAsync();
-
-
-        var projectActivities =
-            activities
+        var activities = (await _activityRepository.GetAllAsync())
             .Where(x => x.ProjectId == projectId)
             .ToList();
 
+        var activityIds = activities.Select(x => x.Id).ToHashSet();
 
-
-        var progressEntries =
-            await _progressRepository.GetAllAsync();
-
-
-
-        var entries =
-            progressEntries
-            .Where(x =>
-                projectActivities
-                .Select(a => a.Id)
-                .Contains(x.ActivityId)
-                &&
-                x.ProgressDate <= reportDate)
+        // ProgressEntry is a dated status snapshot. Use the latest snapshot
+        // per activity at or before the report date; summing snapshots
+        // would count the same progress and cost repeatedly.
+        var latestEntries = (await _progressRepository.GetAllAsync())
+            .Where(x => activityIds.Contains(x.ActivityId) &&
+                        x.ProgressDate <= reportDate)
+            .GroupBy(x => x.ActivityId)
+            .Select(group => group
+                .OrderByDescending(x => x.ProgressDate)
+                .ThenByDescending(x => x.CreatedAt)
+                .First())
             .ToList();
 
+        var plannedValue = latestEntries.Sum(x => x.PlannedValue);
+        var earnedValue = latestEntries.Sum(x => x.EarnedValue);
+        var actualCost = latestEntries.Sum(x => x.ActualCost);
 
-
-        decimal plannedValue =
-            projectActivities
-            .Where(x =>
-                x.PlannedStart <= reportDate)
-            .Sum(x => x.Budget);
-
-
-
-        decimal earnedValue =
-            entries.Sum(x => x.EarnedValue);
-
-
-
-        decimal actualCost =
-            entries.Sum(x => x.ActualCost);
-
-
-
-        decimal costVariance =
-            earnedValue - actualCost;
-
-
-        decimal scheduleVariance =
-            earnedValue - plannedValue;
-
-
-
-        decimal cpi =
-            actualCost == 0
-            ? 0
-            : earnedValue / actualCost;
-
-
-
-        decimal spi =
-            plannedValue == 0
-            ? 0
-            : earnedValue / plannedValue;
-
-
+        var costVariance = earnedValue - actualCost;
+        var scheduleVariance = earnedValue - plannedValue;
+        var cpi = actualCost == 0 ? 0 : earnedValue / actualCost;
+        var spi = plannedValue == 0 ? 0 : earnedValue / plannedValue;
 
         return new EvmResultDto
         {
             ProjectId = projectId,
-
             ReportDate = reportDate,
-
             PlannedValue = Math.Round(plannedValue, 2),
-
             EarnedValue = Math.Round(earnedValue, 2),
-
             ActualCost = Math.Round(actualCost, 2),
-
             CostVariance = Math.Round(costVariance, 2),
-
             ScheduleVariance = Math.Round(scheduleVariance, 2),
-
             CPI = Math.Round(cpi, 2),
-
             SPI = Math.Round(spi, 2)
         };
     }
