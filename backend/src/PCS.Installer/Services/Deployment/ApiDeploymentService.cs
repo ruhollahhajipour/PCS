@@ -82,6 +82,17 @@ public sealed class ApiDeploymentService
                     source,
                     file);
 
+            // Preserve the installed API configuration during repair
+            // and upgrade. It contains the existing JWT signing key.
+            if (context.Mode != InstallationMode.NewInstall &&
+                string.Equals(
+                    relativePath,
+                    "appsettings.json",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
 
             string target =
                 Path.Combine(
