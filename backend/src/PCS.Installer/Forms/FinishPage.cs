@@ -264,6 +264,42 @@ public class FinishPage
 
             resultCard.Controls.Add(
                 locationLabel);
+
+            if (context.Mode == InstallationMode.NewInstall &&
+                !string.IsNullOrWhiteSpace(context.InitialAdminPassword))
+            {
+                Label bootstrapPasswordLabel =
+                    new Label
+                    {
+                        Text =
+                            "One-time administrator password: " +
+                            context.InitialAdminPassword,
+
+                        Location =
+                            new Point(155, 230),
+
+                        Size =
+                            new Size(525, 30),
+
+                        Font =
+                            Fonts.SmallBold,
+
+                        ForeColor =
+                            Colors.TextPrimary,
+
+                        BackColor =
+                            Color.Transparent,
+
+                        AutoEllipsis =
+                            true
+                    };
+
+                resultCard.Controls.Add(bootstrapPasswordLabel);
+
+                detailLabel.Text =
+                    "Save the one-time administrator password below. " +
+                    "It is required for the first login; change it immediately.";
+            }
         }
 
 
