@@ -225,6 +225,12 @@ public class InstallerContext
         = string.Empty;
 
 
+    // Generated only for a new installation and shown once on Finish.
+    public string JwtSecret { get; set; } = string.Empty;
+
+    public string InitialAdminPassword { get; set; } = string.Empty;
+
+
     // ========================================
     // Application Configuration
     // ========================================
