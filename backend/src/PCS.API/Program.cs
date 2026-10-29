@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -758,6 +759,30 @@ using (
         dbContext,
         builder.Configuration,
         passwordHasher);
+
+    // Remove the one-time bootstrap password only after the seed
+    // completed successfully. The in-memory configuration remains
+    // available for this process; the persisted file is scrubbed.
+    string bootstrapSettingsPath =
+        Path.Combine(baseDirectory, "appsettings.json");
+
+    if (File.Exists(bootstrapSettingsPath))
+    {
+        var settingsJson =
+            JsonNode.Parse(await File.ReadAllTextAsync(bootstrapSettingsPath));
+
+        if (settingsJson is JsonObject settingsObject &&
+            settingsObject["InitialAdmin"] is JsonObject initialAdminObject &&
+            initialAdminObject.ContainsKey("Password"))
+        {
+            initialAdminObject["Password"] = string.Empty;
+
+            await File.WriteAllTextAsync(
+                bootstrapSettingsPath,
+                settingsJson.ToJsonString(
+                    new JsonSerializerOptions { WriteIndented = true }));
+        }
+    }
 }
 
 
