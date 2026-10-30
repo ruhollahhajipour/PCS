@@ -1,15 +1,11 @@
 using System;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using PCS.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace PCS.Infrastructure.Migrations;
 
-[DbContext(typeof(PCSDbContext))]
-[Migration("20261030120000_AddTimePhasedProjectBaselines")]
 public partial class AddTimePhasedProjectBaselines : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
