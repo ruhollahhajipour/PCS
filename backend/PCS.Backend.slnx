@@ -6,4 +6,7 @@
     <Project Path="src/PCS.Infrastructure/PCS.Infrastructure.csproj" />
     <Project Path="src/PCS.Installer/PCS.Installer.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PCS.Application.Tests/PCS.Application.Tests.csproj" />
+  </Folder>
 </Solution>
