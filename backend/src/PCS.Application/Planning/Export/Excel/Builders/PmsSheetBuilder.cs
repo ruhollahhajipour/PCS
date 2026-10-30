@@ -26,7 +26,7 @@ public sealed class PmsSheetBuilder
         sheet.PageSetup.Margins.Left = 0.25;
         sheet.PageSetup.Margins.Right = 0.25;
         sheet.PageSetup.CenterHorizontally = true;
-        sheet.PageSetup.SetRowsToRepeatAtTop("1:7");
+        sheet.PageSetup.RowsToRepeatAtTop = sheet.Range("1:7");
         sheet.PageSetup.Header.Center.AddText("PCS | PROJECT MANAGEMENT SYSTEM");
         sheet.PageSetup.Footer.Left.AddText("Controlled project schedule");
         sheet.PageSetup.Footer.Right.AddText("Page &P of &N");
