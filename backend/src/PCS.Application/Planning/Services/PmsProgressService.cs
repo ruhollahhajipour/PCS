@@ -40,6 +40,13 @@ public sealed class PmsProgressService : IPmsProgressService
 
         // Include the requested WBS and all nested work packages. A visited set
         // protects the calculation from malformed cyclic hierarchy references.
+        var childrenByParent = nodes
+            .Where(x => x.ParentId.HasValue)
+            .GroupBy(x => x.ParentId!.Value)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(x => x.Id).ToList());
+
         var descendantIds = new HashSet<Guid> { wbsNodeId };
         var pending = new Queue<Guid>();
         pending.Enqueue(wbsNodeId);
@@ -47,10 +54,13 @@ public sealed class PmsProgressService : IPmsProgressService
         while (pending.Count > 0)
         {
             var parentId = pending.Dequeue();
-            foreach (var child in nodes.Where(x => x.ParentId == parentId))
+            if (!childrenByParent.TryGetValue(parentId, out var childIds))
+                continue;
+
+            foreach (var childId in childIds)
             {
-                if (descendantIds.Add(child.Id))
-                    pending.Enqueue(child.Id);
+                if (descendantIds.Add(childId))
+                    pending.Enqueue(childId);
             }
         }
 
