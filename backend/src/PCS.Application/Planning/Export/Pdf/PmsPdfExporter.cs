@@ -388,19 +388,23 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
 
         if (isDescription)
         {
-            cell.AlignRight()
+            var descriptor = cell.AlignRight()
                 .Text(text)
                 .FontSize(6.5f)
-                .Bold(row.IsWbs || row.IsCritical)
                 .FontColor(foreground);
+
+            if (row.IsWbs || row.IsCritical)
+                descriptor.Bold();
         }
         else
         {
-            cell.AlignCenter()
+            var descriptor = cell.AlignCenter()
                 .Text(text)
                 .FontSize(6.2f)
-                .Bold(row.IsWbs || row.IsCritical)
                 .FontColor(foreground);
+
+            if (row.IsWbs || row.IsCritical)
+                descriptor.Bold();
         }
     }
 
