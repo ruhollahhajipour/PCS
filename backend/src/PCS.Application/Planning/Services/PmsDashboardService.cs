@@ -86,7 +86,7 @@ public class PmsDashboardService : IPmsDashboardService
             Progress = progress,
 
             Budget =
-                projectActivities.Sum(x => x.Budget),
+                activeBaseline?.TotalBudget ?? projectActivities.Sum(x => x.Budget),
 
             ActualCost =
                 evm?.ActualCost ?? projectActivities.Sum(x => x.ActualCost),
