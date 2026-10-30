@@ -39,8 +39,15 @@ public sealed class PmsSheetBuilder
                 x => x.OrderBy(a => a.Code, StringComparer.OrdinalIgnoreCase).ToList(),
                 StringComparer.OrdinalIgnoreCase);
 
-        var maxLevel = dto.WbsNodes
+        var allWbsNodes = dto.WbsNodes
             .SelectMany(GetAllNodes)
+            .ToList();
+
+        var wbsCodes = allWbsNodes
+            .Select(x => x.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var maxLevel = allWbsNodes
             .Select(x => x.Level)
             .DefaultIfEmpty(1)
             .Max();
@@ -53,15 +60,9 @@ public sealed class PmsSheetBuilder
             WriteNode(sheet, root, dto, activitiesByWbs, ref row, maxLevel, theme);
         }
 
-        var assignedCodes = new HashSet<string>(
-            activitiesByWbs.Keys,
-            StringComparer.OrdinalIgnoreCase);
-
         var unassigned = dto.Activities
             .Where(x => string.IsNullOrWhiteSpace(x.WbsCode) ||
-                        !dto.WbsNodes.SelectMany(GetAllNodes)
-                            .Any(n => string.Equals(
-                                n.Code, x.WbsCode, StringComparison.OrdinalIgnoreCase)))
+                        !wbsCodes.Contains(x.WbsCode))
             .OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -251,7 +252,7 @@ public sealed class PmsSheetBuilder
         var weightValue = projectBudget == 0
             ? 0
             : activity.Budget / projectBudget;
-        var weightFactor = owner?.Budget is > 0
+        var weightFactor = owner is not null && owner.Budget > 0
             ? activity.Budget / owner.Budget
             : 0;
 
