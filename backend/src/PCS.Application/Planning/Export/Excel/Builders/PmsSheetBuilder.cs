@@ -72,7 +72,11 @@ public sealed class PmsSheetBuilder
                 WriteActivity(sheet, row++, activity, null, dto, theme);
         }
 
-        ApplyFormatting(sheet, Math.Max(HeaderRow, row - 1), theme);
+        ApplyFormatting(
+            sheet,
+            Math.Max(HeaderRow, row - 1),
+            theme,
+            dto.ExportDate);
 
         var noteRow = row + 1;
         sheet.Range(noteRow, 1, noteRow, 15).Merge();
@@ -372,7 +376,8 @@ public sealed class PmsSheetBuilder
     private static void ApplyFormatting(
         IXLWorksheet sheet,
         int lastRow,
-        ThemePalette theme)
+        ThemePalette theme,
+        DateTime exportDate)
     {
         if (lastRow >= FirstDataRow)
         {
@@ -407,7 +412,7 @@ public sealed class PmsSheetBuilder
         sheet.PageSetup.Margins.Right = 0.25;
         sheet.PageSetup.Footer.Left.AddText("PCS | Project Control Suite");
         sheet.PageSetup.Footer.Center.AddText(
-            $"Generated: {dto.ExportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+            $"Generated: {exportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
         sheet.PageSetup.Footer.Right.AddText("Page &P / &N");
         sheet.TabColor = XLColor.FromHtml(theme.Primary);
     }
