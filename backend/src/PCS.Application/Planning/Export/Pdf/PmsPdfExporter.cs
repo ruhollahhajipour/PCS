@@ -48,6 +48,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         ArgumentNullException.ThrowIfNull(dto);
 
         var rows = BuildRows(dto);
+        var theme = PmsPdfTheme.From(dto);
         var platformLogo = _brandingService.GetPlatformLogo(dto);
         var companyLogo = _brandingService.GetCompanyLogo(dto);
 
@@ -71,11 +72,12 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                         container,
                         dto,
                         platformLogo,
-                        companyLogo));
+                        companyLogo,
+                        theme));
 
                 page.Content()
                     .PaddingTop(8)
-                    .Element(container => ComposeBody(container, dto, rows));
+                    .Element(container => ComposeBody(container, dto, rows, theme));
 
                 page.Footer()
                     .PaddingTop(7)
@@ -88,12 +90,13 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         IContainer container,
         ExportPmsDto dto,
         byte[]? platformLogo,
-        byte[]? companyLogo)
+        byte[]? companyLogo,
+        PmsPdfTheme theme)
     {
         container
             .ContentFromRightToLeft()
             .BorderBottom(2)
-            .BorderColor(Colors.Blue.Darken2)
+            .BorderColor(theme.Primary)
             .PaddingBottom(7)
             .Row(row =>
             {
@@ -114,16 +117,14 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                             .Text("PCS | PROJECT CONTROL SUITE")
                             .FontSize(9)
                             .Bold()
-                            .FontColor(Colors.Blue.Darken2);
+                            .FontColor(theme.Primary);
 
                         column.Item()
                             .PaddingTop(2)
-                            .Text(string.IsNullOrWhiteSpace(dto.ReportTitle)
-                                ? "گزارش جامع سیستم مدیریت پروژه"
-                                : dto.ReportTitle)
+                            .Text(ResolveReportTitle(dto.ReportTitle))
                             .FontSize(13)
                             .Bold()
-                            .FontColor(Colors.Blue.Darken4);
+                            .FontColor(theme.Dark);
 
                         var companyName = string.IsNullOrWhiteSpace(dto.CompanyDisplayName)
                             ? dto.ClientName
@@ -152,7 +153,8 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     private static void ComposeBody(
         IContainer container,
         ExportPmsDto dto,
-        IReadOnlyCollection<PmsPdfRow> rows)
+        IReadOnlyCollection<PmsPdfRow> rows,
+        PmsPdfTheme theme)
     {
         container
             .ContentFromRightToLeft()
@@ -179,22 +181,22 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     row.Spacing(6);
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "پیشرفت کل", FormatPercent(dto.OverallProgress)));
+                        c, "پیشرفت کل", FormatPercent(dto.OverallProgress), theme));
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "بودجه کل", FormatAmount(dto.TotalBudget)));
+                        c, "بودجه کل", FormatAmount(dto.TotalBudget), theme));
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "تعداد فعالیت‌ها", dto.TotalActivities.ToString(CultureInfo.InvariantCulture)));
+                        c, "تعداد فعالیت‌ها", dto.TotalActivities.ToString(CultureInfo.InvariantCulture), theme));
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "تعداد گره‌های WBS", dto.TotalWbsNodes.ToString(CultureInfo.InvariantCulture)));
+                        c, "تعداد گره‌های WBS", dto.TotalWbsNodes.ToString(CultureInfo.InvariantCulture), theme));
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "CPI", FormatIndex(dto.CPI)));
+                        c, "CPI", FormatIndex(dto.CPI), theme));
 
                     row.RelativeItem().Element(c => ComposeKpi(
-                        c, "SPI", FormatIndex(dto.SPI)));
+                        c, "SPI", FormatIndex(dto.SPI), theme));
                 });
 
                 column.Item()
@@ -202,7 +204,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .Text("ساختار شکست کار و فهرست فعالیت‌ها")
                     .FontSize(10)
                     .Bold()
-                    .FontColor(Colors.Blue.Darken4);
+                    .FontColor(theme.Dark);
 
                 column.Item().Table(table =>
                 {
@@ -230,7 +232,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                         foreach (var title in TableHeaders)
                         {
                             header.Cell().Element(cell =>
-                                ComposeHeaderCell(cell, title));
+                                ComposeHeaderCell(cell, title, theme));
                         }
                     });
 
@@ -241,7 +243,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                             table.Cell()
                                 .ColumnSpan(TableColumnCount)
                                 .Element(cell =>
-                                    cell.Background(Colors.Blue.Darken3)
+                                    cell.Background(theme.Dark)
                                         .Padding(5)
                                         .Text(item.Name)
                                         .FontSize(8)
@@ -273,7 +275,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                         {
                             var cellIndex = index;
                             table.Cell().Element(cell =>
-                                ComposeBodyCell(cell, values[cellIndex], item, cellIndex == 4));
+                                ComposeBodyCell(cell, values[cellIndex], item, cellIndex == 4, theme));
                         }
                     }
                 });
@@ -283,7 +285,12 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .Text("شاخص‌های ارزش کسب‌شده (EVM)")
                     .FontSize(9)
                     .Bold()
-                    .FontColor(Colors.Blue.Darken4);
+                    .FontColor(theme.Dark);
+
+                column.Item()
+                    .Text("توجه: مقدار PV در نسخه فعلی با فرض ثابت ۵۰٪ بودجه محاسبه می‌شود و معادل Baseline زمان‌بندی نیست.")
+                    .FontSize(6.5f)
+                    .FontColor(Colors.Orange.Darken3);
 
                 column.Item().Row(row =>
                 {
@@ -297,12 +304,16 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
             });
     }
 
-    private static void ComposeKpi(IContainer container, string label, string value)
+    private static void ComposeKpi(
+        IContainer container,
+        string label,
+        string value,
+        PmsPdfTheme theme)
     {
         container
             .Border(1)
-            .BorderColor(Colors.Grey.Lighten2)
-            .Background(Colors.Grey.Lighten5)
+            .BorderColor(theme.Border)
+            .Background("#F6F8FB")
             .PaddingVertical(6)
             .PaddingHorizontal(7)
             .Column(column =>
@@ -317,7 +328,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .Text(value)
                     .FontSize(11)
                     .Bold()
-                    .FontColor(Colors.Blue.Darken3);
+                    .FontColor(theme.Primary);
             });
     }
 
@@ -342,12 +353,15 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
             });
     }
 
-    private static void ComposeHeaderCell(IContainer container, string text)
+    private static void ComposeHeaderCell(
+        IContainer container,
+        string text,
+        PmsPdfTheme theme)
     {
         container
-            .Background(Colors.Blue.Darken3)
+            .Background(theme.Dark)
             .BorderBottom(1)
-            .BorderColor(Colors.Blue.Darken4)
+            .BorderColor(theme.Border)
             .PaddingVertical(5)
             .PaddingHorizontal(2)
             .AlignCenter()
@@ -361,14 +375,15 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         IContainer container,
         string text,
         PmsPdfRow row,
-        bool isDescription)
+        bool isDescription,
+        PmsPdfTheme theme)
     {
         var background = row.IsWbs
             ? row.Level <= 1
-                ? Colors.Blue.Darken2
+                ? theme.Dark
                 : row.Level == 2
-                    ? Colors.Blue.Lighten4
-                    : Colors.Grey.Lighten4
+                    ? theme.Secondary
+                    : "#EFF6FF"
             : row.IsMilestone
                 ? Colors.Yellow.Lighten4
                 : Colors.White;
@@ -377,7 +392,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
             ? Colors.White
             : row.IsCritical
                 ? Colors.Red.Darken2
-                : Colors.Grey.Darken4;
+                : theme.Dark;
 
         var cell = container
             .Background(background)
@@ -530,7 +545,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 Level = level,
                 Code = activity.Code,
                 ParentCode = parentCode,
-                Type = activity.IsMilestone ? "Milestone" : "Activity",
+                Type = activity.IsMilestone ? "نقطه عطف" : "فعالیت",
                 Name = activity.Name,
                 Budget = activity.Budget,
                 WeightFactor = activity.WeightFactor,
@@ -548,6 +563,15 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         }
     }
 
+    private static string ResolveReportTitle(string? reportTitle) =>
+        string.IsNullOrWhiteSpace(reportTitle) ||
+        string.Equals(
+            reportTitle.Trim(),
+            "PCS Professional PMS Report",
+            StringComparison.OrdinalIgnoreCase)
+            ? "گزارش جامع سیستم مدیریت پروژه"
+            : reportTitle;
+
     private static string FormatAmount(decimal value) =>
         value.ToString("#,##0.##", CultureInfo.InvariantCulture);
 
@@ -559,6 +583,29 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
 
     private static string Display(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private sealed record PmsPdfTheme(
+        string Primary,
+        string Dark,
+        string Secondary,
+        string Border)
+    {
+        public static PmsPdfTheme From(ExportPmsDto dto) => new(
+            NormalizeColor(dto.ThemePrimaryColor, "#2563EB"),
+            NormalizeColor(dto.ThemeDarkColor, "#0F172A"),
+            NormalizeColor(dto.ThemeSecondaryColor, "#60A5FA"),
+            NormalizeColor(dto.ThemeBorderColor, "#1E3A8A"));
+
+        private static string NormalizeColor(string? value, string fallback)
+        {
+            var candidate = value?.Trim();
+            return candidate is { Length: 7 } &&
+                   candidate[0] == '#' &&
+                   candidate.Skip(1).All(Uri.IsHexDigit)
+                ? candidate
+                : fallback;
+        }
+    }
 
     private sealed class PmsPdfRow
     {
