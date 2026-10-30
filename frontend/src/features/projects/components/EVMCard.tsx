@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -42,7 +43,16 @@ export default function EVMCard({ data }: Props) {
           <Typography variant="caption" display="block" color="text.secondary">
             Baseline budget: {formatValue(data.baselineBudget)} · Activities: {data.baselineActivityCount}
           </Typography>
+          <Typography variant="caption" display="block" color="text.secondary">
+            PV is linearly time-phased across captured working days; holiday and shift exceptions are not modelled.
+          </Typography>
         </Box>
+
+        {data.dataQualityNote && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {data.dataQualityNote}
+          </Alert>
+        )}
 
         <Grid container spacing={1.5}>
           {items.map(item => (
