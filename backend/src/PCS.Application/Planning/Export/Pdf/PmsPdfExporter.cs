@@ -290,7 +290,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 column.Item()
                     .Text(dto.HasApprovedBaseline
                         ? $"مبنای زمان‌بندی: {dto.BaselineName} | نسخه {dto.BaselineVersion} | تاریخ گزارش: {dto.EvmDataDate:yyyy-MM-dd} | PV: توزیع خطی در روزهای کاری ثبت‌شده"
-                        : "هشدار: Baseline زمان‌بندی مصوب و فعالی وجود ندارد؛ مقدار PV برابر صفر گزارش شده است.")
+                        : "هشدار: Baseline زمان‌بندی مصوب و فعالی وجود ندارد؛ شاخص‌های EVM معتبر نیستند و PV، EV، CV، SV، CPI و SPI صفر گزارش شده‌اند.")
                     .FontSize(6.5f)
                     .FontColor(dto.HasApprovedBaseline ? theme.Primary : Colors.Orange.Darken3);
 
