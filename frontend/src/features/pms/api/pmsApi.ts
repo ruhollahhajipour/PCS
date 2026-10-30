@@ -130,6 +130,7 @@ export interface PmsEvm {
   baselineVersion: number;
   baselineActivityCount: number;
   baselineBudget: number;
+  dataQualityNote?: string | null;
 
   plannedValue: number;
   earnedValue: number;
