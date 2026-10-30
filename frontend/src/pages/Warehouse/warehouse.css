@@ -1,0 +1,12 @@
+/* The app shell is LTR; the warehouse module is Persian (RTL).
+   Popups (Select menus, Autocomplete lists) render in portals, so they
+   need the direction applied explicitly. */
+.pcs-rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.pcs-ltr-num input {
+  direction: ltr;
+  text-align: right;
+}

@@ -22,4 +22,4 @@ Enterprise Project Control System
 - Administration
 
 Status:
-Version 0.3 Alpha
+Version 0.4 Alpha (Warehouse module completed)
