@@ -23,7 +23,7 @@ import {
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   DOC_TYPE_LABEL,
@@ -31,7 +31,7 @@ import {
   PARTY_KIND_LABEL,
   RECEIPT_KIND_LABEL,
 } from "../../constants/warehouse";
-import { itemGroups, parties, projects, units } from "../../mock/warehouse";
+import { parties, projects, units } from "../../mock/warehouse";
 import {
   WarehouseService,
   getLineCost,
@@ -87,15 +87,16 @@ const AUDIT_LABEL = {
   Cancel: "ابطال",
 } as const;
 
+let nextLineKey = 1;
+
 const unitName = (code?: string) => units.find((u) => u.code === code)?.name ?? "";
 
 export default function DocumentDialog({ type, doc, onClose, onDone }: Props) {
   const snap = useWarehouse();
   const readOnly = !!doc && doc.status !== "Draft";
 
-  const keyRef = useRef(1);
   const newLine = (): LineState => ({
-    key: keyRef.current++,
+    key: nextLineKey++,
     itemId: null,
     qty: "",
     unitPrice: "",
@@ -137,7 +138,7 @@ export default function DocumentDialog({ type, doc, onClose, onDone }: Props) {
   const [lines, setLines] = useState<LineState[]>(() => {
     if (!doc) return [newLine()];
     return doc.lines.map((l): LineState => {
-      const base = { key: keyRef.current++, itemId: l.itemId, description: l.description ?? "" };
+      const base = { key: nextLineKey++, itemId: l.itemId, description: l.description ?? "" };
       if (doc.type === "Count") {
         const cl = l as CountLine;
         return { ...base, qty: "", unitPrice: "", countedQty: String(cl.countedQty), wbs: "" };
@@ -727,6 +728,3 @@ export default function DocumentDialog({ type, doc, onClose, onDone }: Props) {
     </Dialog>
   );
 }
-
-// Re-exported for the list page (item group names in tooltips etc.).
-export const ITEM_GROUPS = itemGroups;

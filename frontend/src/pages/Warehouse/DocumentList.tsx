@@ -37,7 +37,8 @@ import { formatMoney, formatInt } from "../../utils/format";
 import { showJalali } from "../../utils/jalali";
 import DocumentDialog from "./DocumentDialog";
 import { headCellSx, paperSx, primaryBtnSx } from "./styles";
-import { ConfirmDialog, SelectField, StatusChip, useConfirm } from "./ui";
+import { ConfirmDialog, SelectField, StatusChip } from "./ui";
+import { useConfirm } from "./hooks";
 
 type Action = { kind: "finalize" | "reopen" | "cancel"; doc: WarehouseDoc };
 

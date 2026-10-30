@@ -26,3 +26,9 @@ export function useToast() {
 
   return { toast, notify, close };
 }
+
+/** Keeps the "pending confirmation" state of a row action in one place. */
+export function useConfirm<T>() {
+  const [pending, setPending] = useState<T | null>(null);
+  return { pending, ask: setPending, clear: () => setPending(null) };
+}

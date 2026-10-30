@@ -11,7 +11,6 @@ import {
   Snackbar,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
 
 import { DOC_STATUS_COLOR, DOC_STATUS_LABEL } from "../../constants/warehouse";
 import { normalizeJalali } from "../../utils/jalali";
@@ -215,12 +214,6 @@ export function ConfirmDialog({
       </DialogActions>
     </Dialog>
   );
-}
-
-/** Keeps the "pending confirmation" state of a row action in one place. */
-export function useConfirm<T>() {
-  const [pending, setPending] = useState<T | null>(null);
-  return { pending, ask: setPending, clear: () => setPending(null) };
 }
 
 // ---------- Toast ------------------------------------------------------------

@@ -9,8 +9,8 @@ import Kardex from "./Kardex";
 import Overview from "./Overview";
 import StockReport from "./StockReport";
 import WarehousesTab from "./WarehousesTab";
-import { ConfirmDialog, Toast, useConfirm } from "./ui";
-import { useToast } from "./hooks";
+import { ConfirmDialog, Toast } from "./ui";
+import { useConfirm, useToast } from "./hooks";
 
 const TABS = [
   "نمای کلی",
