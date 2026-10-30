@@ -9,6 +9,7 @@ export interface PmsActivity {
   code: string;
   name: string;
 
+  wbsNodeId: string;
   wbsCode: string;
   wbsName?: string | null;
   wbsLevel: number;
