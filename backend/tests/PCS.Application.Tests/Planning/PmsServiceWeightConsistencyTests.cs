@@ -24,6 +24,7 @@ public sealed class PmsServiceWeightConsistencyTests
         Assert.Equal(25m, childActivity.WeightFactor);
         Assert.Equal(20m, childActivity.WeightValue);
         Assert.Equal(10m, childActivity.WeightedProgress);
+        Assert.Equal(12m, childActivity.Weight);
 
         Assert.Equal(20m, rootActivity.WeightFactor);
         Assert.Equal(20m, rootActivity.WeightValue);
@@ -102,6 +103,7 @@ public sealed class PmsServiceWeightConsistencyTests
                 Code = "A-CHILD",
                 Name = "Child activity",
                 Budget = 100m,
+                Weight = 12m,
                 Progress = 50m
             },
             new Activity
