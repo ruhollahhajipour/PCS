@@ -317,6 +317,10 @@ public sealed class PmsBaselineService : IPmsBaselineService
             x => x.ProjectBaselineId == baseline.Id && !x.IsDeleted))
             .ToList();
 
+        if (items.Count == 0)
+            throw new InvalidOperationException(
+                $"Active approved baseline '{baseline.Name}' has no activity snapshots.");
+
         return ToSnapshotDto(baseline, items);
     }
 
