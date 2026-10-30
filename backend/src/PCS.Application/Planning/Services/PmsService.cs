@@ -1196,7 +1196,7 @@ await _unitOfWork
             foreach (var node in siblings)
             {
                 node.WeightFactor = isRoot
-                    ? node.WeightValue
+                    ? 100m
                     : parentBudget == 0
                         ? 0
                         : node.Budget / parentBudget * 100m;
