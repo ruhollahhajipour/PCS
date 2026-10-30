@@ -9,14 +9,17 @@ public class ProgressEntryService : IProgressEntryService
 {
     private readonly IGenericRepository<ProgressEntry> _repository;
     private readonly IGenericRepository<Activity> _activityRepository;
+    private readonly IPmsBaselineService _baselineService;
 
 
     public ProgressEntryService(
         IGenericRepository<ProgressEntry> repository,
-        IGenericRepository<Activity> activityRepository)
+        IGenericRepository<Activity> activityRepository,
+        IPmsBaselineService baselineService)
     {
         _repository = repository;
         _activityRepository = activityRepository;
+        _baselineService = baselineService;
     }
 
 
@@ -49,8 +52,17 @@ public class ProgressEntryService : IProgressEntryService
 
 
 
-        var earnedValue =
-            activity.Budget * progress / 100;
+        var activeBaseline = await _baselineService.GetActiveSnapshotAsync(activity.ProjectId);
+        var baselineActivity = activeBaseline?.Activities
+            .FirstOrDefault(x => x.ActivityId == activity.Id);
+
+        var baselineBudget = baselineActivity?.Budget ?? 0m;
+        var earnedValue = baselineBudget * progress / 100m;
+        var plannedValue = baselineActivity == null
+            ? 0m
+            : PmsBaselineCalculator.CalculateActivityPlannedValue(
+                baselineActivity,
+                date.Date);
 
 
 
@@ -64,7 +76,9 @@ public class ProgressEntryService : IProgressEntryService
 
             ActualCost = actualCost,
 
-            EarnedValue = earnedValue
+            EarnedValue = earnedValue,
+
+            PlannedValue = plannedValue
         };
 
 
