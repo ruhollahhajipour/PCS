@@ -1,0 +1,71 @@
+name: Backend Application Tests
+
+on:
+  push:
+    branches:
+      - main
+      - development
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-application-tests.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-application-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-solution-build:
+    name: Full Backend Solution Build
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore backend solution
+        run: dotnet restore backend/PCS.Backend.slnx
+
+      - name: Build backend solution
+        run: dotnet build backend/PCS.Backend.slnx --configuration Release --no-restore
+
+  application-tests:
+    name: .NET 10 Application Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore test project
+        run: dotnet restore backend/tests/PCS.Application.Tests/PCS.Application.Tests.csproj
+
+      - name: Build and run application tests
+        run: dotnet test backend/tests/PCS.Application.Tests/PCS.Application.Tests.csproj --configuration Release --no-restore --logger "trx;LogFileName=pcs-application-tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-application-test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: ignore

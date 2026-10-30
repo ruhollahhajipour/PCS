@@ -12,6 +12,7 @@ public class PmsService : IPmsService
     private readonly IGenericRepository<Company> _companyRepository;
     private readonly IGenericRepository<WbsNode> _wbsRepository;
     private readonly IGenericRepository<Activity> _activityRepository;
+    private readonly IGenericRepository<ProgressEntry> _progressRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWbsCalculationService _wbsCalculationService;
     private readonly IPmsBaselineService _baselineService;
@@ -22,6 +23,7 @@ public class PmsService : IPmsService
         IGenericRepository<Company> companyRepository,
         IGenericRepository<WbsNode> wbsRepository,
         IGenericRepository<Activity> activityRepository,
+        IGenericRepository<ProgressEntry> progressRepository,
         IUnitOfWork unitOfWork,
         IWbsCalculationService wbsCalculationService,
         IPmsBaselineService baselineService)
@@ -30,6 +32,7 @@ public class PmsService : IPmsService
         _companyRepository = companyRepository;
         _wbsRepository = wbsRepository;
         _activityRepository = activityRepository;
+        _progressRepository = progressRepository;
         _unitOfWork = unitOfWork;
         _wbsCalculationService = wbsCalculationService;
         _baselineService = baselineService;
@@ -675,10 +678,21 @@ await _unitOfWork
             await _baselineService.GetActiveSnapshotAsync(projectId);
 
         var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = activeBaseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             activeBaseline,
-            dataDate);
+            dataDate,
+            progressEntries);
+
+        var wbsTree = BuildWbsTree(
+            wbsNodes,
+            activities,
+            financials);
+        var calculatedWbsById = FlattenWbsTree(wbsTree)
+            .ToDictionary(x => x.Id);
 
         var totalProjectBudget = financials.TotalBudget;
         var actualCost = financials.ActualCost;
@@ -720,7 +734,9 @@ await _unitOfWork
                                 n.Id ==
                                 x.WbsNodeId);
 
-
+                    calculatedWbsById.TryGetValue(
+                        x.WbsNodeId,
+                        out var calculatedWbs);
 
                     var activityBudget = financials.BudgetByActivity[x.Id];
                     var activityActualCost = financials.ActualCostByActivity[x.Id];
@@ -826,24 +842,21 @@ await _unitOfWork
                         // برای Activity مستقل،
                         // W.F در Export برابر نسبت به WBS است
                         WeightFactor =
-                            wbs == null ||
-                            wbs.Budget == 0
-                            ? 0
-                            :
-                            (activityBudget /
-                             wbs.Budget)
-                             * 100m,
+                            calculatedWbs == null ||
+                            calculatedWbs.Budget <= 0m
+                            ? 0m
+                            : activityBudget / calculatedWbs.Budget * 100m,
 
 
 
                         Weight =
-                            weightValue,
+                            x.Weight,
 
 
 
                         WeightedProgress =
                             weightValue *
-                            (x.Progress / 100m),
+                            (Math.Clamp(x.Progress, 0m, 100m) / 100m),
 
 
 
@@ -990,10 +1003,7 @@ await _unitOfWork
 
 
             WbsNodes =
-                BuildWbsTree(
-                    wbsNodes,
-                    activities,
-                    financials),
+                wbsTree,
 
 
 
@@ -1192,6 +1202,18 @@ await _unitOfWork
         return roots;
     }
 
+    private static IEnumerable<WbsNodeDto> FlattenWbsTree(
+        IEnumerable<WbsNodeDto> roots)
+    {
+        foreach (var node in roots)
+        {
+            yield return node;
+
+            foreach (var descendant in FlattenWbsTree(node.Children))
+                yield return descendant;
+        }
+    }
+
     private sealed record PmsFinancialSnapshot(
         decimal TotalBudget,
         decimal PlannedValue,
@@ -1206,11 +1228,44 @@ await _unitOfWork
         Dictionary<Guid, decimal> PlannedValueByActivity,
         Dictionary<Guid, decimal> ProgressValueByActivity);
 
+    private async Task<List<ProgressEntry>> GetProgressEntriesAsync(
+        IReadOnlyCollection<Activity> activities,
+        DateTime dataDate)
+    {
+        var activityIds = activities.Select(x => x.Id).ToArray();
+        if (activityIds.Length == 0)
+            return [];
+
+        var progressEntries = new List<ProgressEntry>();
+        var progressDateExclusive = dataDate.Date.AddDays(1);
+
+        // Keep the query below common SQLite and SQL Server parameter limits.
+        foreach (var activityIdBatch in activityIds.Chunk(500))
+        {
+            var batchIds = activityIdBatch.ToArray();
+            var batchEntries = await _progressRepository.FindAsync(
+                x => batchIds.Contains(x.ActivityId) &&
+                     x.ProgressDate < progressDateExclusive &&
+                     !x.IsDeleted);
+
+            progressEntries.AddRange(batchEntries);
+        }
+
+        return progressEntries;
+    }
+
     private static PmsFinancialSnapshot BuildFinancialSnapshot(
         IReadOnlyCollection<Activity> activities,
         ProjectBaselineSnapshotDto? baseline,
-        DateTime dataDate)
+        DateTime dataDate,
+        IReadOnlyCollection<ProgressEntry> progressEntries)
     {
+        var progressCostByActivity = progressEntries
+            .GroupBy(x => x.ActivityId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => Math.Max(x.ActualCost, 0m)));
+
         var baselineByActivity = baseline?.Activities
             .ToDictionary(x => x.ActivityId)
             ?? new Dictionary<Guid, ProjectBaselineActivityDto>();
@@ -1225,9 +1280,13 @@ await _unitOfWork
 
         var actualCostByActivity = activities.ToDictionary(
             x => x.Id,
-            x => baseline == null || baselineByActivity.ContainsKey(x.Id)
+            x => baseline == null
                 ? x.ActualCost
-                : 0m);
+                : baselineByActivity.ContainsKey(x.Id)
+                    ? Math.Max(
+                        Math.Max(x.ActualCost, 0m),
+                        progressCostByActivity.GetValueOrDefault(x.Id))
+                    : 0m);
 
         var progressValueByActivity = activities.ToDictionary(
             x => x.Id,
@@ -1297,10 +1356,15 @@ await _unitOfWork
 
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = baseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
-            DateTime.UtcNow.Date);
+            dataDate,
+            progressEntries);
 
         return BuildWbsTree(
             nodes,
@@ -1343,12 +1407,23 @@ await _unitOfWork
 
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = baseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
-            DateTime.UtcNow.Date);
+            dataDate,
+            progressEntries);
 
         var totalBudget = financials.TotalBudget;
+        var wbsTree = BuildWbsTree(
+            wbs.Values.ToList(),
+            activities,
+            financials);
+        var calculatedWbsById = FlattenWbsTree(wbsTree)
+            .ToDictionary(x => x.Id);
 
         return activities.Select(
             x =>
@@ -1358,7 +1433,9 @@ await _unitOfWork
                     x.WbsNodeId,
                     out var node);
 
-
+                calculatedWbsById.TryGetValue(
+                    x.WbsNodeId,
+                    out var calculatedWbs);
 
                 return new ActivityDto
                 {
@@ -1406,13 +1483,25 @@ await _unitOfWork
 
 
                     WeightValue =
-                        totalBudget == 0
-                        ? 0
-                        :
-                        (financials.BudgetByActivity[x.Id] /
-                         totalBudget)
-                         * 100m,
+                        totalBudget <= 0m
+                        ? 0m
+                        : financials.BudgetByActivity[x.Id] / totalBudget * 100m,
 
+                    WeightFactor =
+                        calculatedWbs == null ||
+                        calculatedWbs.Budget <= 0m
+                            ? 0m
+                            : financials.BudgetByActivity[x.Id] /
+                              calculatedWbs.Budget * 100m,
+
+                    Weight =
+                        x.Weight,
+
+                    WeightedProgress =
+                        (totalBudget <= 0m
+                            ? 0m
+                            : financials.BudgetByActivity[x.Id] / totalBudget * 100m) *
+                        (Math.Clamp(x.Progress, 0m, 100m) / 100m),
 
                     EarnedValue =
                         financials.EarnedValueByActivity[x.Id],
