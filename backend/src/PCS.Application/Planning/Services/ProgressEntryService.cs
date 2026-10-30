@@ -112,7 +112,9 @@ public class ProgressEntryService : IProgressEntryService
 
                 ActualCost = x.ActualCost,
 
-                EarnedValue = x.EarnedValue
+                EarnedValue = x.EarnedValue,
+
+                PlannedValue = x.PlannedValue
             })
             .ToList();
     }
