@@ -22,6 +22,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backend-solution-build:
+    name: Full Backend Solution Build
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore backend solution
+        run: dotnet restore backend/PCS.Backend.slnx
+
+      - name: Build backend solution
+        run: dotnet build backend/PCS.Backend.slnx --configuration Release --no-restore
+
   application-tests:
     name: .NET 10 Application Tests
     runs-on: ubuntu-latest
