@@ -3,7 +3,8 @@ name: Backend Application Tests
 on:
   push:
     branches:
-      - "**"
+      - main
+      - development
     paths:
       - "backend/**"
       - ".github/workflows/backend-application-tests.yml"
