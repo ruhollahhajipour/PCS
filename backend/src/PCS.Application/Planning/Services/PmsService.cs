@@ -1234,10 +1234,22 @@ await _unitOfWork
         if (activityIds.Length == 0)
             return [];
 
-        return (await _progressRepository.FindAsync(
-            x => activityIds.Contains(x.ActivityId) &&
-                 x.ProgressDate < dataDate.Date.AddDays(1) &&
-                 !x.IsDeleted)).ToList();
+        var progressEntries = new List<ProgressEntry>();
+        var progressDateExclusive = dataDate.Date.AddDays(1);
+
+        // Keep the query below common SQLite and SQL Server parameter limits.
+        foreach (var activityIdBatch in activityIds.Chunk(500))
+        {
+            var batchIds = activityIdBatch.ToArray();
+            var batchEntries = await _progressRepository.FindAsync(
+                x => batchIds.Contains(x.ActivityId) &&
+                     x.ProgressDate < progressDateExclusive &&
+                     !x.IsDeleted);
+
+            progressEntries.AddRange(batchEntries);
+        }
+
+        return progressEntries;
     }
 
     private static PmsFinancialSnapshot BuildFinancialSnapshot(
