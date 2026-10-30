@@ -4,6 +4,7 @@ import MainLayout from "./layouts/MainLayout";
 
 import Workspace from "./pages/Workspace";
 import Companies from "./pages/Companies";
+import Warehouse from "./pages/Warehouse";
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
           <Route path="/workspace" element={<Workspace />} />
 
           <Route path="/companies" element={<Companies />} />
+
+          <Route path="/warehouse" element={<Warehouse />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>
