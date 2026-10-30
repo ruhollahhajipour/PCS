@@ -61,8 +61,67 @@ public sealed class WbsCalculationService : IWbsCalculationService
                 activity.Budget * Math.Clamp(activity.Progress, 0m, 100m) / 100m;
         }
 
-        // Roll up from the deepest WBS level to its ancestors.
-        foreach (var node in nodes.OrderByDescending(x => x.Level))
+        // Build the hierarchy from ParentId, not Level. Imported WBS levels can
+        // be stale or inconsistent, while ParentId is the authoritative link.
+        var childrenByParent = nodes
+            .Where(node =>
+                node.ParentId.HasValue &&
+                lookup.ContainsKey(node.ParentId.Value))
+            .GroupBy(node => node.ParentId!.Value)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderBy(child => child.SortOrder)
+                    .ThenBy(child => child.Code, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+
+        // Produce a child-before-parent order and reject cycles explicitly.
+        // Without this validation, cyclic WBS data can silently produce zero
+        // project budget or incomplete roll-ups.
+        var visitStateById = new Dictionary<Guid, byte>();
+        var postOrder = new List<WbsNodeDto>(nodes.Count);
+
+        void Visit(WbsNodeDto node)
+        {
+            if (visitStateById.TryGetValue(node.Id, out var state))
+            {
+                if (state == 1)
+                {
+                    throw new InvalidOperationException(
+                        $"WBS hierarchy contains a cycle at node '{node.Code}' ({node.Id}).");
+                }
+
+                if (state == 2)
+                    return;
+            }
+
+            visitStateById[node.Id] = 1;
+
+            if (childrenByParent.TryGetValue(node.Id, out var children))
+            {
+                foreach (var child in children)
+                    Visit(child);
+            }
+
+            visitStateById[node.Id] = 2;
+            postOrder.Add(node);
+        }
+
+        // Missing-parent nodes are treated as roots. Visiting all remaining
+        // nodes afterwards also detects disconnected cyclic components.
+        foreach (var root in nodes.Where(node =>
+                     !node.ParentId.HasValue ||
+                     !lookup.ContainsKey(node.ParentId.Value)))
+        {
+            Visit(root);
+        }
+
+        foreach (var node in nodes)
+            Visit(node);
+
+        // Child rows are now guaranteed to be processed before their parents,
+        // regardless of the numeric Level stored on either row.
+        foreach (var node in postOrder)
         {
             if (!node.ParentId.HasValue ||
                 !lookup.TryGetValue(node.ParentId.Value, out var parent))
@@ -81,16 +140,14 @@ public sealed class WbsCalculationService : IWbsCalculationService
         // Treat nodes with a missing parent as roots as well. This prevents
         // malformed/orphaned hierarchy references from disappearing from totals.
         var roots = nodes
-            .Where(x =>
-                !x.ParentId.HasValue ||
-                !lookup.ContainsKey(x.ParentId.Value))
+            .Where(node =>
+                !node.ParentId.HasValue ||
+                !lookup.ContainsKey(node.ParentId.Value))
             .ToList();
 
-        var projectBudget = roots.Sum(x => x.Budget);
+        var projectBudget = roots.Sum(node => node.Budget);
         if (projectBudget <= 0m)
-        {
             return nodes;
-        }
 
         foreach (var node in nodes)
         {
