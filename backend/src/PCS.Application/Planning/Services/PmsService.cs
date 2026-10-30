@@ -843,7 +843,7 @@ await _unitOfWork
 
 
                         Weight =
-                            weightValue,
+                            x.Weight,
 
 
 
@@ -1441,9 +1441,7 @@ await _unitOfWork
                               calculatedWbs.Budget * 100m,
 
                     Weight =
-                        totalBudget <= 0m
-                            ? 0m
-                            : financials.BudgetByActivity[x.Id] / totalBudget * 100m,
+                        x.Weight,
 
                     WeightedProgress =
                         (totalBudget <= 0m
