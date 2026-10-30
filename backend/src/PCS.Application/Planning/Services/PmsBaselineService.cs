@@ -21,6 +21,7 @@ public sealed class PmsBaselineService : IPmsBaselineService
     private readonly IGenericRepository<ProjectCalendar> _calendarRepository;
     private readonly IGenericRepository<ProjectBaseline> _baselineRepository;
     private readonly IGenericRepository<ProjectBaselineActivity> _baselineActivityRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public PmsBaselineService(
         IGenericRepository<Project> projectRepository,
@@ -28,7 +29,8 @@ public sealed class PmsBaselineService : IPmsBaselineService
         IGenericRepository<WbsNode> wbsRepository,
         IGenericRepository<ProjectCalendar> calendarRepository,
         IGenericRepository<ProjectBaseline> baselineRepository,
-        IGenericRepository<ProjectBaselineActivity> baselineActivityRepository)
+        IGenericRepository<ProjectBaselineActivity> baselineActivityRepository,
+        IUnitOfWork unitOfWork)
     {
         _projectRepository = projectRepository;
         _activityRepository = activityRepository;
@@ -36,6 +38,7 @@ public sealed class PmsBaselineService : IPmsBaselineService
         _calendarRepository = calendarRepository;
         _baselineRepository = baselineRepository;
         _baselineActivityRepository = baselineActivityRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ProjectBaselineSnapshotDto> CreateDraftAsync(
@@ -215,45 +218,61 @@ public sealed class PmsBaselineService : IPmsBaselineService
         Guid baselineId,
         string? approvedBy)
     {
-        var baseline = await _baselineRepository.GetByIdAsync(baselineId)
-            ?? throw new KeyNotFoundException($"Baseline '{baselineId}' was not found.");
+        await _unitOfWork.BeginTransactionAsync();
 
-        if (baseline.ProjectId != projectId || baseline.IsDeleted)
-            throw new KeyNotFoundException($"Baseline '{baselineId}' was not found in this project.");
-
-        var snapshotItems = (await _baselineActivityRepository.GetAllAsync())
-            .Where(x => x.ProjectBaselineId == baselineId && !x.IsDeleted)
-            .ToList();
-
-        if (snapshotItems.Count == 0)
-            throw new InvalidOperationException("An empty baseline cannot be approved.");
-
-        var baselines = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
-            .ToList();
-
-        foreach (var current in baselines.Where(x => x.IsActive && x.IsApproved && x.Id != baselineId))
+        try
         {
-            current.IsActive = false;
-            current.UpdatedAt = DateTime.UtcNow;
-            current.UpdatedBy = approvedBy;
-            _baselineRepository.Update(current);
+            var baseline = await _baselineRepository.GetByIdAsync(baselineId)
+                ?? throw new KeyNotFoundException($"Baseline '{baselineId}' was not found.");
+
+            if (baseline.ProjectId != projectId || baseline.IsDeleted)
+                throw new KeyNotFoundException($"Baseline '{baselineId}' was not found in this project.");
+
+            var snapshotItems = (await _baselineActivityRepository.GetAllAsync())
+                .Where(x => x.ProjectBaselineId == baselineId && !x.IsDeleted)
+                .ToList();
+
+            if (snapshotItems.Count == 0)
+                throw new InvalidOperationException("An empty baseline cannot be approved.");
+
+            var baselines = (await _baselineRepository.GetAllAsync())
+                .Where(x => x.ProjectId == projectId && !x.IsDeleted)
+                .ToList();
+
+            // Deactivate the previous version first so the filtered unique index
+            // remains valid regardless of EF's SQL update ordering.
+            foreach (var current in baselines.Where(
+                         x => x.IsActive && x.IsApproved && x.Id != baselineId))
+            {
+                current.IsActive = false;
+                current.UpdatedAt = DateTime.UtcNow;
+                current.UpdatedBy = approvedBy;
+                _baselineRepository.Update(current);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            baseline.IsApproved = true;
+            baseline.IsActive = true;
+            baseline.ApprovedAt = DateTime.UtcNow;
+            baseline.ApprovedBy = approvedBy;
+            baseline.UpdatedAt = DateTime.UtcNow;
+            baseline.UpdatedBy = approvedBy;
+            _baselineRepository.Update(baseline);
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return ToDto(baseline, snapshotItems.Count);
         }
-
-        baseline.IsApproved = true;
-        baseline.IsActive = true;
-        baseline.ApprovedAt = DateTime.UtcNow;
-        baseline.ApprovedBy = approvedBy;
-        baseline.UpdatedAt = DateTime.UtcNow;
-        baseline.UpdatedBy = approvedBy;
-        _baselineRepository.Update(baseline);
-
-        await _baselineRepository.SaveChangesAsync();
-
-        return ToDto(baseline, snapshotItems.Count);
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
-    public async Task<IReadOnlyList<ProjectBaselineDto>> GetAllAsync(Guid projectId)
+        public async Task<IReadOnlyList<ProjectBaselineDto>> GetAllAsync(Guid projectId)
     {
         var baselines = (await _baselineRepository.GetAllAsync())
             .Where(x => x.ProjectId == projectId && !x.IsDeleted)
