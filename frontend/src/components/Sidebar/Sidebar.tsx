@@ -9,6 +9,7 @@ import {
   DescriptionRounded,
   AssessmentRounded,
   SettingsRounded,
+  FactCheckRounded,
 } from "@mui/icons-material";
 <Box
     component="img"
@@ -60,6 +61,11 @@ const menus = [
     title: "Warehouse",
     path: "/warehouse",
     icon: <Inventory2Rounded />,
+  },
+  {
+    title: "ICAPS",
+    path: "/icaps",
+    icon: <FactCheckRounded />,
   },
   {
     title: "Procurement",

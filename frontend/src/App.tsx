@@ -5,6 +5,7 @@ import MainLayout from "./layouts/MainLayout";
 import Workspace from "./pages/Workspace";
 import Companies from "./pages/Companies";
 import Warehouse from "./pages/Warehouse";
+import ICAPS from "./pages/ICAPS";
 
 function App() {
   return (
@@ -18,6 +19,8 @@ function App() {
           <Route path="/companies" element={<Companies />} />
 
           <Route path="/warehouse" element={<Warehouse />} />
+
+          <Route path="/icaps" element={<ICAPS />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>
