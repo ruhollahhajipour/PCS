@@ -96,6 +96,7 @@ function WbsRow({
           },
         }}
       >
+        {/* WBS */}
         <TableCell
           sx={{
             minWidth: 300,
@@ -184,10 +185,16 @@ function WbsRow({
                     node.isActivity
                       ? 500
                       : 650,
-                  color: theme.palette.text.primary,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  color:
+                    node.isActivity
+                      ? theme.palette.text.primary
+                      : theme.palette.text.primary,
+                  whiteSpace:
+                    "nowrap",
+                  overflow:
+                    "hidden",
+                  textOverflow:
+                    "ellipsis",
                 }}
               >
                 {node.name}
@@ -206,6 +213,7 @@ function WbsRow({
           </Stack>
         </TableCell>
 
+        {/* TYPE */}
         <TableCell
           align="center"
           sx={{
@@ -219,6 +227,7 @@ function WbsRow({
             : "WBS"}
         </TableCell>
 
+        {/* PROGRESS */}
         <TableCell
           sx={{
             minWidth: 155,
@@ -248,9 +257,10 @@ function WbsRow({
                   height: 6,
                   borderRadius: 3,
                   bgcolor: theme.palette.divider,
-                  "& .MuiLinearProgress-bar": {
-                    borderRadius: 3,
-                  },
+                  "& .MuiLinearProgress-bar":
+                    {
+                      borderRadius: 3,
+                    },
                 }}
               />
             </Box>
@@ -271,6 +281,7 @@ function WbsRow({
           </Stack>
         </TableCell>
 
+        {/* BUDGET */}
         <TableCell
           align="right"
           sx={{
@@ -279,9 +290,12 @@ function WbsRow({
             color: theme.palette.text.primary,
           }}
         >
-          {formatNumber(node.budget)}
+          {formatNumber(
+            node.budget
+          )}
         </TableCell>
 
+        {/* ACTUAL */}
         <TableCell
           align="right"
           sx={{
@@ -290,9 +304,12 @@ function WbsRow({
             color: theme.palette.text.primary,
           }}
         >
-          {formatNumber(node.actualCost)}
+          {formatNumber(
+            node.actualCost
+          )}
         </TableCell>
 
+        {/* EV */}
         <TableCell
           align="right"
           sx={{
@@ -301,9 +318,12 @@ function WbsRow({
             color: theme.palette.text.primary,
           }}
         >
-          {formatNumber(node.earnedValue)}
+          {formatNumber(
+            node.earnedValue
+          )}
         </TableCell>
 
+        {/* CPI */}
         <TableCell
           align="center"
           sx={{
@@ -323,6 +343,7 @@ function WbsRow({
             : "—"}
         </TableCell>
 
+        {/* SPI */}
         <TableCell
           align="center"
           sx={{
@@ -381,21 +402,16 @@ export default function ProjectWbs() {
   ] = useState(true);
 
   const [
-    exportingPdf,
-    setExportingPdf,
-  ] = useState(false);
-
-  const [
     error,
     setError,
   ] = useState<string | null>(
     null
   );
 
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const handleExportPdf = async () => {
-    if (!workspace.project.id || exportingPdf)
-      return;
+    if (!workspace.project.id || exportingPdf) return;
 
     try {
       setExportingPdf(true);
@@ -404,7 +420,6 @@ export default function ProjectWbs() {
       const pdf = await exportPmsPdf(workspace.project.id);
       const url = window.URL.createObjectURL(pdf);
       const link = document.createElement("a");
-
       link.href = url;
       link.download = "PCS-PMS-Report.pdf";
       document.body.appendChild(link);
@@ -558,6 +573,8 @@ export default function ProjectWbs() {
 
       flatten(data);
 
+      // WBS parent rows already contain bottom-up rollups.
+      // Sum only project roots to avoid counting descendants twice.
       const budget = data.reduce(
         (sum, node) => sum + node.budget,
         0
@@ -601,6 +618,10 @@ export default function ProjectWbs() {
         },
       }}
     >
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
       <Stack
         direction={{
           xs: "column",
@@ -710,7 +731,9 @@ export default function ProjectWbs() {
                 color: theme.palette.text.primary,
               }}
             >
-              {formatNumber(totals.budget)}
+              {formatNumber(
+                totals.budget
+              )}
             </Typography>
           </Box>
 
@@ -731,13 +754,14 @@ export default function ProjectWbs() {
                 color: theme.palette.text.primary,
               }}
             >
-              {formatNumber(totals.actualCost)}
+              {formatNumber(
+                totals.actualCost
+              )}
             </Typography>
           </Box>
 
           <Button
             variant="contained"
-            color="primary"
             size="medium"
             startIcon={
               exportingPdf
@@ -752,6 +776,11 @@ export default function ProjectWbs() {
         </Stack>
       </Stack>
 
+
+      {/* =================================================
+          CONTENT
+      ================================================= */}
+
       {error && (
         <Alert
           severity="error"
@@ -763,6 +792,7 @@ export default function ProjectWbs() {
           {error}
         </Alert>
       )}
+
 
       <Paper
         elevation={0}
