@@ -38,9 +38,9 @@ class ProjectService {
         consultant: project.consultant,
 
         startDate: project.startDate,
-        endDate:
-          project.endDate ??
-          project.finishDate,
+        finishDate:
+          project.finishDate ??
+          project.endDate,
 
         budget: project.budget,
         actualCost: project.actualCost,
