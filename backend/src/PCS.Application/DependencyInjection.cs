@@ -85,6 +85,10 @@ services.AddScoped<
             IPmsService,
             PmsService>();
 
+        services.AddScoped<
+            IPmsBaselineService,
+            PmsBaselineService>();
+
 
         services.AddScoped<
             IPmsExcelService,
