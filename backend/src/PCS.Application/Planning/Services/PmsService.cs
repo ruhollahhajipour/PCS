@@ -680,6 +680,13 @@ await _unitOfWork
             activeBaseline,
             dataDate);
 
+        var wbsTree = BuildWbsTree(
+            wbsNodes,
+            activities,
+            financials);
+        var calculatedWbsById = FlattenWbsTree(wbsTree)
+            .ToDictionary(x => x.Id);
+
         var totalProjectBudget = financials.TotalBudget;
         var actualCost = financials.ActualCost;
         var earnedValue = financials.EarnedValue;
@@ -720,7 +727,9 @@ await _unitOfWork
                                 n.Id ==
                                 x.WbsNodeId);
 
-
+                    calculatedWbsById.TryGetValue(
+                        x.WbsNodeId,
+                        out var calculatedWbs);
 
                     var activityBudget = financials.BudgetByActivity[x.Id];
                     var activityActualCost = financials.ActualCostByActivity[x.Id];
@@ -826,13 +835,10 @@ await _unitOfWork
                         // برای Activity مستقل،
                         // W.F در Export برابر نسبت به WBS است
                         WeightFactor =
-                            wbs == null ||
-                            wbs.Budget == 0
-                            ? 0
-                            :
-                            (activityBudget /
-                             wbs.Budget)
-                             * 100m,
+                            calculatedWbs == null ||
+                            calculatedWbs.Budget <= 0m
+                            ? 0m
+                            : activityBudget / calculatedWbs.Budget * 100m,
 
 
 
@@ -843,7 +849,7 @@ await _unitOfWork
 
                         WeightedProgress =
                             weightValue *
-                            (x.Progress / 100m),
+                            (Math.Clamp(x.Progress, 0m, 100m) / 100m),
 
 
 
@@ -990,10 +996,7 @@ await _unitOfWork
 
 
             WbsNodes =
-                BuildWbsTree(
-                    wbsNodes,
-                    activities,
-                    financials),
+                wbsTree,
 
 
 
@@ -1192,6 +1195,18 @@ await _unitOfWork
         return roots;
     }
 
+    private static IEnumerable<WbsNodeDto> FlattenWbsTree(
+        IEnumerable<WbsNodeDto> roots)
+    {
+        foreach (var node in roots)
+        {
+            yield return node;
+
+            foreach (var descendant in FlattenWbsTree(node.Children))
+                yield return descendant;
+        }
+    }
+
     private sealed record PmsFinancialSnapshot(
         decimal TotalBudget,
         decimal PlannedValue,
@@ -1349,6 +1364,12 @@ await _unitOfWork
             DateTime.UtcNow.Date);
 
         var totalBudget = financials.TotalBudget;
+        var wbsTree = BuildWbsTree(
+            wbs.Values.ToList(),
+            activities,
+            financials);
+        var calculatedWbsById = FlattenWbsTree(wbsTree)
+            .ToDictionary(x => x.Id);
 
         return activities.Select(
             x =>
@@ -1358,7 +1379,9 @@ await _unitOfWork
                     x.WbsNodeId,
                     out var node);
 
-
+                calculatedWbsById.TryGetValue(
+                    x.WbsNodeId,
+                    out var calculatedWbs);
 
                 return new ActivityDto
                 {
@@ -1406,13 +1429,27 @@ await _unitOfWork
 
 
                     WeightValue =
-                        totalBudget == 0
-                        ? 0
-                        :
-                        (financials.BudgetByActivity[x.Id] /
-                         totalBudget)
-                         * 100m,
+                        totalBudget <= 0m
+                        ? 0m
+                        : financials.BudgetByActivity[x.Id] / totalBudget * 100m,
 
+                    WeightFactor =
+                        calculatedWbs == null ||
+                        calculatedWbs.Budget <= 0m
+                            ? 0m
+                            : financials.BudgetByActivity[x.Id] /
+                              calculatedWbs.Budget * 100m,
+
+                    Weight =
+                        totalBudget <= 0m
+                            ? 0m
+                            : financials.BudgetByActivity[x.Id] / totalBudget * 100m,
+
+                    WeightedProgress =
+                        (totalBudget <= 0m
+                            ? 0m
+                            : financials.BudgetByActivity[x.Id] / totalBudget * 100m) *
+                        (Math.Clamp(x.Progress, 0m, 100m) / 100m),
 
                     EarnedValue =
                         financials.EarnedValueByActivity[x.Id],
