@@ -31,7 +31,7 @@ import {
   NumbersRounded,
 } from "@mui/icons-material";
 
-import SettingsService from "../services/settings.service";
+import { useSettings } from "../../../context/SettingsContext";
 
 import type {
   Settings as SettingsModel,
@@ -227,26 +227,20 @@ function SectionHeader({
 }
 
 export default function Settings() {
+  const {
+    settings: appliedSettings,
+    updateSettings,
+    resetSettings: resetAppliedSettings,
+  } = useSettings();
+
   const [settings, setSettings] =
-    useState<SettingsModel>(
-      SettingsService.getDefaults(),
-    );
+    useState<SettingsModel>(appliedSettings);
 
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    SettingsService.get().then((value) => {
-      if (mounted) {
-        setSettings(value);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    setSettings(appliedSettings);
+  }, [appliedSettings]);
 
   const update = <K extends keyof SettingsModel>(
     key: K,
@@ -274,17 +268,12 @@ export default function Settings() {
   };
 
   const saveSettings = async () => {
-    await SettingsService.save(settings);
+    await updateSettings(settings);
     setSaved(true);
   };
 
   const resetSettings = async () => {
-    await SettingsService.reset();
-
-    const defaults =
-      SettingsService.getDefaults();
-
-    setSettings(defaults);
+    await resetAppliedSettings();
     setSaved(true);
   };
 

@@ -90,7 +90,7 @@ public sealed class ThemePalette
 
             Border =
                 string.IsNullOrWhiteSpace(border)
-                    ? dark
+                    ? "#1E3A8A"
                     : border,
 
 
@@ -113,8 +113,11 @@ public sealed class ThemePalette
         int level,
         int totalLevels)
     {
-        if(level <= 0)
+        if (level <= 0)
             return Activity;
+
+        if (totalLevels <= 0)
+            return Primary;
 
 
 
@@ -125,7 +128,10 @@ public sealed class ThemePalette
 
 
 
-        if(level > colors.Count)
+        if (colors.Count == 0)
+            return Primary;
+
+        if (level > colors.Count)
             return colors[^1];
 
 

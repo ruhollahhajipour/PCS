@@ -22,15 +22,18 @@ public class PmsController : ControllerBase
     private readonly IPmsExcelService _excelService;
     private readonly IPmsService _pmsService;
     private readonly IPmsTemplateService _templateService;
+    private readonly IPmsPdfExporter _pdfExporter;
 
     public PmsController(
         IPmsExcelService excelService,
         IPmsService pmsService,
-        IPmsTemplateService templateService)
+        IPmsTemplateService templateService,
+        IPmsPdfExporter pdfExporter)
     {
         _excelService = excelService;
         _pmsService = pmsService;
         _templateService = templateService;
+        _pdfExporter = pdfExporter;
     }
 
     [HttpPost("import")]
@@ -134,6 +137,18 @@ public class PmsController : ControllerBase
             file,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "PCS-PMS-Report.xlsx");
+    }
+
+    [HttpGet("export/{projectId}/pdf")]
+    [Permission(Permissions.ProjectView)]
+    public async Task<IActionResult> ExportPdf(Guid projectId)
+    {
+        if (projectId == Guid.Empty)
+            return BadRequest("ProjectId is required.");
+
+        var dto = await _pmsService.ExportPmsAsync(projectId);
+        var file = await _pdfExporter.GenerateAsync(dto);
+        return File(file, "application/pdf", "PCS-PMS-Report.pdf");
     }
 
     [HttpGet("{projectId}/activities")]

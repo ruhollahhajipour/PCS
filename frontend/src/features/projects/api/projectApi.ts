@@ -19,7 +19,10 @@ export async function createProject(
 ): Promise<string> {
   const response = await http.post<string>(
     "/Projects",
-    project
+    {
+      ...project,
+      endDate: project.finishDate ?? project.endDate,
+    }
   );
 
   return response.data;
@@ -30,7 +33,10 @@ export async function updateProject(
 ): Promise<void> {
   await http.put(
     `/Projects/${project.id}`,
-    project
+    {
+      ...project,
+      endDate: project.finishDate ?? project.endDate,
+    }
   );
 }
 

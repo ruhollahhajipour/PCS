@@ -54,19 +54,17 @@ public sealed class PmsCalculationService
 
 
 
-                var ev =
-                    childNodes.Sum(
-                        x =>
-                        x.Budget *
-                        (x.Progress / 100m));
+                node.EarnedValue =
+                    childNodes.Sum(x => x.EarnedValue);
 
-
+                node.PlannedValue =
+                    childNodes.Sum(x => x.PlannedValue);
 
                 node.Progress =
                     node.Budget == 0
                     ? 0
                     :
-                    (ev / node.Budget) * 100m;
+                    (node.EarnedValue / node.Budget) * 100m;
             }
         }
     }
@@ -126,8 +124,14 @@ public sealed class PmsCalculationService
 
 
 
+        // Planned Value must come from an approved, time-phased baseline.
+        // Never infer it from a fixed percentage of the project budget.
+        // WBS PlannedValue is the current supported source; when no baseline
+        // PV has been populated, report zero rather than fabricated data.
         decimal pv =
-            budget * 0.5m;
+            wbsList
+                .Where(x => x.ParentId == null)
+                .Sum(x => x.PlannedValue);
 
 
 

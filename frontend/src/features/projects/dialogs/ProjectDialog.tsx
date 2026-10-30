@@ -53,7 +53,7 @@ const initialForm: Project = {
 
   startDate:"",
 
-  endDate:"",
+  finishDate:"",
 
   budget:0,
 
@@ -134,7 +134,13 @@ export default function ProjectDialog({
 
 
     setForm(
-      project ?? initialForm
+      project
+        ? {
+            ...initialForm,
+            ...project,
+            finishDate: project.finishDate ?? project.endDate ?? "",
+          }
+        : initialForm
     );
 
 
@@ -453,9 +459,9 @@ export default function ProjectDialog({
 
               label="End Date"
 
-              name="endDate"
+              name="finishDate"
 
-              value={form.endDate ?? ""}
+              value={form.finishDate ?? form.endDate ?? ""}
 
               onChange={handleChange}
 

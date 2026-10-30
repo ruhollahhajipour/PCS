@@ -8,12 +8,18 @@ namespace PCS.Application.Projects.Services;
 public class ProjectService : IProjectService
 {
     private readonly IGenericRepository<Project> _repository;
+    private readonly IGenericRepository<Company> _companyRepository;
+    private readonly IGenericRepository<Plant> _plantRepository;
 
 
     public ProjectService(
-        IGenericRepository<Project> repository)
+        IGenericRepository<Project> repository,
+        IGenericRepository<Company> companyRepository,
+        IGenericRepository<Plant> plantRepository)
     {
         _repository = repository;
+        _companyRepository = companyRepository;
+        _plantRepository = plantRepository;
     }
 
 
@@ -42,7 +48,7 @@ public class ProjectService : IProjectService
         CreateProjectDto request)
     {
         ValidateRequest(request);
-
+        await ValidateOrganizationAsync(request.CompanyId, request.PlantId);
 
         var project = new Project();
 
@@ -68,7 +74,7 @@ public class ProjectService : IProjectService
         CreateProjectDto request)
     {
         ValidateRequest(request);
-
+        await ValidateOrganizationAsync(request.CompanyId, request.PlantId);
 
         var project = await _repository.GetByIdAsync(id);
 
@@ -228,17 +234,8 @@ public class ProjectService : IProjectService
             dto.Progress;
 
 
-        project.SPI =
-            dto.SPI == 0
-                ? 1
-                : dto.SPI;
-
-
-
-        project.CPI =
-            dto.CPI == 0
-                ? 1
-                : dto.CPI;
+        project.SPI = dto.SPI;
+        project.CPI = dto.CPI;
 
 
 
@@ -265,6 +262,26 @@ public class ProjectService : IProjectService
 
 
 
+
+
+    private async Task ValidateOrganizationAsync(
+        Guid companyId,
+        Guid? plantId)
+    {
+        var company = await _companyRepository.GetByIdAsync(companyId);
+        if (company is null || !company.IsActive)
+            throw new ArgumentException("The selected company does not exist or is inactive.");
+
+        if (!plantId.HasValue)
+            return;
+
+        var plant = await _plantRepository.GetByIdAsync(plantId.Value);
+        if (plant is null || !plant.IsActive)
+            throw new ArgumentException("The selected plant does not exist or is inactive.");
+
+        if (plant.CompanyId != companyId)
+            throw new ArgumentException("The selected plant does not belong to the selected company.");
+    }
 
 
     private static void ValidateRequest(

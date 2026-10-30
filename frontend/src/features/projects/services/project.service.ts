@@ -39,8 +39,8 @@ class ProjectService {
 
         startDate: project.startDate,
         endDate:
-          project.endDate ??
-          project.finishDate,
+          project.finishDate ??
+          project.endDate,
 
         budget: project.budget,
         actualCost: project.actualCost,
@@ -86,8 +86,8 @@ class ProjectService {
         startDate: project.startDate,
 
         endDate:
-          project.endDate ??
-          project.finishDate,
+          project.finishDate ??
+          project.endDate,
 
         budget: project.budget,
 

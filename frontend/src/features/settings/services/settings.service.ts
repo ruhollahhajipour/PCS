@@ -50,27 +50,51 @@ function cloneDefaults(): Settings {
   };
 }
 
+function isOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T {
+  return typeof value === "string" &&
+    allowed.includes(value as T);
+}
+
 function isValidSettings(value: unknown): value is Settings {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   const candidate = value as Partial<Settings>;
+  const pms = candidate.pms;
+
+  if (!pms || typeof pms !== "object") {
+    return false;
+  }
 
   return (
     typeof candidate.companyName === "string" &&
     typeof candidate.currency === "string" &&
-    typeof candidate.language === "string" &&
-    typeof candidate.direction === "string" &&
-    typeof candidate.calendar === "string" &&
-    typeof candidate.dateFormat === "string" &&
-    typeof candidate.timeFormat === "string" &&
-    typeof candidate.weekStart === "string" &&
-    typeof candidate.numberFormat === "string" &&
-    typeof candidate.theme === "string" &&
-    typeof candidate.pageSize === "number" &&
-    typeof candidate.pms === "object" &&
-    candidate.pms !== null
+    isOneOf(candidate.language, ["en", "fa", "ar"] as const) &&
+    isOneOf(candidate.direction, ["auto", "ltr", "rtl"] as const) &&
+    isOneOf(candidate.calendar, ["gregorian", "persian"] as const) &&
+    isOneOf(candidate.dateFormat, [
+      "yyyy-mm-dd", "dd/mm/yyyy", "mm/dd/yyyy", "dd-mmm-yyyy",
+      "yyyy/mm/dd", "persian-yyyy/mm/dd", "persian-yyyy-mm-dd",
+      "persian-yy/mm/dd", "persian-yy-mm-dd", "persian-long",
+    ] as const) &&
+    isOneOf(candidate.timeFormat, ["12", "24"] as const) &&
+    isOneOf(candidate.weekStart, ["saturday", "sunday", "monday"] as const) &&
+    isOneOf(candidate.numberFormat, ["western", "arabic"] as const) &&
+    isOneOf(candidate.theme, ["light", "dark", "system"] as const) &&
+    Number.isInteger(candidate.pageSize) &&
+    candidate.pageSize! >= 1 &&
+    candidate.pageSize! <= 500 &&
+    isOneOf(pms.timelineScale, ["day", "week", "month", "quarter", "year"] as const) &&
+    typeof pms.showTodayLine === "boolean" &&
+    typeof pms.showBaseline === "boolean" &&
+    typeof pms.showCriticalPath === "boolean" &&
+    typeof pms.showMilestones === "boolean" &&
+    typeof pms.showFloat === "boolean" &&
+    typeof pms.defaultWbsExpanded === "boolean"
   );
 }
 

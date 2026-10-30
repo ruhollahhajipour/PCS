@@ -66,191 +66,128 @@ public class PmsService : IPmsService
 
         var existingWbs =
             (await _wbsRepository.GetAllAsync())
-            .Where(x =>
-                x.ProjectId == dto.ProjectId)
+            .Where(x => x.ProjectId == dto.ProjectId)
             .ToDictionary(
-                x => x.Code);
+                x => x.Code.Trim(),
+                StringComparer.OrdinalIgnoreCase);
 
+        var wbsMap = new Dictionary<string, WbsNode>(
+            StringComparer.OrdinalIgnoreCase);
 
-
-
-        var wbsMap =
-            new Dictionary<string, WbsNode>();
-
-
-
-
-
-        // =====================================================
-        // IMPORT WBS STRUCTURE
-        // =====================================================
-
-        foreach(var item in dto.WbsNodes)
+        // Pass 1: create/update every WBS node without relying on Excel row order.
+        foreach (var item in dto.WbsNodes)
         {
-            if(string.IsNullOrWhiteSpace(item.Code))
+            if (string.IsNullOrWhiteSpace(item.Code))
                 continue;
 
+            var code = item.Code.Trim();
+            if (wbsMap.ContainsKey(code))
+                throw new InvalidOperationException($"Duplicate WBS code '{code}'.");
 
+            existingWbs.TryGetValue(code, out var currentWbs);
 
-            existingWbs.TryGetValue(
-                item.Code.Trim(),
-                out var currentWbs);
-
-
-
-            Guid? parentId = null;
-
-
-            string path =
-                item.Code.Trim();
-
-
-
-
-            if(!string.IsNullOrWhiteSpace(item.ParentCode)
-                &&
-                wbsMap.TryGetValue(
-                    item.ParentCode.Trim(),
-                    out var parent))
+            if (currentWbs == null)
             {
-                parentId =
-                    parent.Id;
-
-
-                path =
-                    $"{parent.Path}/{item.Code.Trim()}";
-            }
-
-
-
-
-            if(currentWbs != null)
-            {
-                currentWbs.Name =
-                    item.Name.Trim();
-
-
-                currentWbs.ParentId =
-                    parentId;
-
-
-                currentWbs.Level =
-                    item.Level;
-
-
-                currentWbs.Path =
-                    path;
-
-
-
-                // Budget WBS بعداً از Activity Rollup می‌شود
-                currentWbs.Budget =
-                    0;
-
-
-
-                currentWbs.Weight =
-                    0;
-
-
-
-                currentWbs.Progress =
-                    0;
-
-
-
-                _wbsRepository.Update(
-                    currentWbs);
-
-
-
-                wbsMap[item.Code.Trim()] =
-                    currentWbs;
-
-
-                continue;
-            }
-
-
-
-
-
-            var wbs =
-                new WbsNode
+                currentWbs = new WbsNode
                 {
-                    Id =
-                        Guid.NewGuid(),
-
-
-
-                    ProjectId =
-                        dto.ProjectId,
-
-
-
-                    ParentId =
-                        parentId,
-
-
-
-                    Code =
-                        item.Code.Trim(),
-
-
-
-                    Name =
-                        item.Name.Trim(),
-
-
-
-                    Level =
-                        item.Level,
-
-
-
-                    SortOrder =
-                        0,
-
-
-
-                    Path =
-                        path,
-
-
-
-                    // مقدار واقعی بعداً محاسبه می‌شود
-                    Budget =
-                        0,
-
-
-
-                    Weight =
-                        0,
-
-
-
-                    Progress =
-                        0,
-
-
-
-                    IsActive =
-                        true
+                    Id = Guid.NewGuid(),
+                    ProjectId = dto.ProjectId,
+                    Code = code,
+                    Name = item.Name.Trim(),
+                    Level = item.Level,
+                    SortOrder = 0,
+                    Path = code,
+                    Budget = 0,
+                    Weight = 0,
+                    Progress = 0,
+                    IsActive = true
                 };
 
+                await _wbsRepository.AddAsync(currentWbs);
+            }
+            else
+            {
+                currentWbs.Name = item.Name.Trim();
+                currentWbs.Level = item.Level;
+                currentWbs.ParentId = null;
+                currentWbs.Path = code;
+                currentWbs.Budget = 0;
+                currentWbs.Weight = 0;
+                currentWbs.Progress = 0;
+                _wbsRepository.Update(currentWbs);
+            }
 
-
-
-            await _wbsRepository
-                .AddAsync(wbs);
-
-
-
-
-            wbsMap[item.Code.Trim()] =
-                wbs;
+            wbsMap.Add(code, currentWbs);
         }
-                // =====================================================
+
+        // Pass 2: resolve parent links after all nodes exist.
+        foreach (var item in dto.WbsNodes)
+        {
+            var code = item.Code.Trim();
+            var node = wbsMap[code];
+
+            if (string.IsNullOrWhiteSpace(item.ParentCode))
+            {
+                node.ParentId = null;
+                node.Path = code;
+                continue;
+            }
+
+            var parentCode = item.ParentCode.Trim();
+            if (!wbsMap.TryGetValue(parentCode, out var parent))
+                throw new InvalidOperationException(
+                    $"WBS '{code}' references unknown parent '{parentCode}'.");
+
+            if (parent.Id == node.Id)
+                throw new InvalidOperationException(
+                    $"WBS '{code}' cannot be its own parent.");
+
+            node.ParentId = parent.Id;
+            _wbsRepository.Update(node);
+        }
+
+        // Reject indirect cycles before building paths or saving the import.
+        foreach (var node in wbsMap.Values)
+        {
+            var visited = new HashSet<Guid>();
+            var current = node;
+
+            while (current.ParentId.HasValue)
+            {
+                if (!visited.Add(current.Id))
+                    throw new InvalidOperationException(
+                        $"WBS hierarchy contains a cycle at '{node.Code}'.");
+
+                current = wbsMap.Values.FirstOrDefault(
+                    x => x.Id == current.ParentId.Value)
+                    ?? throw new InvalidOperationException(
+                        $"WBS '{node.Code}' references a parent outside this project.");
+            }
+
+            if (!visited.Add(current.Id))
+                throw new InvalidOperationException(
+                    $"WBS hierarchy contains a cycle at '{node.Code}'.");
+        }
+
+        // Build canonical paths from the resolved hierarchy.
+        foreach (var node in wbsMap.Values)
+        {
+            var segments = new Stack<string>();
+            var current = node;
+            while (true)
+            {
+                segments.Push(current.Code);
+                if (!current.ParentId.HasValue)
+                    break;
+
+                current = wbsMap.Values.First(x => x.Id == current.ParentId.Value);
+            }
+
+            node.Path = string.Join("/", segments);
+            _wbsRepository.Update(node);
+        }
+
+        // =====================================================
         // IMPORT ACTIVITIES
         // =====================================================
 
@@ -309,13 +246,11 @@ public class PmsService : IPmsService
 
 
 
-                existingActivity.ActualStart =
-                    item.ActualStart;
+                if (item.ActualStartSpecified)
+                    existingActivity.ActualStart = item.ActualStart;
 
-
-
-                existingActivity.ActualFinish =
-                    item.ActualFinish;
+                if (item.ActualFinishSpecified)
+                    existingActivity.ActualFinish = item.ActualFinish;
 
 
 
@@ -532,9 +467,7 @@ var activityDtos =
                     x.Budget *
                     (x.Progress / 100m),
 
-                PlannedValue =
-                    x.Budget *
-                    0.5m
+                PlannedValue = 0
             })
         .ToList();
 
@@ -690,13 +623,9 @@ await _unitOfWork
 
 
 
-        // فعلاً Baseline پیش فرض 50%
-        // بعداً از Schedule Baseline خوانده می‌شود
-        var plannedValue =
-            activities.Sum(
-                x =>
-                    x.Budget *
-                    0.5m);
+        // Activity-level time-phased baseline values are not modeled.
+        // Do not fabricate PV from a fixed percentage of budget.
+        var plannedValue = 0m;
 
 
 
@@ -767,9 +696,7 @@ await _unitOfWork
 
 
 
-                    var pv =
-                        x.Budget *
-                        0.5m;
+                    var pv = 0m; // Activity-level baseline PV is not modeled yet.
 
 
 
@@ -1099,233 +1026,97 @@ await _unitOfWork
         List<Activity> activities,
         decimal totalProjectBudget)
     {
-
-        var budgetLookup =
-            activities
-            .GroupBy(
-                x => x.WbsNodeId)
-            .ToDictionary(
-                x => x.Key,
-                x => x.Sum(
-                    a => a.Budget));
-
-
-
-        var lookup =
-            nodes.ToDictionary(
-                x => x.Id,
-                x =>
-                new WbsNodeDto
-                {
-                    Id =
-                        x.Id,
-
-
-                    ParentId =
-                        x.ParentId,
-
-
-                    Code =
-                        x.Code,
-
-
-                    ParentCode =
-                        nodes
-                        .FirstOrDefault(
-                            p =>
-                                p.Id ==
-                                x.ParentId)
-                        ?.Code,
-
-
-                    Path =
-                        x.Path,
-
-
-                    Name =
-                        x.Name,
-
-
-                    Level =
-                        x.Level,
-
-
-                    SortOrder =
-                        x.SortOrder
-                });
-
-
-
-        // ==========================================
-        // Bottom-Up Budget Calculation
-        // ==========================================
-
-        foreach(var node in nodes
-            .OrderByDescending(
-                x => x.Level))
-        {
-
-            var dto =
-                lookup[node.Id];
-
-
-            decimal budget = 0;
-
-
-
-            if(budgetLookup.TryGetValue(
-                    node.Id,
-                    out var activityBudget))
+        var lookup = nodes.ToDictionary(
+            node => node.Id,
+            node => new WbsNodeDto
             {
-                budget += activityBudget;
-            }
+                Id = node.Id,
+                ParentId = node.ParentId,
+                Code = node.Code,
+                ParentCode = nodes.FirstOrDefault(parent => parent.Id == node.ParentId)?.Code,
+                Path = node.Path,
+                Name = node.Name,
+                Level = node.Level,
+                SortOrder = node.SortOrder
+            });
 
+        // Aggregate direct activity values first. PlannedValue is intentionally
+        // zero: the current Activity entity has no baseline/time-phased PV field.
+        foreach (var activity in activities)
+        {
+            if (!lookup.TryGetValue(activity.WbsNodeId, out var node))
+                continue;
 
-
-            budget +=
-                dto.Children
-                .Sum(
-                    x => x.Budget);
-
-
-
-            dto.Budget =
-                budget;
+            node.Budget += activity.Budget;
+            node.ActualCost += activity.ActualCost;
+            node.EarnedValue += activity.Budget * (activity.Progress / 100m);
         }
 
-
-
-
-
-        // ==========================================
-        // W.V Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        // Roll up each node once, from leaves to roots.
+        foreach (var node in nodes.OrderByDescending(item => item.Level))
         {
-            item.WeightValue =
-                totalProjectBudget == 0
+            if (!node.ParentId.HasValue ||
+                !lookup.TryGetValue(node.ParentId.Value, out var parent))
+                continue;
+
+            var child = lookup[node.Id];
+            parent.Budget += child.Budget;
+            parent.ActualCost += child.ActualCost;
+            parent.EarnedValue += child.EarnedValue;
+            parent.PlannedValue += child.PlannedValue;
+        }
+
+        foreach (var item in lookup.Values)
+        {
+            item.WeightValue = totalProjectBudget <= 0
                 ? 0
-                :
-                (item.Budget /
-                 totalProjectBudget)
-                 * 100m;
+                : item.Budget / totalProjectBudget * 100m;
+
+            item.WeightFactor = item.ParentId.HasValue &&
+                lookup.TryGetValue(item.ParentId.Value, out var parent) &&
+                parent.Budget > 0
+                    ? item.Budget / parent.Budget * 100m
+                    : item.ParentId.HasValue ? 0 : (item.Budget > 0 ? 100m : 0m);
+
+            item.Progress = item.Budget <= 0
+                ? 0
+                : item.EarnedValue / item.Budget * 100m;
         }
 
-
-
-
-
-        // ==========================================
-        // W.F Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        var roots = new List<WbsNodeDto>();
+        foreach (var node in nodes.OrderBy(item => item.SortOrder).ThenBy(item => item.Code))
         {
-            if(item.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    item.ParentId.Value,
-                    out var parent))
-            {
-                item.WeightFactor =
-                    parent.Budget == 0
-                    ? 0
-                    :
-                    (item.Budget /
-                     parent.Budget)
-                     * 100m;
-            }
-            else
-            {
-                item.WeightFactor =
-                    item.WeightValue;
-            }
-        }
-
-
-
-
-
-        var roots =
-            new List<WbsNodeDto>();
-
-
-        foreach(var node in nodes)
-        {
-            var item =
-                lookup[node.Id];
-
-
-            if(node.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    node.ParentId.Value,
-                    out var parent))
-            {
+            var item = lookup[node.Id];
+            if (node.ParentId.HasValue && lookup.TryGetValue(node.ParentId.Value, out var parent))
                 parent.Children.Add(item);
-            }
             else
-            {
                 roots.Add(item);
-            }
         }
-
 
         return roots;
     }
-
-
-
-
-
-
 
 
     // =====================================================
     // GET WBS TREE
     // =====================================================
 
-    public async Task<List<WbsNodeDto>>
-        GetWbsTreeAsync(
-            Guid projectId)
+    public async Task<List<WbsNodeDto>> GetWbsTreeAsync(Guid projectId)
     {
-
-        var nodes =
-            (await _wbsRepository
-                .GetAllAsync())
-            .Where(x =>
-                x.ProjectId == projectId)
-            .OrderBy(x =>
-                x.Path)
+        var nodes = (await _wbsRepository.GetAllAsync())
+            .Where(item => item.ProjectId == projectId)
+            .OrderBy(item => item.Level)
+            .ThenBy(item => item.SortOrder)
+            .ThenBy(item => item.Code)
             .ToList();
 
-
-
-        var activities =
-            (await _activityRepository
-                .GetAllAsync())
-            .Where(x =>
-                x.ProjectId == projectId)
+        var activities = (await _activityRepository.GetAllAsync())
+            .Where(item => item.ProjectId == projectId)
             .ToList();
 
-
-
-        var totalBudget =
-            activities.Sum(
-                x => x.Budget);
-
-
-
-        return BuildWbsTree(
-            nodes,
-            activities,
-            totalBudget);
+        var totalBudget = activities.Sum(item => item.Budget);
+        return BuildWbsTree(nodes, activities, totalBudget);
     }
-
-
-
-
-
-
 
 
     // =====================================================
@@ -1425,9 +1216,7 @@ await _unitOfWork
                         (x.Progress / 100m),
 
 
-                    PlannedValue =
-                        x.Budget *
-                        0.5m,
+                    PlannedValue = 0,
 
 
                     IsCritical =

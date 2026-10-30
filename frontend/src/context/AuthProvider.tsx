@@ -132,6 +132,15 @@ export function AuthProvider({
 
     async function restoreSession() {
 
+      // The public visual preview is intentionally backend-free.
+      // Do not attempt to restore a previously saved API session there.
+      if (window.location.pathname === "/preview") {
+        if (mounted) {
+          setLoading(false);
+        }
+        return;
+      }
+
       const existingToken =
         AuthService.getToken();
 

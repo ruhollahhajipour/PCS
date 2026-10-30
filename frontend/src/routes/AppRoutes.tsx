@@ -1,4 +1,4 @@
-﻿import {
+import {
   BrowserRouter,
   Navigate,
   Route,
@@ -7,6 +7,7 @@
 
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import PreviewPage from "../pages/PreviewPage";
 
 import { useWorkspace } from "../context/WorkspaceContext";
 
@@ -163,6 +164,12 @@ export default function AppRoutes() {
         <Route
           path="/login"
           element={<Login />}
+        />
+
+        {/* Public, read-only visual preview using fictional sample data. */}
+        <Route
+          path="/preview"
+          element={<PreviewPage />}
         />
 
         <Route
