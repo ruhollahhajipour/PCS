@@ -45,13 +45,9 @@ public class ProgressEntryService : IProgressEntryService
         if (actualCost < 0m)
             throw new ArgumentOutOfRangeException(nameof(actualCost), "Actual Cost cannot be negative.");
 
-        var activity =
-            (await _activityRepository.GetAllAsync())
-            .FirstOrDefault(x => x.Id == activityId);
-
-
-        if (activity == null)
-            throw new Exception("Activity not found");
+        var activity = await _activityRepository.GetByIdAsync(activityId);
+        if (activity == null || activity.IsDeleted)
+            throw new KeyNotFoundException("Activity not found.");
 
 
 
@@ -90,7 +86,11 @@ public class ProgressEntryService : IProgressEntryService
             ? DateTime.MinValue
             : existingEntries.Max(x => x.ProgressDate);
 
-        if (progressDate >= latestExistingDate)
+        var isLatestStatus = existingEntries.Count > 0
+            ? progressDate >= latestExistingDate
+            : progressDate >= DateTime.UtcNow.Date || activity.Progress == 0m;
+
+        if (isLatestStatus)
             activity.Progress = progress;
 
         // Progress-entry ActualCost is a period amount; the Activity field is cumulative.
