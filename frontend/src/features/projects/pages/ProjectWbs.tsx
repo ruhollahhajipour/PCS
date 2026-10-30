@@ -1253,7 +1253,7 @@ export default function ProjectWbs() {
               inputProps={{ maxLength: 500 }}
             />
             <Alert severity="info">
-              The draft captures activity dates, budgets, WBS assignments and current project-calendar working days. It does not become the EVM reference until approved.
+              The draft snapshots activity dates, budgets, WBS assignments and each calendar's weekly working-day pattern. Public-holiday exceptions are not modeled yet. Approval activates it as the EVM reference.
             </Alert>
           </Stack>
         </DialogContent>
