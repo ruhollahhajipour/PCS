@@ -79,7 +79,7 @@ public sealed class PmsSheetBuilder
         sheet.Range(noteRow, 1, noteRow, 15).Merge();
         var pvNote = sheet.Cell(noteRow, 1);
         pvNote.Value = dto.HasApprovedBaseline
-            ? $"Approved schedule baseline: {dto.BaselineName} | Version {dto.BaselineVersion} | Data date: {dto.EvmDataDate:yyyy-MM-dd}"
+            ? $"Approved schedule baseline: {dto.BaselineName} | Version {dto.BaselineVersion} | Data date: {dto.EvmDataDate:yyyy-MM-dd} | PV is linearly time-phased across captured working days."
             : "WARNING: No active approved schedule baseline exists. Planned Value (PV) is reported as zero.";
         pvNote.Style.Font.Italic = true;
         pvNote.Style.Font.FontSize = 9;
