@@ -50,7 +50,7 @@ public sealed class PmsBaselineService : IPmsBaselineService
         if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
             throw new ArgumentException("Baseline name is required and must not exceed 200 characters.", nameof(request));
 
-        if (request.Description?.Length > 500)
+        if (request.Description is { Length: > 500 })
             throw new ArgumentException("Baseline description must not exceed 500 characters.", nameof(request));
 
         var project = await _projectRepository.GetByIdAsync(projectId)
