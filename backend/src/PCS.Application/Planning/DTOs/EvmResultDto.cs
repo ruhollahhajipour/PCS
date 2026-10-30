@@ -16,6 +16,8 @@ public class EvmResultDto
 
     public decimal BaselineBudget { get; set; }
 
+    public string? DataQualityNote { get; set; }
+
     public decimal PlannedValue { get; set; }
 
     public decimal EarnedValue { get; set; }
