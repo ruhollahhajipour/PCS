@@ -226,7 +226,6 @@ public sealed class PmsSheetBuilder
         ThemePalette theme)
     {
         var currentRow = row++;
-        var projectBudget = dto.TotalBudget;
 
         sheet.Cell(currentRow, 1).Value = node.Code;
         sheet.Cell(currentRow, 2).Value = node.ParentCode ?? string.Empty;
