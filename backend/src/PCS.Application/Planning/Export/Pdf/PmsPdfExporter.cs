@@ -442,18 +442,10 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .AlignCenter()
                     .Text(text =>
                     {
-                        text.Span("صفحه ")
-                            .FontSize(7)
-                            .FontColor(Colors.Grey.Darken1);
-                        text.CurrentPageNumber()
-                            .FontSize(7)
-                            .FontColor(Colors.Grey.Darken1);
-                        text.Span(" از ")
-                            .FontSize(7)
-                            .FontColor(Colors.Grey.Darken1);
-                        text.TotalPages()
-                            .FontSize(7)
-                            .FontColor(Colors.Grey.Darken1);
+                        text.Span("صفحه ");
+                        text.CurrentPageNumber();
+                        text.Span(" از ");
+                        text.TotalPages();
                     });
 
                 row.RelativeItem()
