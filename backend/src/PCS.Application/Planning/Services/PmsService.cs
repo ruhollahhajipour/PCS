@@ -519,6 +519,9 @@ var activityDtos =
                 Name =
                     x.Name,
 
+                WbsNodeId =
+                    wbsMap[x.WbsCode.Trim()].Id,
+
                 WbsCode =
                     x.WbsCode,
 
@@ -755,6 +758,9 @@ await _unitOfWork
                             x.Name,
 
 
+
+                        WbsNodeId =
+                            x.WbsNodeId,
 
                         WbsCode =
                             wbs?.Code
@@ -1328,6 +1334,7 @@ await _unitOfWork
         var wbs =
             (await _wbsRepository
                 .GetAllAsync())
+            .Where(x => x.ProjectId == projectId)
             .ToDictionary(
                 x => x.Id);
 
@@ -1356,6 +1363,8 @@ await _unitOfWork
                     Id =
                         x.Id,
 
+                    WbsNodeId =
+                        x.WbsNodeId,
 
                     Code =
                         x.Code,
