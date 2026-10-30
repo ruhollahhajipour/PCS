@@ -16,6 +16,7 @@ import {
 } from "react-router-dom";
 
 import GanttChart from "../components/gantt/GanttChart";
+import { useWorkspace } from "../../../context/WorkspaceContext";
 
 import {
     getProjectGantt,
@@ -823,6 +824,9 @@ export default function ProjectSchedule() {
             id: string
         }>();
 
+    const { workspace } = useWorkspace();
+    const projectId = id || workspace.project.id;
+
 
     const [
         data,
@@ -867,7 +871,7 @@ export default function ProjectSchedule() {
 
         async function load() {
 
-            if (!id) {
+            if (!projectId) {
 
                 setError(
                     "Project ID not found"
@@ -890,8 +894,8 @@ export default function ProjectSchedule() {
                     wbsResponse
                 ] =
                     await Promise.all([
-                        getProjectGantt(id),
-                        getPmsWbs(id)
+                        getProjectGantt(projectId),
+                        getPmsWbs(projectId)
                     ]);
 
 
@@ -969,7 +973,7 @@ export default function ProjectSchedule() {
             cancelled = true;
         };
 
-    }, [id]);
+    }, [projectId]);
 
 
     /* ========================================================
