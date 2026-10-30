@@ -41,13 +41,26 @@ public sealed class PmsEvmService : IPmsEvmService
         var baselineActivities = baseline.Activities;
         var activityIds = baselineActivities
             .Select(x => x.ActivityId)
-            .ToHashSet();
-
-        var progressEntries = (await _progressRepository.GetAllAsync())
-            .Where(x => activityIds.Contains(x.ActivityId) &&
-                        x.ProgressDate.Date <= dataDate &&
-                        !x.IsDeleted)
             .ToList();
+
+        // Chunk IDs to stay below SQL Server's 2,100-parameter limit on large EPC projects.
+        var progressEntries = new List<ProgressEntry>();
+        var currentActivities = new List<Activity>();
+        var progressDateExclusive = dataDate.AddDays(1);
+
+        foreach (var activityIdBatch in activityIds.Chunk(1000))
+        {
+            var batchIds = activityIdBatch.ToList();
+            var batchProgress = await _progressRepository.FindAsync(
+                x => batchIds.Contains(x.ActivityId) &&
+                     x.ProgressDate < progressDateExclusive &&
+                     !x.IsDeleted);
+            progressEntries.AddRange(batchProgress);
+
+            var batchActivities = await _activityRepository.FindAsync(
+                x => batchIds.Contains(x.Id) && !x.IsDeleted);
+            currentActivities.AddRange(batchActivities);
+        }
 
         var latestProgressByActivity = progressEntries
             .GroupBy(x => x.ActivityId)
@@ -57,8 +70,7 @@ public sealed class PmsEvmService : IPmsEvmService
                 .First())
             .ToDictionary(x => x.ActivityId);
 
-        var currentActivityById = (await _activityRepository.GetAllAsync())
-            .Where(x => activityIds.Contains(x.Id) && !x.IsDeleted)
+        var currentActivityById = currentActivities
             .ToDictionary(x => x.Id);
 
         var progressEntriesByActivity = progressEntries
