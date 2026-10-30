@@ -1,128 +1,37 @@
-import type { Project } from "../../../models/project";
-
-
 export type EVMResult = {
-
-  PV:number;
-
-  EV:number;
-
-  AC:number;
-
-  CV:number;
-
-  SV:number;
-
-  CPI:number;
-
-  SPI:number;
-
+  PV: number;
+  EV: number;
+  AC: number;
+  CV: number;
+  SV: number;
+  CPI: number;
+  SPI: number;
 };
 
+export type EVMCalculationInput = {
+  plannedValue: number;
+  earnedValue: number;
+  actualCost: number;
+};
 
-
-
-
+/**
+ * Calculates EVM indices from values already derived from an approved baseline.
+ * This helper intentionally does not infer PV from current progress.
+ */
 export default function evmCalculator(
-  project:Project
-):EVMResult {
-
-
-
-  const budget =
-    Number(project.budget ?? 0);
-
-
-
-  const actualCost =
-    Number(project.actualCost ?? 0);
-
-
-
-  const progress =
-    Number(project.progress ?? 0);
-
-
-
-
-
-  const plannedProgress =
-    progress / 100;
-
-
-
-
-
-  const PV =
-    budget * plannedProgress;
-
-
-
-  const EV =
-    budget * plannedProgress;
-
-
-
-  const AC =
-    actualCost;
-
-
-
-
-
-  const CV =
-    EV - AC;
-
-
-
-  const SV =
-    EV - PV;
-
-
-
-
-
-  const CPI =
-    AC === 0
-
-      ? 0
-
-      : EV / AC;
-
-
-
-
-
-  const SPI =
-    PV === 0
-
-      ? 0
-
-      : EV / PV;
-
-
-
-
-
-
+  input: EVMCalculationInput
+): EVMResult {
+  const PV = Math.max(0, Number(input.plannedValue) || 0);
+  const EV = Math.max(0, Number(input.earnedValue) || 0);
+  const AC = Math.max(0, Number(input.actualCost) || 0);
 
   return {
-
     PV,
-
     EV,
-
     AC,
-
-    CV,
-
-    SV,
-
-    CPI,
-
-    SPI,
-
+    CV: EV - AC,
+    SV: EV - PV,
+    CPI: AC === 0 ? 0 : EV / AC,
+    SPI: PV === 0 ? 0 : EV / PV,
   };
-
-
 }
