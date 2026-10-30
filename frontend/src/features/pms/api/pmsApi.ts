@@ -248,12 +248,17 @@ export async function getPmsEvm(
   projectId: string,
   reportDate: Date = new Date()
 ): Promise<PmsEvm> {
+  const localReportDate = [
+    reportDate.getFullYear(),
+    String(reportDate.getMonth() + 1).padStart(2, "0"),
+    String(reportDate.getDate()).padStart(2, "0"),
+  ].join("-");
+
   const response = await http.get(
     `/pms/evm/${projectId}`,
     {
       params: {
-        reportDate:
-          reportDate.toISOString(),
+        reportDate: localReportDate,
       },
     }
   );
