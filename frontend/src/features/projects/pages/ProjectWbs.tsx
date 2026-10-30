@@ -550,9 +550,9 @@ export default function ProjectWbs() {
 
         const activitiesByWbs = new Map<string, typeof activities>();
         for (const activity of activities) {
-          const assigned = activitiesByWbs.get(activity.wbsCode) ?? [];
+          const assigned = activitiesByWbs.get(activity.wbsNodeId) ?? [];
           assigned.push(activity);
-          activitiesByWbs.set(activity.wbsCode, assigned);
+          activitiesByWbs.set(activity.wbsNodeId, assigned);
         }
 
         const attachActivities = (nodes: WbsNode[]): WbsNode[] =>
