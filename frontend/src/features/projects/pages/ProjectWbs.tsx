@@ -26,10 +26,12 @@ import {
   InsertDriveFileRounded,
 } from "@mui/icons-material";
 
+import { useTheme } from "@mui/material/styles";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 
 import {
   getPmsWbs,
+  getPmsActivities,
   type WbsNode,
 } from "../../pms/api/pmsApi";
 
@@ -72,6 +74,7 @@ function WbsRow({
   depth,
 }: WbsRowProps) {
 
+  const theme = useTheme();
   const [expanded, setExpanded] =
     useState(true);
 
@@ -126,7 +129,7 @@ function WbsRow({
                 "&:hover": {
                   bgcolor:
                     hasChildren
-                      ? "#F1F5F9"
+                      ? theme.palette.action.hover
                       : "transparent",
                 },
               }}
@@ -137,7 +140,7 @@ function WbsRow({
                   sx={{
                     fontSize: 13,
                     fontWeight: 700,
-                    color: "#64748B",
+                    color: theme.palette.text.secondary,
                     transform:
                       expanded
                         ? "rotate(90deg)"
@@ -155,14 +158,14 @@ function WbsRow({
               <InsertDriveFileRounded
                 sx={{
                   fontSize: 17,
-                  color: "#64748B",
+                  color: theme.palette.text.secondary,
                 }}
               />
             ) : (
               <FolderRounded
                 sx={{
                   fontSize: 18,
-                  color: "#2563EB",
+                  color: theme.palette.primary.main,
                 }}
               />
             )}
@@ -181,8 +184,8 @@ function WbsRow({
                       : 650,
                   color:
                     node.isActivity
-                      ? "#334155"
-                      : "#0F172A",
+                      ? theme.palette.text.primary
+                      : theme.palette.text.primary,
                   whiteSpace:
                     "nowrap",
                   overflow:
@@ -197,7 +200,7 @@ function WbsRow({
               <Typography
                 sx={{
                   fontSize: 10.5,
-                  color: "#94A3B8",
+                  color: theme.palette.text.disabled,
                   mt: 0.15,
                 }}
               >
@@ -213,7 +216,7 @@ function WbsRow({
           sx={{
             minWidth: 90,
             fontSize: 11.5,
-            color: "#64748B",
+            color: theme.palette.text.secondary,
           }}
         >
           {node.isActivity
@@ -250,7 +253,7 @@ function WbsRow({
                 sx={{
                   height: 6,
                   borderRadius: 3,
-                  bgcolor: "#E8EEF5",
+                  bgcolor: theme.palette.divider,
                   "& .MuiLinearProgress-bar":
                     {
                       borderRadius: 3,
@@ -265,7 +268,7 @@ function WbsRow({
                 textAlign: "right",
                 fontSize: 11.5,
                 fontWeight: 650,
-                color: "#334155",
+                color: theme.palette.text.primary,
               }}
             >
               {formatPercent(
@@ -281,7 +284,7 @@ function WbsRow({
           sx={{
             minWidth: 125,
             fontSize: 11.5,
-            color: "#334155",
+            color: theme.palette.text.primary,
           }}
         >
           {formatNumber(
@@ -295,7 +298,7 @@ function WbsRow({
           sx={{
             minWidth: 125,
             fontSize: 11.5,
-            color: "#334155",
+            color: theme.palette.text.primary,
           }}
         >
           {formatNumber(
@@ -309,7 +312,7 @@ function WbsRow({
           sx={{
             minWidth: 125,
             fontSize: 11.5,
-            color: "#334155",
+            color: theme.palette.text.primary,
           }}
         >
           {formatNumber(
@@ -326,10 +329,10 @@ function WbsRow({
             fontWeight: 650,
             color:
               node.cpi > 1
-                ? "#15803D"
+                ? theme.palette.success.main
                 : node.cpi > 0
-                  ? "#B45309"
-                  : "#94A3B8",
+                  ? theme.palette.warning.main
+                  : theme.palette.text.disabled,
           }}
         >
           {node.cpi
@@ -346,10 +349,10 @@ function WbsRow({
             fontWeight: 650,
             color:
               node.spi > 1
-                ? "#15803D"
+                ? theme.palette.success.main
                 : node.spi > 0
-                  ? "#B45309"
-                  : "#94A3B8",
+                  ? theme.palette.warning.main
+                  : theme.palette.text.disabled,
           }}
         >
           {node.spi
@@ -380,6 +383,7 @@ function WbsRow({
 
 export default function ProjectWbs() {
 
+  const theme = useTheme();
   const {
     workspace,
   } = useWorkspace();
@@ -421,13 +425,56 @@ export default function ProjectWbs() {
         setLoading(true);
         setError(null);
 
-        const result =
-          await getPmsWbs(
-            workspace.project.id
-          );
+        const [wbsResult, activities] = await Promise.all([
+          getPmsWbs(workspace.project.id),
+          getPmsActivities(workspace.project.id),
+        ]);
+
+        const activitiesByWbs = new Map<string, typeof activities>();
+        for (const activity of activities) {
+          const assigned = activitiesByWbs.get(activity.wbsCode) ?? [];
+          assigned.push(activity);
+          activitiesByWbs.set(activity.wbsCode, assigned);
+        }
+
+        const attachActivities = (nodes: WbsNode[]): WbsNode[] =>
+          nodes.map(node => {
+            const activityNodes: WbsNode[] = (activitiesByWbs.get(node.code) ?? [])
+              .sort((a, b) => a.code.localeCompare(b.code))
+              .map(activity => ({
+                id: activity.id,
+                parentId: node.id,
+                code: activity.code,
+                parentCode: node.code,
+                path: `${node.path}/${activity.code}`,
+                name: activity.name,
+                level: node.level + 1,
+                sortOrder: 0,
+                isActivity: true,
+                budget: activity.budget,
+                actualCost: activity.actualCost,
+                plannedValue: activity.plannedValue,
+                earnedValue: activity.earnedValue,
+                weightFactor: activity.weightFactor,
+                weightValue: activity.weightValue,
+                weight: activity.weight,
+                progress: activity.progress,
+                cpi: activity.cpi,
+                spi: activity.spi,
+                children: [],
+              }));
+
+            return {
+              ...node,
+              children: [
+                ...activityNodes,
+                ...attachActivities(node.children ?? []),
+              ],
+            };
+          });
 
         if (!cancelled) {
-          setData(result);
+          setData(attachActivities(wbsResult));
         }
 
       }
@@ -491,26 +538,22 @@ export default function ProjectWbs() {
 
       flatten(data);
 
-      const budget =
-        allNodes.reduce(
-          (sum, node) =>
-            sum + node.budget,
-          0
-        );
+      // WBS parent rows already contain bottom-up rollups.
+      // Sum only project roots to avoid counting descendants twice.
+      const budget = data.reduce(
+        (sum, node) => sum + node.budget,
+        0
+      );
 
-      const actualCost =
-        allNodes.reduce(
-          (sum, node) =>
-            sum + node.actualCost,
-          0
-        );
+      const actualCost = data.reduce(
+        (sum, node) => sum + node.actualCost,
+        0
+      );
 
-      const earnedValue =
-        allNodes.reduce(
-          (sum, node) =>
-            sum + node.earnedValue,
-          0
-        );
+      const earnedValue = data.reduce(
+        (sum, node) => sum + node.earnedValue,
+        0
+      );
 
       const activities =
         allNodes.filter(
@@ -533,7 +576,7 @@ export default function ProjectWbs() {
       sx={{
         width: "100%",
         minHeight: "100%",
-        bgcolor: "#F6F8FB",
+        bgcolor: theme.palette.background.default,
         p: {
           xs: 1.5,
           md: 2.5,
@@ -572,13 +615,13 @@ export default function ProjectWbs() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              bgcolor: "#EAF1FF",
+              bgcolor: theme.palette.action.selected,
             }}
           >
             <AccountTreeRounded
               sx={{
                 fontSize: 22,
-                color: "#2563EB",
+                color: theme.palette.primary.main,
               }}
             />
           </Box>
@@ -588,7 +631,7 @@ export default function ProjectWbs() {
               sx={{
                 fontSize: 18,
                 fontWeight: 750,
-                color: "#0F172A",
+                color: theme.palette.text.primary,
                 lineHeight: 1.25,
               }}
             >
@@ -598,7 +641,7 @@ export default function ProjectWbs() {
             <Typography
               sx={{
                 fontSize: 11.5,
-                color: "#64748B",
+                color: theme.palette.text.secondary,
                 mt: 0.35,
               }}
             >
@@ -618,7 +661,7 @@ export default function ProjectWbs() {
             <Typography
               sx={{
                 fontSize: 10.5,
-                color: "#94A3B8",
+                color: theme.palette.text.disabled,
               }}
             >
               Activities
@@ -628,7 +671,7 @@ export default function ProjectWbs() {
               sx={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: "#334155",
+                color: theme.palette.text.primary,
               }}
             >
               {totals.activities}
@@ -639,7 +682,7 @@ export default function ProjectWbs() {
             <Typography
               sx={{
                 fontSize: 10.5,
-                color: "#94A3B8",
+                color: theme.palette.text.disabled,
               }}
             >
               Budget
@@ -649,7 +692,7 @@ export default function ProjectWbs() {
               sx={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: "#334155",
+                color: theme.palette.text.primary,
               }}
             >
               {formatNumber(
@@ -662,7 +705,7 @@ export default function ProjectWbs() {
             <Typography
               sx={{
                 fontSize: 10.5,
-                color: "#94A3B8",
+                color: theme.palette.text.disabled,
               }}
             >
               Actual Cost
@@ -672,7 +715,7 @@ export default function ProjectWbs() {
               sx={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: "#334155",
+                color: theme.palette.text.primary,
               }}
             >
               {formatNumber(
@@ -732,7 +775,7 @@ export default function ProjectWbs() {
               <Typography
                 sx={{
                   fontSize: 12,
-                  color: "#64748B",
+                  color: theme.palette.text.secondary,
                 }}
               >
                 Loading WBS...
@@ -773,7 +816,7 @@ export default function ProjectWbs() {
               <Typography
                 sx={{
                   fontSize: 11.5,
-                  color: "#94A3B8",
+                  color: theme.palette.text.disabled,
                 }}
               >
                 The selected project does not
@@ -800,7 +843,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -815,7 +858,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -829,7 +872,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -844,7 +887,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -859,7 +902,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -874,7 +917,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -889,7 +932,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
@@ -904,7 +947,7 @@ export default function ProjectWbs() {
                       bgcolor: "#F8FAFC",
                       fontSize: 10.5,
                       fontWeight: 750,
-                      color: "#64748B",
+                      color: theme.palette.text.secondary,
                       borderBottom:
                         "1px solid #E2E8F0",
                     }}
