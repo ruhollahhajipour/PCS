@@ -126,9 +126,22 @@ public sealed class PmsBaselineService : IPmsBaselineService
                         $"Activity '{activity.Code}' references a calendar that is not active in this project.");
                 }
             }
-            else
+            else if (defaultCalendar is not null)
             {
                 calendar = defaultCalendar;
+            }
+            else if (calendars.Count == 1)
+            {
+                calendar = calendars[0];
+            }
+            else if (calendars.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"Activity '{activity.Code}' has no assigned calendar and the project has multiple calendars but no default calendar.");
+            }
+            else
+            {
+                calendar = null;
             }
 
             var workingDaysMask = calendar is null
