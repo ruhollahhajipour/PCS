@@ -462,18 +462,17 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     {
         var result = new List<PmsPdfRow>();
         var activitiesByWbs = dto.Activities
-            .Where(activity => !string.IsNullOrWhiteSpace(activity.WbsCode))
-            .GroupBy(activity => activity.WbsCode, StringComparer.OrdinalIgnoreCase)
+            .Where(activity => activity.WbsNodeId != Guid.Empty)
+            .GroupBy(activity => activity.WbsNodeId)
             .ToDictionary(
                 group => group.Key,
-                group => group.OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase).ToList(),
-                StringComparer.OrdinalIgnoreCase);
+                group => group.OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase).ToList());
 
-        var knownWbsCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var knownWbsIds = new HashSet<Guid>();
 
         void AddNode(WbsNodeDto node)
         {
-            knownWbsCodes.Add(node.Code);
+            knownWbsIds.Add(node.Id);
 
             result.Add(new PmsPdfRow
             {
@@ -487,9 +486,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 WeightFactor = node.WeightFactor,
                 WeightValue = node.WeightValue,
                 Progress = node.Progress,
-                WeightedProgress = dto.TotalBudget == 0
-                    ? 0
-                    : node.EarnedValue / dto.TotalBudget * 100m,
+                WeightedProgress = node.WeightValue * node.Progress / 100m,
                 EarnedValue = node.EarnedValue,
                 PlannedValue = node.PlannedValue,
                 ActualCost = node.ActualCost,
@@ -497,7 +494,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 SPI = node.SPI
             });
 
-            if (activitiesByWbs.TryGetValue(node.Code, out var assignedActivities))
+            if (activitiesByWbs.TryGetValue(node.Id, out var assignedActivities))
             {
                 foreach (var activity in assignedActivities)
                     AddActivity(activity, node.Code, node.Level + 1);
@@ -519,8 +516,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         }
 
         var unassigned = dto.Activities
-            .Where(activity => string.IsNullOrWhiteSpace(activity.WbsCode) ||
-                               !knownWbsCodes.Contains(activity.WbsCode))
+            .Where(activity => !knownWbsIds.Contains(activity.WbsNodeId))
             .OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -553,9 +549,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 WeightFactor = activity.WeightFactor,
                 WeightValue = activity.WeightValue,
                 Progress = activity.Progress,
-                WeightedProgress = dto.TotalBudget == 0
-                    ? 0
-                    : activity.EarnedValue / dto.TotalBudget * 100m,
+                WeightedProgress = activity.WeightValue * activity.Progress / 100m,
                 EarnedValue = activity.EarnedValue,
                 PlannedValue = activity.PlannedValue,
                 ActualCost = activity.ActualCost,
