@@ -14,6 +14,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   LinearProgress,
   Paper,
   Stack,
@@ -31,12 +32,13 @@ import {
   AccountTreeRounded,
   AddRounded,
   CheckCircleRounded,
+  ChevronRightRounded,
   FolderRounded,
   InsertDriveFileRounded,
   PictureAsPdfRounded,
 } from "@mui/icons-material";
 
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 
 import {
@@ -102,9 +104,26 @@ function WbsRow({
       <TableRow
         hover
         sx={{
+          backgroundColor: node.isActivity
+            ? "transparent"
+            : alpha(
+                theme.palette.primary.main,
+                theme.palette.mode === "dark"
+                  ? node.level <= 1 ? 0.2 : 0.1
+                  : node.level <= 1 ? 0.075 : 0.035
+              ),
+          borderInlineStart: node.isActivity
+            ? "none"
+            : `3px solid ${alpha(theme.palette.primary.main, node.level <= 1 ? 0.75 : 0.35)}`,
+          transition: theme.transitions.create("background-color"),
+          "&:hover": {
+            backgroundColor: alpha(
+              theme.palette.primary.main,
+              theme.palette.mode === "dark" ? 0.24 : 0.1
+            ),
+          },
           "& > td": {
-            borderBottom:
-              `1px solid ${theme.palette.divider}`,
+            borderBottom: `1px solid ${theme.palette.divider}`,
           },
         }}
       >
@@ -120,54 +139,32 @@ function WbsRow({
             alignItems="center"
             spacing={0.75}
             sx={{
-              pl: depth * 2.5,
+              paddingInlineStart: theme.spacing(depth * 2.5),
             }}
           >
-            <Box
-              onClick={() => {
-                if (hasChildren) {
-                  setExpanded(
-                    value => !value
-                  );
-                }
-              }}
+            <IconButton
+              size="small"
+              disabled={!hasChildren}
+              aria-label={expanded ? `Collapse ${node.name}` : `Expand ${node.name}`}
+              aria-expanded={hasChildren ? expanded : undefined}
+              onClick={() => setExpanded(value => !value)}
               sx={{
                 width: 22,
                 height: 22,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: hasChildren
-                  ? "pointer"
-                  : "default",
                 borderRadius: 1,
-                "&:hover": {
-                  bgcolor:
-                    hasChildren
-                      ? theme.palette.action.hover
-                      : "transparent",
-                },
+                color: theme.palette.text.secondary,
               }}
             >
               {hasChildren ? (
-                <Typography
-                  component="span"
+                <ChevronRightRounded
                   sx={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: theme.palette.text.secondary,
-                    transform:
-                      expanded
-                        ? "rotate(90deg)"
-                        : "none",
-                    transition:
-                      "transform .15s ease",
+                    fontSize: 18,
+                    transform: expanded ? "rotate(90deg)" : "none",
+                    transition: theme.transitions.create("transform"),
                   }}
-                >
-                  ›
-                </Typography>
+                />
               ) : null}
-            </Box>
+            </IconButton>
 
             {node.isActivity ? (
               <InsertDriveFileRounded
@@ -196,11 +193,8 @@ function WbsRow({
                   fontWeight:
                     node.isActivity
                       ? 500
-                      : 650,
-                  color:
-                    node.isActivity
-                      ? theme.palette.text.primary
-                      : theme.palette.text.primary,
+                      : node.level <= 1 ? 750 : 650,
+                  color: theme.palette.text.primary,
                   whiteSpace:
                     "nowrap",
                   overflow:
@@ -234,9 +228,18 @@ function WbsRow({
             color: theme.palette.text.secondary,
           }}
         >
-          {node.isActivity
-            ? "Activity"
-            : "WBS"}
+          <Chip
+            size="small"
+            label={node.isActivity ? "Activity" : "WBS"}
+            color={node.isActivity ? "default" : "primary"}
+            variant={node.isActivity ? "outlined" : "filled"}
+            sx={{
+              height: 22,
+              fontSize: 10,
+              fontWeight: 650,
+              borderRadius: 1.25,
+            }}
+          />
         </TableCell>
 
         {/* PROGRESS */}
