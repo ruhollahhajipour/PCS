@@ -1197,8 +1197,7 @@ await _unitOfWork
         Dictionary<Guid, decimal> ActualCostByActivity,
         Dictionary<Guid, decimal> EarnedValueByActivity,
         Dictionary<Guid, decimal> PlannedValueByActivity,
-        Dictionary<Guid, decimal> ProgressValueByActivity,
-        bool HasApprovedBaseline);
+        Dictionary<Guid, decimal> ProgressValueByActivity);
 
     private static PmsFinancialSnapshot BuildFinancialSnapshot(
         IReadOnlyCollection<Activity> activities,
@@ -1258,8 +1257,7 @@ await _unitOfWork
             actualCostByActivity,
             earnedValueByActivity,
             plannedValueByActivity,
-            progressValueByActivity,
-            baseline != null);
+            progressValueByActivity);
     }
 
     // =====================================================
