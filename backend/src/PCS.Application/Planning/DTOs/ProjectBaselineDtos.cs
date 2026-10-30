@@ -7,7 +7,7 @@ public sealed class CreateProjectBaselineDto
     public string? Description { get; set; }
 }
 
-public sealed class ProjectBaselineDto
+public class ProjectBaselineDto
 {
     public Guid Id { get; set; }
 
