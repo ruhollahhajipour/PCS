@@ -28,8 +28,9 @@ public sealed class PmsEvmService : IPmsEvmService
         if (projectId == Guid.Empty)
             throw new ArgumentException("ProjectId is required.", nameof(projectId));
 
+        var todayUtc = DateTime.UtcNow.Date;
         var dataDate = reportDate.Date;
-        if (dataDate > DateTime.UtcNow.Date.AddDays(1))
+        if (dataDate > todayUtc)
             throw new ArgumentOutOfRangeException(
                 nameof(reportDate),
                 "An EVM data date cannot be in the future.");
