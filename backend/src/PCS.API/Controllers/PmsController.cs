@@ -222,15 +222,30 @@ public class PmsController : ControllerBase
         if (request == null)
             return BadRequest("Baseline request is required.");
 
-        var result = await _baselineService.CreateDraftAsync(
-            projectId,
-            request,
-            User.Identity?.Name);
+        try
+        {
+            var result = await _baselineService.CreateDraftAsync(
+                projectId,
+                request,
+                User.Identity?.Name);
 
-        return CreatedAtAction(
-            nameof(GetBaselines),
-            new { projectId },
-            result);
+            return CreatedAtAction(
+                nameof(GetBaselines),
+                new { projectId },
+                result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Message = ex.Message });
+        }
     }
 
     [HttpPost("{projectId}/baselines/{baselineId}/approve")]
@@ -242,12 +257,23 @@ public class PmsController : ControllerBase
         if (projectId == Guid.Empty || baselineId == Guid.Empty)
             return BadRequest("ProjectId and BaselineId are required.");
 
-        var result = await _baselineService.ApproveAsync(
-            projectId,
-            baselineId,
-            User.Identity?.Name);
+        try
+        {
+            var result = await _baselineService.ApproveAsync(
+                projectId,
+                baselineId,
+                User.Identity?.Name);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Message = ex.Message });
+        }
     }
 
     [HttpGet("template")]
