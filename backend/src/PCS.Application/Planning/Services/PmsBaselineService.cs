@@ -294,7 +294,7 @@ public sealed class PmsBaselineService : IPmsBaselineService
         }
     }
 
-        public async Task<IReadOnlyList<ProjectBaselineDto>> GetAllAsync(Guid projectId)
+    public async Task<IReadOnlyList<ProjectBaselineDto>> GetAllAsync(Guid projectId)
     {
         var baselines = (await _baselineRepository.FindAsync(
                 x => x.ProjectId == projectId && !x.IsDeleted))
