@@ -12,7 +12,7 @@ import {
 
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
 
@@ -225,6 +225,16 @@ export default function Login() {
               {loading
                 ? "Signing In..."
                 : "Sign In"}
+            </Button>
+
+            <Button
+              component={RouterLink}
+              to="/preview"
+              fullWidth
+              variant="text"
+              sx={{ fontWeight: 650, textTransform: "none" }}
+            >
+              Explore read-only demo
             </Button>
           </Stack>
         </form>
