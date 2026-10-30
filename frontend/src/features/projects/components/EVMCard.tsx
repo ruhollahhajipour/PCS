@@ -1,340 +1,85 @@
 import {
+  Box,
   Card,
   CardContent,
-  Typography,
-  Box,
   Chip,
+  Grid,
+  Typography,
 } from "@mui/material";
 
-import type { EVMResult } from "../utils/evmCalculator";
-
-
+import type { PmsEvm } from "../../pms/api/pmsApi";
 
 type Props = {
-
-  data:EVMResult;
-
+  data: PmsEvm;
 };
 
+function formatValue(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
-
-
-
-
-
-export default function EVMCard({
-
-  data,
-
-}:Props){
-
-
-
+export default function EVMCard({ data }: Props) {
   const items = [
-
-
-    {
-      title:"Planned Value (PV)",
-      value:data.PV,
-    },
-
-
-    {
-      title:"Earned Value (EV)",
-      value:data.EV,
-    },
-
-
-    {
-      title:"Actual Cost (AC)",
-      value:data.AC,
-    },
-
-
-    {
-      title:"Cost Variance (CV)",
-      value:data.CV,
-    },
-
-
-    {
-      title:"Schedule Variance (SV)",
-      value:data.SV,
-    },
-
-
+    { title: "Planned Value (PV)", value: data.plannedValue },
+    { title: "Earned Value (EV)", value: data.earnedValue },
+    { title: "Actual Cost (AC)", value: data.actualCost },
+    { title: "Cost Variance (CV)", value: data.costVariance },
+    { title: "Schedule Variance (SV)", value: data.scheduleVariance },
   ];
 
-
-
-
-
-
   return (
-
-
-    <Card
-
-      sx={{
-
-        borderRadius:4,
-
-      }}
-
-    >
-
-
+    <Card sx={{ borderRadius: 3 }} variant="outlined">
       <CardContent>
-
-
-
-        <Typography
-
-          variant="h6"
-
-          fontWeight={700}
-
-          mb={3}
-
-        >
-
-          Earned Value Management (EVM)
-
-        </Typography>
-
-
-
-
-
-
-        <Box
-
-          display="grid"
-
-          gridTemplateColumns={{
-
-            xs:"1fr",
-
-            sm:"repeat(2,1fr)",
-
-            md:"repeat(3,1fr)"
-
-          }}
-
-          gap={3}
-
-        >
-
-
-
-          {items.map((item)=>(
-
-
-
-            <Card
-
-              key={item.title}
-
-              variant="outlined"
-
-              sx={{
-
-                borderRadius:3,
-
-              }}
-
-            >
-
-
-              <CardContent>
-
-
-
-                <Typography
-
-                  variant="body2"
-
-                  color="text.secondary"
-
-                >
-
-                  {item.title}
-
-                </Typography>
-
-
-
-
-
-                <Typography
-
-                  variant="h6"
-
-                  fontWeight={700}
-
-                  mt={1}
-
-                >
-
-                  $
-                  {item.value.toLocaleString(
-                    "en-US",
-                    {
-                      maximumFractionDigits:0
-                    }
-                  )}
-
-                </Typography>
-
-
-
-              </CardContent>
-
-
-            </Card>
-
-
-
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight={750}>
+            Earned Value Management (EVM)
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Approved baseline: {data.baselineName} · Version {data.baselineVersion}
+            {" · "}Data date: {new Date(data.reportDate).toLocaleDateString()}
+          </Typography>
+          <Typography variant="caption" display="block" color="text.secondary">
+            Baseline budget: {formatValue(data.baselineBudget)} · Activities: {data.baselineActivityCount}
+          </Typography>
+        </Box>
+
+        <Grid container spacing={1.5}>
+          {items.map(item => (
+            <Grid key={item.title} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Card variant="outlined" sx={{ height: "100%", borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.title}
+                  </Typography>
+                  <Typography variant="h6" fontWeight={750} mt={1}>
+                    {formatValue(item.value)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
+        </Grid>
 
-
-
+        <Box mt={2} display="flex" gap={1} flexWrap="wrap">
+          <Chip
+            label={`CPI: ${data.cpi.toFixed(2)}`}
+            color={data.cpi >= 1 ? "success" : "warning"}
+          />
+          <Chip
+            label={`SPI: ${data.spi.toFixed(2)}`}
+            color={data.spi >= 1 ? "success" : "warning"}
+          />
+          <Chip
+            label={data.costVariance >= 0 ? "Under Budget" : "Over Budget"}
+            color={data.costVariance >= 0 ? "success" : "error"}
+          />
+          <Chip
+            label={data.scheduleVariance >= 0 ? "Ahead Schedule" : "Behind Schedule"}
+            color={data.scheduleVariance >= 0 ? "success" : "error"}
+          />
         </Box>
-
-
-
-
-
-
-
-        <Box
-
-          mt={4}
-
-          display="flex"
-
-          gap={2}
-
-          flexWrap="wrap"
-
-        >
-
-
-
-          <Chip
-
-            label={
-              `CPI : ${data.CPI.toFixed(2)}`
-            }
-
-
-            color={
-
-              data.CPI >= 1
-
-              ? "success"
-
-              : "warning"
-
-            }
-
-
-          />
-
-
-
-
-
-
-          <Chip
-
-            label={
-              `SPI : ${data.SPI.toFixed(2)}`
-            }
-
-
-            color={
-
-              data.SPI >= 1
-
-              ? "success"
-
-              : "warning"
-
-            }
-
-
-          />
-
-
-
-
-          <Chip
-
-            label={
-              data.CV >= 0
-              ? "Under Budget"
-              : "Over Budget"
-            }
-
-
-            color={
-
-              data.CV >= 0
-
-              ? "success"
-
-              : "error"
-
-            }
-
-
-          />
-
-
-
-
-
-          <Chip
-
-            label={
-
-              data.SV >= 0
-
-              ? "Ahead Schedule"
-
-              : "Behind Schedule"
-
-            }
-
-
-            color={
-
-              data.SV >= 0
-
-              ? "success"
-
-              : "error"
-
-            }
-
-
-          />
-
-
-
-
-        </Box>
-
-
-
       </CardContent>
-
-
     </Card>
-
-
   );
-
-
 }
