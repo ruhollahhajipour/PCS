@@ -126,8 +126,9 @@ public sealed class PmsCalculationService
 
 
 
-        decimal pv =
-            budget * 0.5m;
+        // This legacy synchronous calculator has no approved baseline input.
+        // Do not fabricate Planned Value; baseline-backed EVM is calculated by IPmsEvmService.
+        decimal pv = 0m;
 
 
 
