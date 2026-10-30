@@ -944,7 +944,10 @@ export default function ProjectWbs() {
                 }}
               >
                 <Typography sx={{ fontSize: 11.5, flex: 1 }}>
-                  {baseline.name} · V{baseline.version}
+                  {baseline.name} · V{baseline.version} · {baseline.activityCount} activities · {formatNumber(baseline.totalBudget)}
+                  {baseline.plannedStart && baseline.plannedFinish
+                    ? ` · ${new Date(baseline.plannedStart).toLocaleDateString()} – ${new Date(baseline.plannedFinish).toLocaleDateString()}`
+                    : ""}
                 </Typography>
                 <Button
                   size="small"
