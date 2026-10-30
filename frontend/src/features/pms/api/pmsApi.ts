@@ -246,13 +246,17 @@ export async function getPmsWbs(
 
 export async function getPmsEvm(
   projectId: string,
-  reportDate: Date = new Date()
+  reportDate?: Date
 ): Promise<PmsEvm> {
-  const localReportDate = [
-    reportDate.getFullYear(),
-    String(reportDate.getMonth() + 1).padStart(2, "0"),
-    String(reportDate.getDate()).padStart(2, "0"),
-  ].join("-");
+  // Default reports use the same UTC data date as the backend; explicit Date values
+  // are treated as calendar dates selected by the user.
+  const localReportDate = reportDate
+    ? [
+        reportDate.getFullYear(),
+        String(reportDate.getMonth() + 1).padStart(2, "0"),
+        String(reportDate.getDate()).padStart(2, "0"),
+      ].join("-")
+    : new Date().toISOString().slice(0, 10);
 
   const response = await http.get(
     `/pms/evm/${projectId}`,
