@@ -12,18 +12,21 @@ public class PmsDashboardService : IPmsDashboardService
     private readonly IGenericRepository<Activity> _activityRepository;
     private readonly IPmsProgressService _progressService;
     private readonly IPmsEvmService _evmService;
+    private readonly IPmsBaselineService _baselineService;
 
 
     public PmsDashboardService(
         IGenericRepository<Project> projectRepository,
         IGenericRepository<Activity> activityRepository,
         IPmsProgressService progressService,
-        IPmsEvmService evmService)
+        IPmsEvmService evmService,
+        IPmsBaselineService baselineService)
     {
         _projectRepository = projectRepository;
         _activityRepository = activityRepository;
         _progressService = progressService;
         _evmService = evmService;
+        _baselineService = baselineService;
     }
 
 
@@ -63,10 +66,14 @@ public class PmsDashboardService : IPmsDashboardService
 
 
 
-        var evm =
-            await _evmService.CalculateAsync(
+        var activeBaseline =
+            await _baselineService.GetActiveSnapshotAsync(projectId);
+
+        var evm = activeBaseline == null
+            ? null
+            : await _evmService.CalculateAsync(
                 projectId,
-                DateTime.Now);
+                DateTime.UtcNow);
 
 
 
@@ -82,16 +89,16 @@ public class PmsDashboardService : IPmsDashboardService
                 projectActivities.Sum(x => x.Budget),
 
             ActualCost =
-                evm.ActualCost,
+                evm?.ActualCost ?? projectActivities.Sum(x => x.ActualCost),
 
             EarnedValue =
-                evm.EarnedValue,
+                evm?.EarnedValue ?? 0m,
 
             CPI =
-                evm.CPI,
+                evm?.CPI ?? 0m,
 
             SPI =
-                evm.SPI,
+                evm?.SPI ?? 0m,
 
             TotalActivities =
                 projectActivities.Count,
