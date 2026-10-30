@@ -1,16 +1,24 @@
-# PCS Latest Preview Snapshot
+# PCS Preview
 
-This branch is an isolated preview snapshot of the PCS development reference branch.
+This branch provides an isolated browser preview of the PCS development snapshot.
+
+## Open the demo
+
+Visit `/preview` on the deployed preview URL, or select **Explore read-only demo** on the login page.
+
+The public preview is independent of the authentication and workspace providers. It does not call the backend API, does not read or write project records, and does not clear the user's saved workspace. All dashboard metrics, projects, WBS nodes, activities, warehouse stock and procurement orders shown there are fictional sample data.
+
+## Scope and safety
+
+- Demo mode is a separate public route; it does not bypass authentication on normal application routes.
+- The demo is read-only and contains no project data mutation controls.
+- Real login and protected routes continue to use the existing authentication and backend services.
+- This preview is for visual/product review only, not operational use or project reporting.
+
+## Source snapshot
 
 - Source branch: `feature/project-planning-architecture`
-- Source commit: `8aa933a17bb7a333d104cca8404151ac0a1b5f6d`
+- Source commit at preview creation: `8aa933a17bb7a333d104cca8404151ac0a1b5f6d`
 - Preview branch: `preview/pcs-latest-2026-10-31`
 
-The application source is unchanged from the source commit above. This file exists only to give the preview pull request a reviewable, auditable change and does not alter application behavior.
-
-## Preview validation notes
-
-- Frontend production build previously completed successfully on the source snapshot.
-- Frontend regression suite previously reported 6 failing CPM scheduling assertions out of 18 tests; these remain visible review items and are not fixed by this preview branch.
-- Backend validation results from earlier CI runs apply only to the tested backend scope, not to the complete application.
-- A successful preview deployment does not certify this snapshot as the canonical PCS release.
+Frontend build and browser verification must be confirmed from deployment checks before treating this preview as validated.
