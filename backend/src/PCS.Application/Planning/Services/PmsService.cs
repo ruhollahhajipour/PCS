@@ -14,6 +14,7 @@ public class PmsService : IPmsService
     private readonly IGenericRepository<Activity> _activityRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWbsCalculationService _wbsCalculationService;
+    private readonly IPmsBaselineService _baselineService;
 
 
     public PmsService(
@@ -22,7 +23,8 @@ public class PmsService : IPmsService
         IGenericRepository<WbsNode> wbsRepository,
         IGenericRepository<Activity> activityRepository,
         IUnitOfWork unitOfWork,
-        IWbsCalculationService wbsCalculationService)
+        IWbsCalculationService wbsCalculationService,
+        IPmsBaselineService baselineService)
     {
         _projectRepository = projectRepository;
         _companyRepository = companyRepository;
@@ -30,6 +32,7 @@ public class PmsService : IPmsService
         _activityRepository = activityRepository;
         _unitOfWork = unitOfWork;
         _wbsCalculationService = wbsCalculationService;
+        _baselineService = baselineService;
     }
 
 
@@ -533,8 +536,7 @@ var activityDtos =
                     (x.Progress / 100m),
 
                 PlannedValue =
-                    x.Budget *
-                    0.5m
+                    0m
             })
         .ToList();
 
@@ -667,6 +669,16 @@ await _unitOfWork
         // PROJECT KPI FROM ACTIVITIES
         // =====================================================
 
+        var activeBaseline =
+            await _baselineService.GetActiveSnapshotAsync(projectId);
+
+        var dataDate = DateTime.UtcNow.Date;
+        var plannedValueByActivity = activeBaseline == null
+            ? new Dictionary<Guid, decimal>()
+            : activeBaseline.Activities.ToDictionary(
+                x => x.ActivityId,
+                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, dataDate));
+
         var totalProjectBudget =
             activities.Sum(
                 x => x.Budget);
@@ -690,13 +702,11 @@ await _unitOfWork
 
 
 
-        // فعلاً Baseline پیش فرض 50%
-        // بعداً از Schedule Baseline خوانده می‌شود
         var plannedValue =
-            activities.Sum(
-                x =>
-                    x.Budget *
-                    0.5m);
+            activities.Sum(x =>
+                plannedValueByActivity.TryGetValue(x.Id, out var value)
+                    ? value
+                    : 0m);
 
 
 
@@ -768,8 +778,9 @@ await _unitOfWork
 
 
                     var pv =
-                        x.Budget *
-                        0.5m;
+                        plannedValueByActivity.TryGetValue(x.Id, out var planned)
+                            ? planned
+                            : 0m;
 
 
 
@@ -1022,7 +1033,8 @@ await _unitOfWork
                 BuildWbsTree(
                     wbsNodes,
                     activities,
-                    totalProjectBudget),
+                    totalProjectBudget,
+                    plannedValueByActivity),
 
 
 
@@ -1080,7 +1092,13 @@ await _unitOfWork
             SPI =
                 Math.Round(
                     spi,
-                    2)
+                    2),
+
+            HasApprovedBaseline = activeBaseline != null,
+            BaselineId = activeBaseline?.Id,
+            BaselineName = activeBaseline?.Name,
+            BaselineVersion = activeBaseline?.Version ?? 0,
+            EvmDataDate = dataDate
         };
     }
 
@@ -1097,7 +1115,8 @@ await _unitOfWork
     private static List<WbsNodeDto> BuildWbsTree(
         List<WbsNode> nodes,
         List<Activity> activities,
-        decimal totalProjectBudget)
+        decimal totalProjectBudget,
+        IReadOnlyDictionary<Guid, decimal> plannedValueByActivity)
     {
         if (nodes.Count == 0)
             return new List<WbsNodeDto>();
@@ -1153,10 +1172,10 @@ await _unitOfWork
             dto.ActualCost = assigned.Sum(x => x.ActualCost);
             dto.EarnedValue = assigned.Sum(x => x.Budget * (x.Progress / 100m));
 
-            // The current domain model has no schedule baseline value.
-            // Keep parity with the existing export convention (50%) until
-            // baseline-backed PlannedValue is available from scheduling.
-            dto.PlannedValue = assigned.Sum(x => x.Budget * 0.5m);
+            dto.PlannedValue = assigned.Sum(x =>
+                plannedValueByActivity.TryGetValue(x.Id, out var planned)
+                    ? planned
+                    : 0m);
         }
 
         WbsNodeDto RollUp(WbsNodeDto node)
@@ -1244,10 +1263,18 @@ await _unitOfWork
 
 
 
+        var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var plannedValueByActivity = baseline == null
+            ? new Dictionary<Guid, decimal>()
+            : baseline.Activities.ToDictionary(
+                x => x.ActivityId,
+                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, DateTime.UtcNow.Date));
+
         return BuildWbsTree(
             nodes,
             activities,
-            totalBudget);
+            totalBudget,
+            plannedValueByActivity);
     }
 
 
@@ -1287,7 +1314,12 @@ await _unitOfWork
             activities.Sum(
                 x => x.Budget);
 
-
+        var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var plannedValueByActivity = baseline == null
+            ? new Dictionary<Guid, decimal>()
+            : baseline.Activities.ToDictionary(
+                x => x.ActivityId,
+                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, DateTime.UtcNow.Date));
 
         return activities.Select(
             x =>
@@ -1355,8 +1387,9 @@ await _unitOfWork
 
 
                     PlannedValue =
-                        x.Budget *
-                        0.5m,
+                        plannedValueByActivity.TryGetValue(x.Id, out var planned)
+                            ? planned
+                            : 0m,
 
 
                     IsCritical =
