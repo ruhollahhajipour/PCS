@@ -246,13 +246,11 @@ public class PmsService : IPmsService
 
 
 
-                existingActivity.ActualStart =
-                    item.ActualStart;
+                if (item.ActualStartSpecified)
+                    existingActivity.ActualStart = item.ActualStart;
 
-
-
-                existingActivity.ActualFinish =
-                    item.ActualFinish;
+                if (item.ActualFinishSpecified)
+                    existingActivity.ActualFinish = item.ActualFinish;
 
 
 
