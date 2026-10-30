@@ -100,6 +100,15 @@ public sealed class PmsSheetBuilder
                 .WithSize(72, 42);
         }
 
+        var companyLogoPath = ResolveBrandingPath(dto.CompanyLogoPath);
+        if (companyLogoPath is not null &&
+            !string.Equals(companyLogoPath, logoPath, StringComparison.OrdinalIgnoreCase))
+        {
+            sheet.AddPicture(companyLogoPath)
+                .MoveTo(sheet.Cell("N1"))
+                .WithSize(72, 42);
+        }
+
         sheet.Range("A3:O3").Merge();
         var company = sheet.Cell("A3");
         company.Value = string.IsNullOrWhiteSpace(dto.CompanyDisplayName)
