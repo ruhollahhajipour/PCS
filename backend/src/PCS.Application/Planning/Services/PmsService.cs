@@ -673,71 +673,30 @@ await _unitOfWork
             await _baselineService.GetActiveSnapshotAsync(projectId);
 
         var dataDate = DateTime.UtcNow.Date;
-        var plannedValueByActivity = activeBaseline == null
-            ? new Dictionary<Guid, decimal>()
-            : activeBaseline.Activities.ToDictionary(
-                x => x.ActivityId,
-                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, dataDate));
+        var financials = BuildFinancialSnapshot(
+            activities,
+            activeBaseline,
+            dataDate);
 
-        var totalProjectBudget =
-            activities.Sum(
-                x => x.Budget);
-
-
-
-
-        var actualCost =
-            activities.Sum(
-                x => x.ActualCost);
+        var totalProjectBudget = financials.TotalBudget;
+        var actualCost = financials.ActualCost;
+        var earnedValue = financials.EarnedValue;
+        var plannedValue = financials.PlannedValue;
 
 
 
 
-        var earnedValue =
-            activities.Sum(
-                x =>
-                    x.Budget *
-                    (x.Progress / 100m));
+        var overallProgress = financials.OverallProgress;
 
 
 
 
-        var plannedValue =
-            activities.Sum(x =>
-                plannedValueByActivity.TryGetValue(x.Id, out var value)
-                    ? value
-                    : 0m);
+        var cpi = financials.CPI;
 
 
 
 
-        var overallProgress =
-            totalProjectBudget == 0
-            ? 0
-            :
-            (earnedValue /
-             totalProjectBudget)
-             * 100m;
-
-
-
-
-        var cpi =
-            actualCost == 0
-            ? 0
-            :
-            earnedValue /
-            actualCost;
-
-
-
-
-        var spi =
-            plannedValue == 0
-            ? 0
-            :
-            earnedValue /
-            plannedValue;
+        var spi = financials.SPI;
 
 
 
@@ -761,26 +720,19 @@ await _unitOfWork
 
 
 
-                    var weightValue =
-                        totalProjectBudget == 0
+                    var activityBudget = financials.BudgetByActivity[x.Id];
+                    var activityActualCost = financials.ActualCostByActivity[x.Id];
+                    var weightValue = totalProjectBudget == 0
                         ? 0
-                        :
-                        (x.Budget /
-                         totalProjectBudget)
-                         * 100m;
+                        : activityBudget / totalProjectBudget * 100m;
 
 
 
-                    var earned =
-                        x.Budget *
-                        (x.Progress / 100m);
+                    var earned = financials.EarnedValueByActivity[x.Id];
 
 
 
-                    var pv =
-                        plannedValueByActivity.TryGetValue(x.Id, out var planned)
-                            ? planned
-                            : 0m;
+                    var pv = financials.PlannedValueByActivity[x.Id];
 
 
 
@@ -886,12 +838,12 @@ await _unitOfWork
 
 
                         Budget =
-                            x.Budget,
+                            activityBudget,
 
 
 
                         ActualCost =
-                            x.ActualCost,
+                            activityActualCost,
 
 
 
@@ -907,7 +859,7 @@ await _unitOfWork
 
                         CostVariance =
                             earned -
-                            x.ActualCost,
+                            activityActualCost,
 
 
 
@@ -918,11 +870,11 @@ await _unitOfWork
 
 
                         CPI =
-                            x.ActualCost == 0
+                            activityActualCost == 0
                             ? 0
                             :
                             earned /
-                            x.ActualCost,
+                            activityActualCost,
 
 
 
@@ -1033,8 +985,7 @@ await _unitOfWork
                 BuildWbsTree(
                     wbsNodes,
                     activities,
-                    totalProjectBudget,
-                    plannedValueByActivity),
+                    financials),
 
 
 
@@ -1115,8 +1066,7 @@ await _unitOfWork
     private static List<WbsNodeDto> BuildWbsTree(
         List<WbsNode> nodes,
         List<Activity> activities,
-        decimal totalProjectBudget,
-        IReadOnlyDictionary<Guid, decimal> plannedValueByActivity)
+        PmsFinancialSnapshot financials)
     {
         if (nodes.Count == 0)
             return new List<WbsNodeDto>();
@@ -1168,14 +1118,10 @@ await _unitOfWork
                 continue;
 
             var dto = lookup[entity.Id];
-            dto.Budget = assigned.Sum(x => x.Budget);
-            dto.ActualCost = assigned.Sum(x => x.ActualCost);
-            dto.EarnedValue = assigned.Sum(x => x.Budget * (x.Progress / 100m));
-
-            dto.PlannedValue = assigned.Sum(x =>
-                plannedValueByActivity.TryGetValue(x.Id, out var planned)
-                    ? planned
-                    : 0m);
+            dto.Budget = assigned.Sum(x => financials.BudgetByActivity[x.Id]);
+            dto.ActualCost = assigned.Sum(x => financials.ActualCostByActivity[x.Id]);
+            dto.EarnedValue = assigned.Sum(x => financials.EarnedValueByActivity[x.Id]);
+            dto.PlannedValue = assigned.Sum(x => financials.PlannedValueByActivity[x.Id]);
         }
 
         WbsNodeDto RollUp(WbsNodeDto node)
@@ -1193,9 +1139,9 @@ await _unitOfWork
                 ? 0
                 : Math.Clamp(node.EarnedValue / node.Budget * 100m, 0m, 100m);
 
-            node.WeightValue = totalProjectBudget == 0
+            node.WeightValue = financials.TotalBudget == 0
                 ? 0
-                : node.Budget / totalProjectBudget * 100m;
+                : node.Budget / financials.TotalBudget * 100m;
 
             return node;
         }
@@ -1224,8 +1170,76 @@ await _unitOfWork
             }
         }
 
-        SetWeightFactors(roots, totalProjectBudget, true);
+        SetWeightFactors(roots, financials.TotalBudget, true);
         return roots;
+    }
+
+    private sealed record PmsFinancialSnapshot(
+        decimal TotalBudget,
+        decimal PlannedValue,
+        decimal EarnedValue,
+        decimal ActualCost,
+        decimal OverallProgress,
+        decimal CPI,
+        decimal SPI,
+        Dictionary<Guid, decimal> BudgetByActivity,
+        Dictionary<Guid, decimal> ActualCostByActivity,
+        Dictionary<Guid, decimal> EarnedValueByActivity,
+        Dictionary<Guid, decimal> PlannedValueByActivity);
+
+    private static PmsFinancialSnapshot BuildFinancialSnapshot(
+        IReadOnlyCollection<Activity> activities,
+        ProjectBaselineSnapshotDto? baseline,
+        DateTime dataDate)
+    {
+        var baselineByActivity = baseline?.Activities
+            .ToDictionary(x => x.ActivityId)
+            ?? new Dictionary<Guid, ProjectBaselineActivityDto>();
+
+        var budgetByActivity = activities.ToDictionary(
+            x => x.Id,
+            x => baseline == null
+                ? x.Budget
+                : baselineByActivity.TryGetValue(x.Id, out var item)
+                    ? item.Budget
+                    : 0m);
+
+        var actualCostByActivity = activities.ToDictionary(
+            x => x.Id,
+            x => baseline == null || baselineByActivity.ContainsKey(x.Id)
+                ? x.ActualCost
+                : 0m);
+
+        var earnedValueByActivity = activities.ToDictionary(
+            x => x.Id,
+            x => budgetByActivity[x.Id] * x.Progress / 100m);
+
+        var plannedValueByActivity = activities.ToDictionary(
+            x => x.Id,
+            x => baselineByActivity.TryGetValue(x.Id, out var item)
+                ? PmsBaselineCalculator.CalculateActivityPlannedValue(item, dataDate)
+                : 0m);
+
+        var totalBudget = baseline?.TotalBudget ?? budgetByActivity.Values.Sum();
+        var plannedValue = baseline == null
+            ? 0m
+            : baseline.Activities.Sum(x =>
+                PmsBaselineCalculator.CalculateActivityPlannedValue(x, dataDate));
+        var earnedValue = earnedValueByActivity.Values.Sum();
+        var actualCost = actualCostByActivity.Values.Sum();
+
+        return new PmsFinancialSnapshot(
+            totalBudget,
+            plannedValue,
+            earnedValue,
+            actualCost,
+            totalBudget == 0m ? 0m : earnedValue / totalBudget * 100m,
+            actualCost == 0m ? 0m : earnedValue / actualCost,
+            plannedValue == 0m ? 0m : earnedValue / plannedValue,
+            budgetByActivity,
+            actualCostByActivity,
+            earnedValueByActivity,
+            plannedValueByActivity);
     }
 
     // =====================================================
@@ -1257,24 +1271,16 @@ await _unitOfWork
 
 
 
-        var totalBudget =
-            activities.Sum(
-                x => x.Budget);
-
-
-
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
-        var plannedValueByActivity = baseline == null
-            ? new Dictionary<Guid, decimal>()
-            : baseline.Activities.ToDictionary(
-                x => x.ActivityId,
-                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, DateTime.UtcNow.Date));
+        var financials = BuildFinancialSnapshot(
+            activities,
+            baseline,
+            DateTime.UtcNow.Date);
 
         return BuildWbsTree(
             nodes,
             activities,
-            totalBudget,
-            plannedValueByActivity);
+            financials);
     }
 
 
@@ -1310,16 +1316,13 @@ await _unitOfWork
 
 
 
-        var totalBudget =
-            activities.Sum(
-                x => x.Budget);
-
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
-        var plannedValueByActivity = baseline == null
-            ? new Dictionary<Guid, decimal>()
-            : baseline.Activities.ToDictionary(
-                x => x.ActivityId,
-                x => PmsBaselineCalculator.CalculateActivityPlannedValue(x, DateTime.UtcNow.Date));
+        var financials = BuildFinancialSnapshot(
+            activities,
+            baseline,
+            DateTime.UtcNow.Date);
+
+        var totalBudget = financials.TotalBudget;
 
         return activities.Select(
             x =>
@@ -1361,11 +1364,11 @@ await _unitOfWork
 
 
                     Budget =
-                        x.Budget,
+                        financials.BudgetByActivity[x.Id],
 
 
                     ActualCost =
-                        x.ActualCost,
+                        financials.ActualCostByActivity[x.Id],
 
 
                     Progress =
@@ -1376,20 +1379,17 @@ await _unitOfWork
                         totalBudget == 0
                         ? 0
                         :
-                        (x.Budget /
+                        (financials.BudgetByActivity[x.Id] /
                          totalBudget)
                          * 100m,
 
 
                     EarnedValue =
-                        x.Budget *
-                        (x.Progress / 100m),
+                        financials.EarnedValueByActivity[x.Id],
 
 
                     PlannedValue =
-                        plannedValueByActivity.TryGetValue(x.Id, out var planned)
-                            ? planned
-                            : 0m,
+                        financials.PlannedValueByActivity[x.Id],
 
 
                     IsCritical =
