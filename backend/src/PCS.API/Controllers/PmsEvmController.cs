@@ -35,11 +35,15 @@ public class PmsEvmController : ControllerBase
 
             return Ok(result);
         }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(new
             {
-                Code = "ACTIVE_APPROVED_BASELINE_REQUIRED",
+                Code = "APPROVED_BASELINE_REQUIRED_FOR_DATA_DATE",
                 Message = ex.Message
             });
         }
