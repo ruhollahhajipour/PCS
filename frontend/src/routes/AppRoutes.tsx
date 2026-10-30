@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import { useWorkspace } from "../context/WorkspaceContext";
 
 import Login from "../pages/Login";
+import PreviewMode from "../pages/PreviewMode";
 import ChangePassword from "../pages/ChangePassword";
 
 // =====================
@@ -163,6 +164,12 @@ export default function AppRoutes() {
         <Route
           path="/login"
           element={<Login />}
+        />
+
+        {/* Public, isolated, read-only product preview. */}
+        <Route
+          path="/preview"
+          element={<PreviewMode />}
         />
 
         <Route
