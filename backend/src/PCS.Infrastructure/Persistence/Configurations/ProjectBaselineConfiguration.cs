@@ -28,6 +28,9 @@ public class ProjectBaselineConfiguration
         builder.Property(x => x.Description)
             .HasMaxLength(500);
 
+        builder.Property(x => x.ApprovedBy)
+            .HasMaxLength(200);
+
 
 
         // ==========================================
@@ -80,5 +83,9 @@ public class ProjectBaselineConfiguration
             x.ProjectId,
             x.Version
         });
+
+        builder.HasIndex(x => x.ProjectId)
+            .IsUnique()
+            .HasFilter("IsApproved = 1 AND IsActive = 1");
     }
 }
