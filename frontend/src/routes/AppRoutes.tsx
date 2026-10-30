@@ -12,7 +12,6 @@ import { useWorkspace } from "../context/WorkspaceContext";
 
 import Login from "../pages/Login";
 import PreviewMode from "../pages/PreviewMode";
-import ChangePassword from "../pages/ChangePassword";
 
 // =====================
 // Dashboard
@@ -172,13 +171,10 @@ export default function AppRoutes() {
           element={<PreviewMode />}
         />
 
+        {/* Password changes are disabled during temporary development access. */}
         <Route
           path="/change-password"
-          element={
-            <ProtectedRoute>
-              <ChangePassword />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/dashboard" replace />}
         />
 
 
