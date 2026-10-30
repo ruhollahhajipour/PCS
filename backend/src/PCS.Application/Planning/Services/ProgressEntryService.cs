@@ -64,15 +64,17 @@ public class ProgressEntryService : IProgressEntryService
             throw new InvalidOperationException(
                 "A progress entry already exists for this activity and reporting date.");
 
-        var activeBaseline = await _baselineService.GetActiveSnapshotAsync(activity.ProjectId);
-        var baselineActivity = activeBaseline?.Activities
+        var effectiveBaseline = await _baselineService.GetSnapshotForDateAsync(
+            activity.ProjectId,
+            progressDate);
+        var effectiveBaselineActivity = effectiveBaseline?.Activities
             .FirstOrDefault(x => x.ActivityId == activity.Id);
 
-        var baselineBudget = baselineActivity?.Budget ?? 0m;
-        var plannedValue = baselineActivity == null
+        var effectiveBaselineBudget = effectiveBaselineActivity?.Budget ?? 0m;
+        var plannedValue = effectiveBaselineActivity == null
             ? 0m
             : PmsBaselineCalculator.CalculateActivityPlannedValue(
-                baselineActivity,
+                effectiveBaselineActivity,
                 progressDate);
 
         var entry = new ProgressEntry
@@ -81,7 +83,7 @@ public class ProgressEntryService : IProgressEntryService
             ProgressDate = progressDate,
             Progress = progress,
             ActualCost = actualCost,
-            EarnedValue = baselineBudget * progress / 100m,
+            EarnedValue = effectiveBaselineBudget * progress / 100m,
             PlannedValue = plannedValue
         };
 
@@ -94,7 +96,12 @@ public class ProgressEntryService : IProgressEntryService
 
         // Progress-entry ActualCost is a period amount; the Activity field is cumulative.
         activity.ActualCost += actualCost;
-        activity.EarnedValue = baselineBudget * activity.Progress / 100m;
+
+        var currentBaseline = await _baselineService.GetActiveSnapshotAsync(activity.ProjectId);
+        var currentBaselineBudget = currentBaseline?.Activities
+            .FirstOrDefault(x => x.ActivityId == activity.Id)?.Budget ?? 0m;
+        activity.EarnedValue = currentBaselineBudget * activity.Progress / 100m;
+
         _activityRepository.Update(activity);
 
         await _repository.AddAsync(entry);
