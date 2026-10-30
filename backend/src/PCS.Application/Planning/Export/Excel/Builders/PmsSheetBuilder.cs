@@ -74,6 +74,21 @@ public sealed class PmsSheetBuilder
         }
 
         ApplyFormatting(sheet, Math.Max(HeaderRow, row - 1), theme);
+
+        // Planned Value is provisional until a real schedule baseline is connected.
+        var noteRow = row + 1;
+        sheet.Range(noteRow, 1, noteRow, 15).Merge();
+        var pvNote = sheet.Cell(noteRow, 1);
+        pvNote.Value = "PV NOTE: Current Planned Value is provisionally calculated as 50% of activity budget; it is not derived from an approved schedule baseline.";
+        pvNote.Style.Font.Italic = true;
+        pvNote.Style.Font.FontSize = 9;
+        pvNote.Style.Font.FontColor = XLColor.FromHtml("#92400E");
+        pvNote.Style.Fill.BackgroundColor = XLColor.FromHtml("#FFFBEB");
+        pvNote.Style.Alignment.WrapText = true;
+        pvNote.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        pvNote.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        pvNote.Style.Border.OutsideBorderColor = XLColor.FromHtml("#F59E0B");
+        sheet.Row(noteRow).Height = 30;
     }
 
     private static void CreateTitle(
