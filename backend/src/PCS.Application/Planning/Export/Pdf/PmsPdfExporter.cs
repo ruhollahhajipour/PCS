@@ -288,9 +288,11 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .FontColor(theme.Dark);
 
                 column.Item()
-                    .Text("توجه: مقدار PV در نسخه فعلی با فرض ثابت ۵۰٪ بودجه محاسبه می‌شود و معادل Baseline زمان‌بندی نیست.")
+                    .Text(dto.HasApprovedBaseline
+                        ? $"مبنای زمان‌بندی: {dto.BaselineName} | نسخه {dto.BaselineVersion} | تاریخ گزارش: {dto.EvmDataDate:yyyy-MM-dd}"
+                        : "هشدار: Baseline زمان‌بندی مصوب و فعالی وجود ندارد؛ مقدار PV برابر صفر گزارش شده است.")
                     .FontSize(6.5f)
-                    .FontColor(Colors.Orange.Darken3);
+                    .FontColor(dto.HasApprovedBaseline ? theme.Primary : Colors.Orange.Darken3);
 
                 column.Item().Row(row =>
                 {
