@@ -678,7 +678,9 @@ await _unitOfWork
             await _baselineService.GetActiveSnapshotAsync(projectId);
 
         var dataDate = DateTime.UtcNow.Date;
-        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
+        var progressEntries = activeBaseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             activeBaseline,
@@ -1355,7 +1357,9 @@ await _unitOfWork
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
         var dataDate = DateTime.UtcNow.Date;
-        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
+        var progressEntries = baseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
@@ -1404,7 +1408,9 @@ await _unitOfWork
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
         var dataDate = DateTime.UtcNow.Date;
-        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
+        var progressEntries = baseline is null
+            ? new List<ProgressEntry>()
+            : await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
