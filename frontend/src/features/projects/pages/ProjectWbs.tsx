@@ -754,7 +754,7 @@ export default function ProjectWbs() {
         elevation={0}
         sx={{
           border:
-            `1px solid ${theme.palette.divider}",
+            `1px solid ${theme.palette.divider}`,
           borderRadius: 2.5,
           overflow: "hidden",
           bgcolor: theme.palette.background.paper,
@@ -851,7 +851,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     WBS / Activity
@@ -866,7 +866,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     Type
@@ -880,7 +880,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     Progress
@@ -895,7 +895,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     Budget
@@ -910,7 +910,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     Actual Cost
@@ -925,7 +925,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     Earned Value
@@ -940,7 +940,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     CPI
@@ -955,7 +955,7 @@ export default function ProjectWbs() {
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
                       borderBottom:
-                        `1px solid ${theme.palette.divider}",
+                        `1px solid ${theme.palette.divider}`,
                     }}
                   >
                     SPI
