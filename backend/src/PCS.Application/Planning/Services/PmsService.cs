@@ -1099,186 +1099,115 @@ await _unitOfWork
         List<Activity> activities,
         decimal totalProjectBudget)
     {
+        if (nodes.Count == 0)
+            return new List<WbsNodeDto>();
 
-        var budgetLookup =
-            activities
-            .GroupBy(
-                x => x.WbsNodeId)
-            .ToDictionary(
-                x => x.Key,
-                x => x.Sum(
-                    a => a.Budget));
-
-
-
-        var lookup =
-            nodes.ToDictionary(
-                x => x.Id,
-                x =>
-                new WbsNodeDto
-                {
-                    Id =
-                        x.Id,
-
-
-                    ParentId =
-                        x.ParentId,
-
-
-                    Code =
-                        x.Code,
-
-
-                    ParentCode =
-                        nodes
-                        .FirstOrDefault(
-                            p =>
-                                p.Id ==
-                                x.ParentId)
-                        ?.Code,
-
-
-                    Path =
-                        x.Path,
-
-
-                    Name =
-                        x.Name,
-
-
-                    Level =
-                        x.Level,
-
-
-                    SortOrder =
-                        x.SortOrder
-                });
-
-
-
-        // ==========================================
-        // Bottom-Up Budget Calculation
-        // ==========================================
-
-        foreach(var node in nodes
-            .OrderByDescending(
-                x => x.Level))
-        {
-
-            var dto =
-                lookup[node.Id];
-
-
-            decimal budget = 0;
-
-
-
-            if(budgetLookup.TryGetValue(
-                    node.Id,
-                    out var activityBudget))
+        var lookup = nodes.ToDictionary(
+            x => x.Id,
+            x => new WbsNodeDto
             {
-                budget += activityBudget;
+                Id = x.Id,
+                ParentId = x.ParentId,
+                Code = x.Code,
+                ParentCode = null,
+                Path = x.Path,
+                Name = x.Name,
+                Level = x.Level,
+                SortOrder = x.SortOrder
+            });
+
+        // Link the complete hierarchy before calculating any parent totals.
+        foreach (var entity in nodes)
+        {
+            var current = lookup[entity.Id];
+
+            if (entity.ParentId.HasValue &&
+                lookup.TryGetValue(entity.ParentId.Value, out var parent))
+            {
+                current.ParentCode = parent.Code;
+                parent.Children.Add(current);
             }
-
-
-
-            budget +=
-                dto.Children
-                .Sum(
-                    x => x.Budget);
-
-
-
-            dto.Budget =
-                budget;
         }
 
-
-
-
-
-        // ==========================================
-        // W.V Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        foreach (var node in lookup.Values)
         {
-            item.WeightValue =
-                totalProjectBudget == 0
+            node.Children = node.Children
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var activitiesByWbs = activities
+            .Where(x => lookup.ContainsKey(x.WbsNodeId))
+            .GroupBy(x => x.WbsNodeId)
+            .ToDictionary(x => x.Key, x => x.ToList());
+
+        // Aggregate activity-level values first, then roll them up bottom-up.
+        foreach (var entity in nodes)
+        {
+            if (!activitiesByWbs.TryGetValue(entity.Id, out var assigned))
+                continue;
+
+            var dto = lookup[entity.Id];
+            dto.Budget = assigned.Sum(x => x.Budget);
+            dto.ActualCost = assigned.Sum(x => x.ActualCost);
+            dto.EarnedValue = assigned.Sum(x => x.Budget * (x.Progress / 100m));
+
+            // The current domain model has no schedule baseline value.
+            // Keep parity with the existing export convention (50%) until
+            // baseline-backed PlannedValue is available from scheduling.
+            dto.PlannedValue = assigned.Sum(x => x.Budget * 0.5m);
+        }
+
+        WbsNodeDto RollUp(WbsNodeDto node)
+        {
+            foreach (var child in node.Children)
+            {
+                RollUp(child);
+                node.Budget += child.Budget;
+                node.ActualCost += child.ActualCost;
+                node.EarnedValue += child.EarnedValue;
+                node.PlannedValue += child.PlannedValue;
+            }
+
+            node.Progress = node.Budget == 0
                 ? 0
-                :
-                (item.Budget /
-                 totalProjectBudget)
-                 * 100m;
+                : Math.Clamp(node.EarnedValue / node.Budget * 100m, 0m, 100m);
+
+            node.WeightValue = totalProjectBudget == 0
+                ? 0
+                : node.Budget / totalProjectBudget * 100m;
+
+            return node;
         }
 
+        var roots = nodes
+            .Where(x => !x.ParentId.HasValue || !lookup.ContainsKey(x.ParentId.Value))
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
+            .Select(x => lookup[x.Id])
+            .ToList();
 
+        foreach (var root in roots)
+            RollUp(root);
 
-
-
-        // ==========================================
-        // W.F Calculation
-        // ==========================================
-
-        foreach(var item in lookup.Values)
+        void SetWeightFactors(IEnumerable<WbsNodeDto> siblings, decimal parentBudget, bool isRoot)
         {
-            if(item.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    item.ParentId.Value,
-                    out var parent))
+            foreach (var node in siblings)
             {
-                item.WeightFactor =
-                    parent.Budget == 0
-                    ? 0
-                    :
-                    (item.Budget /
-                     parent.Budget)
-                     * 100m;
-            }
-            else
-            {
-                item.WeightFactor =
-                    item.WeightValue;
+                node.WeightFactor = isRoot
+                    ? node.WeightValue
+                    : parentBudget == 0
+                        ? 0
+                        : node.Budget / parentBudget * 100m;
+
+                SetWeightFactors(node.Children, node.Budget, false);
             }
         }
 
-
-
-
-
-        var roots =
-            new List<WbsNodeDto>();
-
-
-        foreach(var node in nodes)
-        {
-            var item =
-                lookup[node.Id];
-
-
-            if(node.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    node.ParentId.Value,
-                    out var parent))
-            {
-                parent.Children.Add(item);
-            }
-            else
-            {
-                roots.Add(item);
-            }
-        }
-
-
+        SetWeightFactors(roots, totalProjectBudget, true);
         return roots;
     }
-
-
-
-
-
-
-
 
     // =====================================================
     // GET WBS TREE
