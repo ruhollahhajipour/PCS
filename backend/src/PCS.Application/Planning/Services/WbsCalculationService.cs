@@ -68,8 +68,8 @@ public sealed class WbsCalculationService
 
         foreach(var activity in activities)
         {
-            if(!codeLookup.TryGetValue(
-                    activity.WbsCode,
+            if(!lookup.TryGetValue(
+                    activity.WbsNodeId,
                     out var wbs))
             {
                 continue;
