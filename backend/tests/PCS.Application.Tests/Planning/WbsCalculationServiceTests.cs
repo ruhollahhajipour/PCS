@@ -59,8 +59,8 @@ public sealed class WbsCalculationServiceTests
 
         var result = new WbsCalculationService().Calculate(nodes, activities);
 
-        var root = Assert.Single(result.Where(x => x.Id == rootId));
-        var child = Assert.Single(result.Where(x => x.Id == childId));
+        var root = Assert.Single(result, x => x.Id == rootId);
+        var child = Assert.Single(result, x => x.Id == childId);
 
         Assert.Equal(400m, child.Budget);
         Assert.Equal(100m, child.ActualCost);
