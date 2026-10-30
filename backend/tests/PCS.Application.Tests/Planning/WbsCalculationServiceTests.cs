@@ -79,6 +79,90 @@ public sealed class WbsCalculationServiceTests
     }
 
     [Fact]
+    public void Calculate_RollsUpByParentIdWhenStoredLevelsAreInconsistent()
+    {
+        var rootId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        var leafId = Guid.NewGuid();
+        var nodes = new List<WbsNodeDto>
+        {
+            new()
+            {
+                Id = rootId,
+                Code = "01",
+                Level = 1
+            },
+            new()
+            {
+                Id = childId,
+                ParentId = rootId,
+                Code = "01.01",
+                Level = 3
+            },
+            new()
+            {
+                Id = leafId,
+                ParentId = childId,
+                Code = "01.01.01",
+                Level = 2
+            }
+        };
+        var activities = new List<ActivityDto>
+        {
+            new()
+            {
+                Code = "A-LEAF",
+                WbsNodeId = leafId,
+                Budget = 120m,
+                Progress = 50m
+            }
+        };
+
+        var result = new WbsCalculationService().Calculate(nodes, activities);
+
+        var root = Assert.Single(result, node => node.Id == rootId);
+        var child = Assert.Single(result, node => node.Id == childId);
+        var leaf = Assert.Single(result, node => node.Id == leafId);
+
+        Assert.Equal(120m, leaf.Budget);
+        Assert.Equal(120m, child.Budget);
+        Assert.Equal(120m, root.Budget);
+        Assert.Equal(50m, leaf.Progress);
+        Assert.Equal(50m, child.Progress);
+        Assert.Equal(50m, root.Progress);
+        Assert.Equal(100m, root.WeightValue);
+    }
+
+    [Fact]
+    public void Calculate_ThrowsWhenWbsHierarchyContainsCycle()
+    {
+        var firstId = Guid.NewGuid();
+        var secondId = Guid.NewGuid();
+        var nodes = new List<WbsNodeDto>
+        {
+            new()
+            {
+                Id = firstId,
+                ParentId = secondId,
+                Code = "01"
+            },
+            new()
+            {
+                Id = secondId,
+                ParentId = firstId,
+                Code = "01.01"
+            }
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => new WbsCalculationService().Calculate(
+                nodes,
+                new List<ActivityDto>()));
+
+        Assert.Contains("cycle", exception.Message.ToLowerInvariant());
+    }
+
+    [Fact]
     public void Calculate_ThrowsWhenActivityReferencesUnknownWbsNode()
     {
         var nodes = new List<WbsNodeDto>
