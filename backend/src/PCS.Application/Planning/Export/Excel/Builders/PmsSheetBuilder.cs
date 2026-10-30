@@ -100,7 +100,9 @@ public sealed class PmsSheetBuilder
                 .WithSize(72, 42);
         }
 
-        var companyLogoPath = ResolveBrandingPath(dto.CompanyLogoPath);
+        var companyLogoPath = string.IsNullOrWhiteSpace(dto.CompanyLogoPath)
+            ? null
+            : ResolveBrandingPath(dto.CompanyLogoPath);
         if (companyLogoPath is not null &&
             !string.Equals(companyLogoPath, logoPath, StringComparison.OrdinalIgnoreCase))
         {
