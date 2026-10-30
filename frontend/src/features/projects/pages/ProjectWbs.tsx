@@ -557,7 +557,7 @@ export default function ProjectWbs() {
 
         const attachActivities = (nodes: WbsNode[]): WbsNode[] =>
           nodes.map(node => {
-            const activityNodes: WbsNode[] = (activitiesByWbs.get(node.code) ?? [])
+            const activityNodes: WbsNode[] = (activitiesByWbs.get(node.id) ?? [])
               .sort((a, b) => a.code.localeCompare(b.code))
               .map(activity => ({
                 id: activity.id,
