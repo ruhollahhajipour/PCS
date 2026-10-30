@@ -80,7 +80,18 @@ public sealed class PmsEvmService : IPmsEvmService
                 // Current project fields include opening costs that may predate the progress-entry ledger.
                 var physicalProgress = Math.Clamp(currentActivity!.Progress, 0m, 100m);
                 earnedValue += baselineActivity.Budget * physicalProgress / 100m;
-                actualCost += Math.Max(currentActivity.ActualCost, 0m);
+
+                var currentCost = Math.Max(currentActivity.ActualCost, 0m);
+                if (progressEntriesByActivity.TryGetValue(
+                        baselineActivity.ActivityId,
+                        out var currentActivityEntries))
+                {
+                    currentCost = Math.Max(
+                        currentCost,
+                        currentActivityEntries.Sum(x => Math.Max(x.ActualCost, 0m)));
+                }
+
+                actualCost += currentCost;
                 continue;
             }
 
