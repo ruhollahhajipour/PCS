@@ -27,6 +27,18 @@ public class ProgressEntryService : IProgressEntryService
         decimal progress,
         decimal actualCost)
     {
+        if (activityId == Guid.Empty)
+            throw new ArgumentException("ActivityId is required.", nameof(activityId));
+
+        if (date == default)
+            throw new ArgumentException("Progress date is required.", nameof(date));
+
+        if (progress < 0m || progress > 100m)
+            throw new ArgumentOutOfRangeException(nameof(progress), "Progress must be between 0 and 100.");
+
+        if (actualCost < 0m)
+            throw new ArgumentOutOfRangeException(nameof(actualCost), "Actual Cost cannot be negative.");
+
         var activity =
             (await _activityRepository.GetAllAsync())
             .FirstOrDefault(x => x.Id == activityId);
