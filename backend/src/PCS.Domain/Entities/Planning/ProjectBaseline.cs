@@ -53,6 +53,10 @@ public class ProjectBaseline : AuditableEntity
 
     public bool IsApproved { get; set; }
 
+    public DateTime? ApprovedAt { get; set; }
+
+    public string? ApprovedBy { get; set; }
+
     public bool IsActive { get; set; } = true;
 
 
@@ -61,4 +65,7 @@ public class ProjectBaseline : AuditableEntity
     // ==========================================
 
     public Project Project { get; set; } = null!;
+
+    public ICollection<ProjectBaselineActivity> Activities { get; set; }
+        = new List<ProjectBaselineActivity>();
 }
