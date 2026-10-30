@@ -11,67 +11,44 @@ import {
   useAuth,
 } from "../context/useAuth";
 
-
 type Props = {
   children: ReactNode;
 };
 
-
 export default function ProtectedRoute({
   children,
 }: Props) {
-
   const {
     isAuthenticated,
-
     loading,
-
     user,
   } = useAuth();
 
+  const location = useLocation();
 
-  const location =
-    useLocation();
-
-
-  // -----------------------------------------
-  // Authentication state is still loading
-  // -----------------------------------------
+  // Frontend-only access for the dedicated Vercel Preview branch.
+  // Backend JWT authentication and permission policies remain enabled.
+  if (__PCS_PREVIEW_AUTH_BYPASS__) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return null;
   }
-
-
-  // -----------------------------------------
-  // User is not authenticated
-  // -----------------------------------------
 
   if (!isAuthenticated) {
     return (
       <Navigate
         to="/login"
         replace
-        state={{
-          from:
-            location.pathname,
-        }}
+        state={{ from: location.pathname }}
       />
     );
   }
 
-
-  // -----------------------------------------
-  // Initial password must be changed
-  //
-  // Allow the dedicated password page,
-  // but block every other protected route.
-  // -----------------------------------------
-
   if (
     user?.mustChangePassword === true &&
-    location.pathname !==
-      "/change-password"
+    location.pathname !== "/change-password"
   ) {
     return (
       <Navigate
@@ -81,14 +58,5 @@ export default function ProtectedRoute({
     );
   }
 
-
-  // -----------------------------------------
-  // Authenticated
-  // -----------------------------------------
-
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
