@@ -34,9 +34,9 @@ public sealed class PmsEvmService : IPmsEvmService
                 nameof(reportDate),
                 "An EVM data date cannot be in the future.");
 
-        var baseline = await _baselineService.GetActiveSnapshotAsync(projectId)
+        var baseline = await _baselineService.GetSnapshotForDateAsync(projectId, dataDate)
             ?? throw new InvalidOperationException(
-                "The project does not have an active approved schedule baseline. Create and approve a baseline before calculating EVM.");
+                "No approved schedule baseline was effective on the requested EVM data date.");
 
         var baselineActivities = baseline.Activities;
         var activityIds = baselineActivities
