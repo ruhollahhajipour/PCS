@@ -30,7 +30,7 @@ public sealed class PmsPdfExporter
 
         foreach (var node in nodes.OrderBy(x => x.Path, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.SortOrder))
         {
-            rows.Add((node.Code,node.Name,"WBS",node.Budget,node.Progress,node: null,null,null,null,0,0,"",node.EarnedValue,node.PlannedValue,node.ActualCost,node.Level,true));
+            rows.Add((node.Code,node.Name,"WBS",node.Budget,node.Progress,null,null,null,null,0,0,"",node.EarnedValue,node.PlannedValue,node.ActualCost,node.Level,true));
             foreach (var activity in activities.Where(a => string.Equals(a.WbsCode?.Trim(),node.Code?.Trim(),StringComparison.OrdinalIgnoreCase)).OrderBy(a=>a.Code,StringComparer.OrdinalIgnoreCase))
                 rows.Add((activity.Code,activity.Name,"Activity",activity.Budget,activity.Progress,activity.PlannedStart,activity.PlannedFinish,activity.ActualStart,activity.ActualFinish,activity.Duration,activity.RemainingDuration,activity.Status,activity.EarnedValue,activity.PlannedValue,activity.ActualCost,node.Level+1,false));
         }
