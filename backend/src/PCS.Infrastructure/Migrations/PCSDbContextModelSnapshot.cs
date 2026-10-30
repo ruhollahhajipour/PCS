@@ -626,6 +626,13 @@ namespace PCS.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -692,7 +699,102 @@ namespace PCS.Infrastructure.Migrations
 
                     b.HasIndex("ProjectId", "Version");
 
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasFilter("IsApproved = 1 AND IsActive = 1");
+
                     b.ToTable("ProjectBaselines", (string)null);
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaselineActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActivityCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActivityName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CalendarName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsMilestone")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("PlannedFinish")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PlannedStart")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PlannedDuration")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("ProjectBaselineId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("WorkingDaysMask")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("WorkingHoursPerDay")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WbsCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WbsName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectBaselineId", "ActivityId")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectBaselineId", "WbsCode");
+
+                    b.ToTable("ProjectBaselineActivities", (string)null);
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>
@@ -1686,6 +1788,18 @@ namespace PCS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                    b.Navigation("Activities");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaselineActivity", b =>
+                {
+                    b.HasOne("PCS.Domain.Entities.Planning.ProjectBaseline", "ProjectBaseline")
+                        .WithMany("Activities")
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProjectBaseline");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>
