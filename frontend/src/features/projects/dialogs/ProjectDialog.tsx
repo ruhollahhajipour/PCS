@@ -459,9 +459,9 @@ export default function ProjectDialog({
 
               label="End Date"
 
-              name="endDate"
+              name="finishDate"
 
-              value={form.endDate ?? ""}
+              value={form.finishDate ?? form.endDate ?? ""}
 
               onChange={handleChange}
 
