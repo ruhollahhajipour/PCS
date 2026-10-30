@@ -75,11 +75,12 @@ public sealed class PmsSheetBuilder
 
         ApplyFormatting(sheet, Math.Max(HeaderRow, row - 1), theme);
 
-        // Planned Value is provisional until a real schedule baseline is connected.
         var noteRow = row + 1;
         sheet.Range(noteRow, 1, noteRow, 15).Merge();
         var pvNote = sheet.Cell(noteRow, 1);
-        pvNote.Value = "PV NOTE: Current Planned Value is provisionally calculated as 50% of activity budget; it is not derived from an approved schedule baseline.";
+        pvNote.Value = dto.HasApprovedBaseline
+            ? $"Approved schedule baseline: {dto.BaselineName} | Version {dto.BaselineVersion} | Data date: {dto.EvmDataDate:yyyy-MM-dd}"
+            : "WARNING: No active approved schedule baseline exists. Planned Value (PV) is reported as zero.";
         pvNote.Style.Font.Italic = true;
         pvNote.Style.Font.FontSize = 9;
         pvNote.Style.Font.FontColor = XLColor.FromHtml("#92400E");
