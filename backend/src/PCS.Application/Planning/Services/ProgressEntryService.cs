@@ -36,6 +36,9 @@ public class ProgressEntryService : IProgressEntryService
         if (date == default)
             throw new ArgumentException("Progress date is required.", nameof(date));
 
+        if (date.Date > DateTime.UtcNow.Date)
+            throw new ArgumentOutOfRangeException(nameof(date), "A progress entry cannot be dated in the future.");
+
         if (progress < 0m || progress > 100m)
             throw new ArgumentOutOfRangeException(nameof(progress), "Progress must be between 0 and 100.");
 
