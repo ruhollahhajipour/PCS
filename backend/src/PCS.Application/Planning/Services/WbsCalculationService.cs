@@ -26,6 +26,10 @@ public sealed class WbsCalculationService
                 x => x.Code,
                 StringComparer.OrdinalIgnoreCase);
 
+        var physicalProgressValueByWbs = nodes.ToDictionary(
+            x => x.Id,
+            _ => 0m);
+
 
 
 
@@ -90,6 +94,9 @@ public sealed class WbsCalculationService
 
             wbs.PlannedValue +=
                 activity.PlannedValue;
+
+            physicalProgressValueByWbs[wbs.Id] +=
+                activity.Budget * Math.Clamp(activity.Progress, 0m, 100m) / 100m;
         }
 
 
@@ -140,6 +147,9 @@ public sealed class WbsCalculationService
 
             parent.PlannedValue +=
                 node.PlannedValue;
+
+            physicalProgressValueByWbs[parent.Id] +=
+                physicalProgressValueByWbs[node.Id];
         }
 
 
@@ -234,19 +244,17 @@ public sealed class WbsCalculationService
 
 
             // -------------------------------------------------
-            // Progress
-            // EV / Budget
+            // Physical Progress
+            // Budget-weighted activity progress, independent of EVM.
             // -------------------------------------------------
 
             node.Progress =
                 node.Budget == 0
                 ? 0
                 :
-                (
-                    node.EarnedValue /
-                    node.Budget
-                )
-                * 100m;
+                physicalProgressValueByWbs[node.Id] /
+                node.Budget *
+                100m;
 
         }
 
