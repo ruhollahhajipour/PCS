@@ -428,6 +428,7 @@ export default function ProjectWbs() {
   const [baselineDescription, setBaselineDescription] = useState("");
   const [baselineSaving, setBaselineSaving] = useState(false);
   const [approvingBaselineId, setApprovingBaselineId] = useState<string | null>(null);
+  const [wbsRefreshToken, setWbsRefreshToken] = useState(0);
 
   const activeBaseline = baselines.find(
     baseline => baseline.isApproved && baseline.isActive
@@ -481,6 +482,7 @@ export default function ProjectWbs() {
       setError(null);
       await approveProjectBaseline(projectId, baselineId);
       await refreshBaselines(projectId);
+      setWbsRefreshToken(value => value + 1);
     } catch (baselineError) {
       console.error("Failed to approve schedule baseline", baselineError);
       setError("Unable to approve this baseline. Please review the baseline data and try again.");
@@ -633,6 +635,7 @@ export default function ProjectWbs() {
 
   }, [
     workspace.project.id,
+    wbsRefreshToken,
   ]);
 
 
