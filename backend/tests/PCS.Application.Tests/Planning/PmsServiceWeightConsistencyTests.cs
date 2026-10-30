@@ -18,8 +18,8 @@ public sealed class PmsServiceWeightConsistencyTests
 
         var activities = await service.GetActivitiesAsync(fixture.Project.Id);
 
-        var childActivity = Assert.Single(activities.Where(x => x.Code == "A-CHILD"));
-        var rootActivity = Assert.Single(activities.Where(x => x.Code == "A-ROOT"));
+        var childActivity = Assert.Single(activities, x => x.Code == "A-CHILD");
+        var rootActivity = Assert.Single(activities, x => x.Code == "A-ROOT");
 
         Assert.Equal(25m, childActivity.WeightFactor);
         Assert.Equal(20m, childActivity.WeightValue);
@@ -39,8 +39,8 @@ public sealed class PmsServiceWeightConsistencyTests
 
         var export = await service.ExportPmsAsync(fixture.Project.Id);
 
-        var childActivity = Assert.Single(export.Activities.Where(x => x.Code == "A-CHILD"));
-        var childWbs = Assert.Single(Flatten(export.WbsNodes).Where(x => x.Code == "01.01"));
+        var childActivity = Assert.Single(export.Activities, x => x.Code == "A-CHILD");
+        var childWbs = Assert.Single(Flatten(export.WbsNodes), x => x.Code == "01.01");
 
         Assert.Equal(400m, childWbs.Budget);
         Assert.Equal(25m, childActivity.WeightFactor);
@@ -88,8 +88,8 @@ public sealed class PmsServiceWeightConsistencyTests
         var service = fixture.CreateService(baseline, progressEntries);
 
         var export = await service.ExportPmsAsync(fixture.Project.Id);
-        var exportedActivity = Assert.Single(export.Activities.Where(x => x.Code == "A-CHILD"));
-        var exportedWbs = Assert.Single(Flatten(export.WbsNodes).Where(x => x.Code == "01.01"));
+        var exportedActivity = Assert.Single(export.Activities, x => x.Code == "A-CHILD");
+        var exportedWbs = Assert.Single(Flatten(export.WbsNodes), x => x.Code == "01.01");
 
         // Current EVM AC follows PmsEvmService semantics: use the greater of
         // opening/current Activity.ActualCost and accumulated dated period costs.
