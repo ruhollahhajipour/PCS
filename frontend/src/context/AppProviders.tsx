@@ -11,6 +11,19 @@ interface AppProvidersProps {
 export default function AppProviders({
     children,
 }: AppProvidersProps) {
+    // Avoid mounting the authenticated workspace providers on the public demo.
+    // WorkspaceProvider clears the saved workspace for unauthenticated users.
+    const isPublicPreview =
+        /^\/preview\/?$/.test(window.location.pathname);
+
+    if (isPublicPreview) {
+        return (
+            <SettingsProvider>
+                {children}
+            </SettingsProvider>
+        );
+    }
+
     return (
         <AuthProvider>
             <SettingsProvider>

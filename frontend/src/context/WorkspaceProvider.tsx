@@ -181,9 +181,6 @@ export function WorkspaceProvider({
   const auth =
     useContext(AuthContext);
 
-  const isAuthenticated =
-    auth?.isAuthenticated ?? false;
-
   const authLoading =
     auth?.loading ?? false;
 
@@ -217,24 +214,10 @@ export function WorkspaceProvider({
         return;
       }
 
-      if (!isAuthenticated) {
-        if (cancelled) {
-          return;
-        }
-
-        setWorkspaceState(
-          createEmptyWorkspace()
-        );
-
-        setCompanies([]);
-        setPlants([]);
-        setProjects([]);
-
-        clearStoredWorkspace();
-
-        return;
-      }
-
+      // TEMPORARY DEVELOPMENT MODE:
+      // Attempt normal workspace API loading without requiring a frontend login.
+      // If the API still enforces JWT, the catch block restores the last saved
+      // workspace instead of clearing the user's local selection.
       try {
         const [
           companyData,
@@ -407,7 +390,6 @@ export function WorkspaceProvider({
       cancelled = true;
     };
   }, [
-    isAuthenticated,
     authLoading,
   ]);
 
