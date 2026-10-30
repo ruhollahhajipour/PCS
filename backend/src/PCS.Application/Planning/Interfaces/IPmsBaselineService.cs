@@ -19,4 +19,8 @@ public interface IPmsBaselineService
 
     Task<ProjectBaselineSnapshotDto?> GetActiveSnapshotAsync(
         Guid projectId);
+
+    Task<ProjectBaselineSnapshotDto?> GetSnapshotForDateAsync(
+        Guid projectId,
+        DateTime dataDate);
 }
