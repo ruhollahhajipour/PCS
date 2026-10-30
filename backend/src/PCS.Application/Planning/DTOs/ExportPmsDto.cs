@@ -47,6 +47,16 @@ public class ExportPmsDto
     public DateTime ExportDate { get; set; }
         = DateTime.UtcNow;
 
+    public bool HasApprovedBaseline { get; set; }
+
+    public Guid? BaselineId { get; set; }
+
+    public string? BaselineName { get; set; }
+
+    public int BaselineVersion { get; set; }
+
+    public DateTime EvmDataDate { get; set; }
+
 
 
     // ==========================================
