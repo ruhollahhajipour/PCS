@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClosedXML.Excel;
 using PCS.Application.Planning.DTOs;
 using PCS.Application.Planning.Export.Excel.Branding;
@@ -95,51 +96,98 @@ public sealed class PmsSheetBuilder
         ExportPmsDto dto,
         ThemePalette theme)
     {
-        sheet.Range("A1:O2").Merge();
-        var title = sheet.Cell("A1");
-        title.Value = $"{dto.ProjectName}\nPROJECT MANAGEMENT SYSTEM";
+        // Three independent header zones prevent the PCS and client logos
+        // from covering the report title when the workbook is opened or printed.
+        sheet.Range("A1:B2").Merge();
+        sheet.Range("C1:L2").Merge();
+        sheet.Range("M1:O2").Merge();
+
+        var header = sheet.Range("A1:O2");
+        header.Style.Fill.BackgroundColor = XLColor.FromHtml(theme.Dark);
+        header.Style.Font.FontColor = XLColor.White;
+        header.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+        var title = sheet.Cell("C1");
+        title.Value = $"PCS | PROJECT CONTROL SUITE\n{dto.ProjectName} | PROJECT MANAGEMENT SYSTEM";
         title.Style.Font.Bold = true;
-        title.Style.Font.FontSize = 17;
+        title.Style.Font.FontSize = 13;
         title.Style.Font.FontColor = XLColor.White;
-        title.Style.Fill.BackgroundColor = XLColor.FromHtml(theme.Dark);
         title.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         title.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         title.Style.Alignment.WrapText = true;
 
         var logoPath = ResolveBrandingPath(dto.PlatformLogoPath);
+        var platformLogoCell = sheet.Cell("A1");
         if (logoPath is not null)
         {
             sheet.AddPicture(logoPath)
-                .MoveTo(sheet.Cell("A1"))
-                .WithSize(72, 42);
+                .MoveTo(platformLogoCell)
+                .WithSize(68, 40);
+        }
+        else
+        {
+            platformLogoCell.Value = "PCS";
+            platformLogoCell.Style.Font.Bold = true;
+            platformLogoCell.Style.Font.FontSize = 20;
+            platformLogoCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         }
 
         var companyLogoPath = string.IsNullOrWhiteSpace(dto.CompanyLogoPath)
             ? null
             : ResolveBrandingPath(dto.CompanyLogoPath);
-        if (companyLogoPath is not null &&
-            !string.Equals(companyLogoPath, logoPath, StringComparison.OrdinalIgnoreCase))
+        var hasDistinctCompanyLogo = companyLogoPath is not null &&
+            !string.Equals(companyLogoPath, logoPath, StringComparison.OrdinalIgnoreCase);
+
+        var companyLogoCell = sheet.Cell("M1");
+        if (hasDistinctCompanyLogo)
         {
-            sheet.AddPicture(companyLogoPath)
-                .MoveTo(sheet.Cell("N1"))
-                .WithSize(72, 42);
+            sheet.AddPicture(companyLogoPath!)
+                .MoveTo(companyLogoCell)
+                .WithSize(68, 40);
+        }
+        else
+        {
+            companyLogoCell.Value = string.IsNullOrWhiteSpace(dto.CompanyDisplayName)
+                ? dto.ClientName
+                : dto.CompanyDisplayName;
+            companyLogoCell.Style.Font.Bold = true;
+            companyLogoCell.Style.Font.FontSize = 9;
+            companyLogoCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            companyLogoCell.Style.Alignment.WrapText = true;
         }
 
         sheet.Range("A3:O3").Merge();
         var company = sheet.Cell("A3");
-        company.Value = string.IsNullOrWhiteSpace(dto.CompanyDisplayName)
+        var companyName = string.IsNullOrWhiteSpace(dto.CompanyDisplayName)
             ? dto.ClientName
             : dto.CompanyDisplayName;
+        var exportTimestamp = dto.ExportDate.ToString(
+            "yyyy-MM-dd HH:mm 'UTC'",
+            CultureInfo.InvariantCulture);
+        var baselineLabel = dto.HasApprovedBaseline
+            ? $"Baseline: {dto.BaselineName} (v{dto.BaselineVersion}) | Data date: {dto.EvmDataDate:yyyy-MM-dd}"
+            : "Baseline: NOT APPROVED | EVM: N/A";
+        company.Value = string.Join(
+            "   |   ",
+            new[]
+            {
+                string.IsNullOrWhiteSpace(companyName) ? "PCS Project Control Suite" : companyName,
+                $"Report date: {exportTimestamp}",
+                baselineLabel
+            });
         company.Style.Font.Bold = true;
-        company.Style.Font.FontSize = 11;
+        company.Style.Font.FontSize = 8;
         company.Style.Font.FontColor = XLColor.FromHtml(theme.Dark);
+        company.Style.Fill.BackgroundColor = XLColor.FromHtml("#F6F8FB");
         company.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        company.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        company.Style.Alignment.WrapText = true;
         company.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
         company.Style.Border.BottomBorderColor = XLColor.FromHtml(theme.Primary);
 
         sheet.Row(1).Height = 25;
         sheet.Row(2).Height = 25;
-        sheet.Row(3).Height = 22;
+        sheet.Row(3).Height = 28;
     }
 
     private static void CreateKpiArea(
@@ -350,13 +398,16 @@ public sealed class PmsSheetBuilder
 
         sheet.SheetView.FreezeRows(HeaderRow);
         sheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-        sheet.PageSetup.PaperSize = XLPaperSize.A4Paper;
+        sheet.PageSetup.PaperSize = XLPaperSize.A3Paper;
         sheet.PageSetup.FitToPages(1, 0);
+        sheet.PageSetup.SetRowsToRepeatAtTop(1, HeaderRow);
         sheet.PageSetup.Margins.Top = 0.35;
         sheet.PageSetup.Margins.Bottom = 0.45;
         sheet.PageSetup.Margins.Left = 0.25;
         sheet.PageSetup.Margins.Right = 0.25;
-        sheet.PageSetup.Footer.Center.AddText("PCS Project Control Suite");
+        sheet.PageSetup.Footer.Left.AddText("PCS | Project Control Suite");
+        sheet.PageSetup.Footer.Center.AddText(
+            $"Generated: {dto.ExportDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
         sheet.PageSetup.Footer.Right.AddText("Page &P / &N");
         sheet.TabColor = XLColor.FromHtml(theme.Primary);
     }
