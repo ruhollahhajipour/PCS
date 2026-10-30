@@ -53,7 +53,7 @@ const initialForm: Project = {
 
   startDate:"",
 
-  endDate:"",
+  finishDate:"",
 
   budget:0,
 
