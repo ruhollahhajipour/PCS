@@ -6,6 +6,15 @@ public class EvmResultDto
 
     public DateTime ReportDate { get; set; }
 
+    public Guid BaselineId { get; set; }
+
+    public string BaselineName { get; set; } = string.Empty;
+
+    public int BaselineVersion { get; set; }
+
+    public int BaselineActivityCount { get; set; }
+
+    public decimal BaselineBudget { get; set; }
 
     public decimal PlannedValue { get; set; }
 
@@ -13,11 +22,9 @@ public class EvmResultDto
 
     public decimal ActualCost { get; set; }
 
-
     public decimal ScheduleVariance { get; set; }
 
     public decimal CostVariance { get; set; }
-
 
     public decimal SPI { get; set; }
 
