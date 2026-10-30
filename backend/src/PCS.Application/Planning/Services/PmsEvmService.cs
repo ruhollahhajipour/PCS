@@ -5,114 +5,89 @@ using PCS.Domain.Entities.Planning;
 
 namespace PCS.Application.Planning.Services;
 
-public class PmsEvmService : IPmsEvmService
+public sealed class PmsEvmService : IPmsEvmService
 {
-    private readonly IGenericRepository<Activity> _activityRepository;
     private readonly IGenericRepository<ProgressEntry> _progressRepository;
-
+    private readonly IPmsBaselineService _baselineService;
 
     public PmsEvmService(
-        IGenericRepository<Activity> activityRepository,
-        IGenericRepository<ProgressEntry> progressRepository)
+        IGenericRepository<ProgressEntry> progressRepository,
+        IPmsBaselineService baselineService)
     {
-        _activityRepository = activityRepository;
         _progressRepository = progressRepository;
+        _baselineService = baselineService;
     }
-
-
 
     public async Task<EvmResultDto> CalculateAsync(
         Guid projectId,
         DateTime reportDate)
     {
-        var activities =
-            await _activityRepository.GetAllAsync();
+        if (projectId == Guid.Empty)
+            throw new ArgumentException("ProjectId is required.", nameof(projectId));
 
+        var dataDate = reportDate.Date;
+        var baseline = await _baselineService.GetActiveSnapshotAsync(projectId)
+            ?? throw new InvalidOperationException(
+                "The project does not have an active approved schedule baseline. Create and approve a baseline before calculating EVM.");
 
-        var projectActivities =
-            activities
-            .Where(x => x.ProjectId == projectId)
-            .ToList();
+        var baselineActivities = baseline.Activities;
+        var activityIds = baselineActivities
+            .Select(x => x.ActivityId)
+            .ToHashSet();
 
+        var latestProgressByActivity = (await _progressRepository.GetAllAsync())
+            .Where(x => activityIds.Contains(x.ActivityId) &&
+                        x.ProgressDate.Date <= dataDate &&
+                        !x.IsDeleted)
+            .GroupBy(x => x.ActivityId)
+            .Select(group => group
+                .OrderByDescending(x => x.ProgressDate)
+                .ThenByDescending(x => x.CreatedAt)
+                .First())
+            .ToDictionary(x => x.ActivityId);
 
+        decimal earnedValue = 0m;
+        decimal actualCost = 0m;
 
-        var progressEntries =
-            await _progressRepository.GetAllAsync();
+        foreach (var baselineActivity in baselineActivities)
+        {
+            if (!latestProgressByActivity.TryGetValue(
+                    baselineActivity.ActivityId,
+                    out var progress))
+            {
+                continue;
+            }
 
+            var physicalProgress = Math.Clamp(progress.Progress, 0m, 100m);
+            earnedValue += baselineActivity.Budget * physicalProgress / 100m;
+            actualCost += Math.Max(progress.ActualCost, 0m);
+        }
 
+        var plannedValue = PmsBaselineCalculator.CalculatePlannedValue(
+            baselineActivities,
+            dataDate);
 
-        var entries =
-            progressEntries
-            .Where(x =>
-                projectActivities
-                .Select(a => a.Id)
-                .Contains(x.ActivityId)
-                &&
-                x.ProgressDate <= reportDate)
-            .ToList();
-
-
-
-        decimal plannedValue =
-            projectActivities
-            .Where(x =>
-                x.PlannedStart <= reportDate)
-            .Sum(x => x.Budget);
-
-
-
-        decimal earnedValue =
-            entries.Sum(x => x.EarnedValue);
-
-
-
-        decimal actualCost =
-            entries.Sum(x => x.ActualCost);
-
-
-
-        decimal costVariance =
-            earnedValue - actualCost;
-
-
-        decimal scheduleVariance =
-            earnedValue - plannedValue;
-
-
-
-        decimal cpi =
-            actualCost == 0
-            ? 0
-            : earnedValue / actualCost;
-
-
-
-        decimal spi =
-            plannedValue == 0
-            ? 0
-            : earnedValue / plannedValue;
-
-
+        var costVariance = earnedValue - actualCost;
+        var scheduleVariance = earnedValue - plannedValue;
+        var cpi = actualCost <= 0m ? 0m : earnedValue / actualCost;
+        var spi = plannedValue <= 0m ? 0m : earnedValue / plannedValue;
 
         return new EvmResultDto
         {
             ProjectId = projectId,
-
-            ReportDate = reportDate,
-
-            PlannedValue = Math.Round(plannedValue, 2),
-
-            EarnedValue = Math.Round(earnedValue, 2),
-
-            ActualCost = Math.Round(actualCost, 2),
-
-            CostVariance = Math.Round(costVariance, 2),
-
-            ScheduleVariance = Math.Round(scheduleVariance, 2),
-
-            CPI = Math.Round(cpi, 2),
-
-            SPI = Math.Round(spi, 2)
+            ReportDate = dataDate,
+            BaselineId = baseline.Id,
+            BaselineName = baseline.Name,
+            BaselineVersion = baseline.Version,
+            BaselineActivityCount = baseline.ActivityCount,
+            BaselineBudget = baseline.TotalBudget,
+            PlannedValue = Math.Round(plannedValue, 2, MidpointRounding.AwayFromZero),
+            EarnedValue = Math.Round(earnedValue, 2, MidpointRounding.AwayFromZero),
+            ActualCost = Math.Round(actualCost, 2, MidpointRounding.AwayFromZero),
+            CostVariance = Math.Round(costVariance, 2, MidpointRounding.AwayFromZero),
+            ScheduleVariance = Math.Round(scheduleVariance, 2, MidpointRounding.AwayFromZero),
+            CPI = Math.Round(cpi, 4, MidpointRounding.AwayFromZero),
+            SPI = Math.Round(spi, 4, MidpointRounding.AwayFromZero)
         };
     }
 }
