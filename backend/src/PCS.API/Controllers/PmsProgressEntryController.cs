@@ -26,18 +26,34 @@ public class PmsProgressEntryController : ControllerBase
     public async Task<IActionResult> Add(
         [FromBody] AddProgressEntryRequest request)
     {
-        await _service.AddProgressAsync(
-            request.ActivityId,
-            request.ProgressDate,
-            request.Progress,
-            request.ActualCost);
+        if (request == null)
+            return BadRequest("Progress entry request is required.");
 
-
-        return Ok(new
+        try
         {
-            Message =
-                "Progress entry added successfully"
-        });
+            await _service.AddProgressAsync(
+                request.ActivityId,
+                request.ProgressDate,
+                request.Progress,
+                request.ActualCost);
+
+            return Ok(new
+            {
+                Message = "Progress entry added successfully"
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { Message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Message = ex.Message });
+        }
     }
 
 
