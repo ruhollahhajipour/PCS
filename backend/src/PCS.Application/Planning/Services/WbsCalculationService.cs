@@ -21,11 +21,6 @@ public sealed class WbsCalculationService
 
 
 
-        var codeLookup =
-            nodes.ToDictionary(
-                x => x.Code,
-                StringComparer.OrdinalIgnoreCase);
-
         var physicalProgressValueByWbs = nodes.ToDictionary(
             x => x.Id,
             _ => 0m);
