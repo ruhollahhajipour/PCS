@@ -532,8 +532,7 @@ var activityDtos =
                     x.Progress,
 
                 EarnedValue =
-                    x.Budget *
-                    (x.Progress / 100m),
+                    0m,
 
                 PlannedValue =
                     0m
