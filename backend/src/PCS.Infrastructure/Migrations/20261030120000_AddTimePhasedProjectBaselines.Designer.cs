@@ -11,7 +11,8 @@ using PCS.Infrastructure.Persistence;
 namespace PCS.Infrastructure.Migrations
 {
     [DbContext(typeof(PCSDbContext))]
-    partial class PCSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261030120000_AddTimePhasedProjectBaselines")]
+    partial class AddTimePhasedProjectBaselines
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
