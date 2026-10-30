@@ -134,7 +134,13 @@ export default function ProjectDialog({
 
 
     setForm(
-      project ?? initialForm
+      project
+        ? {
+            ...initialForm,
+            ...project,
+            finishDate: project.finishDate ?? project.endDate ?? "",
+          }
+        : initialForm
     );
 
 
