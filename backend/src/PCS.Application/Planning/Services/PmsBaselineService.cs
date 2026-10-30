@@ -50,8 +50,14 @@ public sealed class PmsBaselineService : IPmsBaselineService
         if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
             throw new ArgumentException("Baseline name is required and must not exceed 200 characters.", nameof(request));
 
+        if (request.Description?.Length > 500)
+            throw new ArgumentException("Baseline description must not exceed 500 characters.", nameof(request));
+
         var project = await _projectRepository.GetByIdAsync(projectId)
             ?? throw new KeyNotFoundException($"Project '{projectId}' was not found.");
+
+        if (project.IsDeleted)
+            throw new KeyNotFoundException($"Project '{projectId}' was not found.");
 
         var existingBaselines = (await _baselineRepository.GetAllAsync())
             .Where(x => x.ProjectId == projectId && !x.IsDeleted)
@@ -102,16 +108,26 @@ public sealed class PmsBaselineService : IPmsBaselineService
                 throw new InvalidOperationException(
                     $"Activity '{activity.Code}' references a WBS node that is not part of this project.");
 
-            var calendar = activity.CalendarId.HasValue
-                ? calendars.FirstOrDefault(x => x.Id == activity.CalendarId.Value)
-                : null;
-            calendar ??= defaultCalendar;
+            ProjectCalendar? calendar;
+            if (activity.CalendarId.HasValue)
+            {
+                calendar = calendars.FirstOrDefault(x => x.Id == activity.CalendarId.Value);
+                if (calendar is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Activity '{activity.Code}' references a calendar that is not active in this project.");
+                }
+            }
+            else
+            {
+                calendar = defaultCalendar;
+            }
 
             var workingDaysMask = calendar is null
                 ? DefaultWorkingDaysMask
                 : BuildWorkingDaysMask(calendar);
 
-            var isMilestone = activity.IsMilestone || activity.Duration == 0;
+            var isMilestone = activity.IsMilestone;
             if (activity.Budget > 0 && !isMilestone &&
                 activity.PlannedStart.HasValue &&
                 activity.PlannedFinish.HasValue &&
@@ -135,10 +151,19 @@ public sealed class PmsBaselineService : IPmsBaselineService
                 WbsName = wbs.Name,
                 PlannedStart = activity.PlannedStart,
                 PlannedFinish = activity.PlannedFinish,
-                PlannedDuration = activity.Duration,
+                PlannedDuration = activity.Duration > 0
+                    ? activity.Duration
+                    : activity.PlannedStart.HasValue && activity.PlannedFinish.HasValue
+                        ? CountWorkingDays(
+                            activity.PlannedStart.Value.Date,
+                            activity.PlannedFinish.Value.Date,
+                            workingDaysMask)
+                        : 0,
                 Budget = activity.Budget,
                 WorkingDaysMask = workingDaysMask,
-                WorkingHoursPerDay = calendar?.WorkingHoursPerDay ?? 8m,
+                WorkingHoursPerDay = calendar is { WorkingHoursPerDay: > 0m }
+                    ? calendar.WorkingHoursPerDay
+                    : 8m,
                 IsMilestone = isMilestone,
                 CalendarName = calendar?.Name ?? "Default (Monday-Friday)",
                 CreatedBy = createdBy
