@@ -10,7 +10,6 @@ public class PmsDashboardService : IPmsDashboardService
 {
     private readonly IGenericRepository<Project> _projectRepository;
     private readonly IGenericRepository<Activity> _activityRepository;
-    private readonly IPmsProgressService _progressService;
     private readonly IPmsEvmService _evmService;
     private readonly IPmsBaselineService _baselineService;
 
@@ -18,13 +17,11 @@ public class PmsDashboardService : IPmsDashboardService
     public PmsDashboardService(
         IGenericRepository<Project> projectRepository,
         IGenericRepository<Activity> activityRepository,
-        IPmsProgressService progressService,
         IPmsEvmService evmService,
         IPmsBaselineService baselineService)
     {
         _projectRepository = projectRepository;
         _activityRepository = activityRepository;
-        _progressService = progressService;
         _evmService = evmService;
         _baselineService = baselineService;
     }
@@ -60,22 +57,37 @@ public class PmsDashboardService : IPmsDashboardService
 
 
 
-        var progress =
-            await _progressService
-            .CalculateProjectProgressAsync(projectId);
-
-
-
         var activeBaseline =
             await _baselineService.GetActiveSnapshotAsync(projectId);
+
+        var baselineBudgetByActivity = activeBaseline?.Activities
+            .ToDictionary(x => x.ActivityId, x => x.Budget)
+            ?? new Dictionary<Guid, decimal>();
+
+        var projectBudget = activeBaseline?.TotalBudget
+            ?? projectActivities.Sum(x => x.Budget);
+
+        var physicalProgressValue = projectActivities.Sum(activity =>
+        {
+            var activityBudget = activeBaseline is null
+                ? activity.Budget
+                : baselineBudgetByActivity.GetValueOrDefault(activity.Id);
+
+            return activityBudget * Math.Clamp(activity.Progress, 0m, 100m) / 100m;
+        });
+
+        var progress = projectBudget <= 0m
+            ? 0m
+            : Math.Round(
+                physicalProgressValue / projectBudget * 100m,
+                2,
+                MidpointRounding.AwayFromZero);
 
         var evm = activeBaseline == null
             ? null
             : await _evmService.CalculateAsync(
                 projectId,
                 DateTime.UtcNow);
-
-
 
         return new PmsDashboardDto
         {
@@ -85,8 +97,7 @@ public class PmsDashboardService : IPmsDashboardService
 
             Progress = progress,
 
-            Budget =
-                activeBaseline?.TotalBudget ?? projectActivities.Sum(x => x.Budget),
+            Budget = projectBudget,
 
             ActualCost =
                 evm?.ActualCost ?? projectActivities.Sum(x => x.ActualCost),
