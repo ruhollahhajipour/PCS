@@ -455,12 +455,18 @@ export default function ProjectWbs() {
                 actualCost: activity.actualCost,
                 plannedValue: activity.plannedValue,
                 earnedValue: activity.earnedValue,
-                weightFactor: activity.weightFactor,
+                weightFactor: node.budget > 0
+                  ? activity.budget / node.budget * 100
+                  : 0,
                 weightValue: activity.weightValue,
                 weight: activity.weight,
                 progress: activity.progress,
-                cpi: activity.cpi,
-                spi: activity.spi,
+                cpi: activity.actualCost > 0
+                  ? activity.earnedValue / activity.actualCost
+                  : 0,
+                spi: activity.plannedValue > 0
+                  ? activity.earnedValue / activity.plannedValue
+                  : 0,
                 children: [],
               }));
 
