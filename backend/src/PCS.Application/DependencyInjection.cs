@@ -15,6 +15,7 @@ using PCS.Application.Planning.Services;
 using PCS.Application.Planning.Export;
 using PCS.Application.Planning.Export.Excel;
 using PCS.Application.Planning.Export.Excel.Builders;
+using PCS.Application.Planning.Export.Pdf;
 
 using PCS.Application.Plants.Interfaces;
 using PCS.Application.Plants.Services; 
@@ -139,6 +140,8 @@ services.AddScoped<
         services.AddScoped<EvmSheetBuilder>();
 
         services.AddScoped<PmsSheetBuilder>();
+        services.AddScoped<PmsPdfExporter>();
+        services.AddScoped<IPmsPdfExporter, PmsPdfExporter>();
 
         services.AddScoped<
          IWbsCalculationService,
