@@ -34,6 +34,10 @@ public sealed class PmsProgressService : IPmsProgressService
         if (!nodeById.TryGetValue(wbsNodeId, out var requestedNode))
             return 0m;
 
+        nodes = nodes
+            .Where(x => x.ProjectId == requestedNode.ProjectId)
+            .ToList();
+
         // Include the requested WBS and all nested work packages. A visited set
         // protects the calculation from malformed cyclic hierarchy references.
         var descendantIds = new HashSet<Guid> { wbsNodeId };
