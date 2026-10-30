@@ -64,16 +64,14 @@ public sealed class PmsBaselineService : IPmsBaselineService
 
         // Include soft-deleted versions because the database's project/name
         // uniqueness constraint also includes them; version numbers stay monotonic.
-        var existingBaselines = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId)
-            .ToList();
+        var existingBaselines = (await _baselineRepository.FindAsync(
+            x => x.ProjectId == projectId)).ToList();
 
         if (existingBaselines.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"A baseline named '{name}' already exists in this project.");
 
-        var activities = (await _activityRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
-            .ToList();
+        var activities = (await _activityRepository.FindAsync(
+            x => x.ProjectId == projectId && !x.IsDeleted)).ToList();
 
         if (activities.Count == 0)
             throw new InvalidOperationException("A baseline cannot be created because the project has no activities.");
@@ -81,12 +79,12 @@ public sealed class PmsBaselineService : IPmsBaselineService
         if (activities.Any(x => x.Budget < 0))
             throw new InvalidOperationException("Activity budgets cannot be negative.");
 
-        var wbsNodes = (await _wbsRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
+        var wbsNodes = (await _wbsRepository.FindAsync(
+            x => x.ProjectId == projectId && !x.IsDeleted))
             .ToDictionary(x => x.Id);
 
-        var calendars = (await _calendarRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && x.IsActive && !x.IsDeleted)
+        var calendars = (await _calendarRepository.FindAsync(
+            x => x.ProjectId == projectId && x.IsActive && !x.IsDeleted))
             .ToList();
 
         var defaultCalendar = calendars.FirstOrDefault(x => x.IsDefault);
@@ -232,15 +230,15 @@ public sealed class PmsBaselineService : IPmsBaselineService
                 throw new InvalidOperationException(
                     "An approved baseline is immutable. Create a new draft version to re-baseline the project.");
 
-            var snapshotItems = (await _baselineActivityRepository.GetAllAsync())
-                .Where(x => x.ProjectBaselineId == baselineId && !x.IsDeleted)
+            var snapshotItems = (await _baselineActivityRepository.FindAsync(
+                x => x.ProjectBaselineId == baselineId && !x.IsDeleted))
                 .ToList();
 
             if (snapshotItems.Count == 0)
                 throw new InvalidOperationException("An empty baseline cannot be approved.");
 
-            var baselines = (await _baselineRepository.GetAllAsync())
-                .Where(x => x.ProjectId == projectId && !x.IsDeleted)
+            var baselines = (await _baselineRepository.FindAsync(
+                x => x.ProjectId == projectId && !x.IsDeleted))
                 .ToList();
 
             // Deactivate the previous version first so the filtered unique index
@@ -278,14 +276,16 @@ public sealed class PmsBaselineService : IPmsBaselineService
 
         public async Task<IReadOnlyList<ProjectBaselineDto>> GetAllAsync(Guid projectId)
     {
-        var baselines = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
+        var baselines = (await _baselineRepository.FindAsync(
+                x => x.ProjectId == projectId && !x.IsDeleted))
             .OrderByDescending(x => x.Version)
             .ToList();
 
-        var items = (await _baselineActivityRepository.GetAllAsync())
-            .Where(x => baselines.Select(b => b.Id).Contains(x.ProjectBaselineId) && !x.IsDeleted)
-            .ToList();
+        var baselineIds = baselines.Select(x => x.Id).ToList();
+        var items = baselineIds.Count == 0
+            ? new List<ProjectBaselineActivity>()
+            : (await _baselineActivityRepository.FindAsync(
+                x => baselineIds.Contains(x.ProjectBaselineId) && !x.IsDeleted)).ToList();
 
         return baselines
             .Select(x => ToDto(x, items.Count(a => a.ProjectBaselineId == x.Id)))
@@ -294,12 +294,11 @@ public sealed class PmsBaselineService : IPmsBaselineService
 
     public async Task<ProjectBaselineSnapshotDto?> GetActiveSnapshotAsync(Guid projectId)
     {
-        var activeBaselines = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId &&
-                        x.IsApproved &&
-                        x.IsActive &&
-                        !x.IsDeleted)
-            .ToList();
+        var activeBaselines = (await _baselineRepository.FindAsync(
+            x => x.ProjectId == projectId &&
+                 x.IsApproved &&
+                 x.IsActive &&
+                 !x.IsDeleted)).ToList();
 
         if (activeBaselines.Count == 0)
             return null;
@@ -309,8 +308,8 @@ public sealed class PmsBaselineService : IPmsBaselineService
                 $"Project '{projectId}' has more than one active approved baseline. Data correction is required.");
 
         var baseline = activeBaselines[0];
-        var items = (await _baselineActivityRepository.GetAllAsync())
-            .Where(x => x.ProjectBaselineId == baseline.Id && !x.IsDeleted)
+        var items = (await _baselineActivityRepository.FindAsync(
+            x => x.ProjectBaselineId == baseline.Id && !x.IsDeleted))
             .ToList();
 
         return ToSnapshotDto(baseline, items);
@@ -320,12 +319,13 @@ public sealed class PmsBaselineService : IPmsBaselineService
         Guid projectId,
         DateTime dataDate)
     {
-        var effectiveBaseline = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId &&
-                        x.IsApproved &&
-                        x.ApprovedAt.HasValue &&
-                        x.ApprovedAt.Value.Date <= dataDate.Date &&
-                        !x.IsDeleted)
+        var effectiveDateExclusive = dataDate.Date.AddDays(1);
+        var effectiveBaseline = (await _baselineRepository.FindAsync(
+                x => x.ProjectId == projectId &&
+                     x.IsApproved &&
+                     x.ApprovedAt.HasValue &&
+                     x.ApprovedAt.Value < effectiveDateExclusive &&
+                     !x.IsDeleted))
             .OrderByDescending(x => x.ApprovedAt)
             .ThenByDescending(x => x.Version)
             .FirstOrDefault();
@@ -333,8 +333,8 @@ public sealed class PmsBaselineService : IPmsBaselineService
         if (effectiveBaseline == null)
             return null;
 
-        var items = (await _baselineActivityRepository.GetAllAsync())
-            .Where(x => x.ProjectBaselineId == effectiveBaseline.Id && !x.IsDeleted)
+        var items = (await _baselineActivityRepository.FindAsync(
+            x => x.ProjectBaselineId == effectiveBaseline.Id && !x.IsDeleted))
             .ToList();
 
         if (items.Count == 0)
