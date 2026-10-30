@@ -4,6 +4,7 @@ using PCS.API.Security;
 
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
+using PCS.Application.Planning.Export.Pdf;
 
 namespace PCS.API.Controllers;
 
@@ -20,15 +21,18 @@ public class PmsController : ControllerBase
     };
 
     private readonly IPmsExcelService _excelService;
+    private readonly IPmsPdfExporter _pdfExporter;
     private readonly IPmsService _pmsService;
     private readonly IPmsTemplateService _templateService;
 
     public PmsController(
         IPmsExcelService excelService,
+        IPmsPdfExporter pdfExporter,
         IPmsService pmsService,
         IPmsTemplateService templateService)
     {
         _excelService = excelService;
+        _pdfExporter = pdfExporter;
         _pmsService = pmsService;
         _templateService = templateService;
     }
@@ -134,6 +138,25 @@ public class PmsController : ControllerBase
             file,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "PCS-PMS-Report.xlsx");
+    }
+
+    [HttpGet("export/{projectId}/pdf")]
+    [Permission(Permissions.ProjectView)]
+    public async Task<IActionResult> ExportPdf(
+        Guid projectId)
+    {
+        if (projectId == Guid.Empty)
+        {
+            return BadRequest("ProjectId is required.");
+        }
+
+        var dto = await _pmsService.ExportPmsAsync(projectId);
+        var file = _pdfExporter.Generate(dto);
+
+        return File(
+            file,
+            "application/pdf",
+            "PCS-PMS-Report.pdf");
     }
 
     [HttpGet("{projectId}/activities")]
