@@ -80,5 +80,8 @@ public class AddProgressEntryRequest
 
     public decimal Progress { get; set; }
 
+    /// <summary>
+    /// Actual cost incurred during this reporting period (not cumulative project-to-date AC).
+    /// </summary>
     public decimal ActualCost { get; set; }
 }
