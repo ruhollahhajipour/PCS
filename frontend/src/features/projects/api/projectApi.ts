@@ -19,7 +19,10 @@ export async function createProject(
 ): Promise<string> {
   const response = await http.post<string>(
     "/Projects",
-    project
+    {
+      ...project,
+      finishDate: project.finishDate ?? project.endDate,
+    }
   );
 
   return response.data;
