@@ -22,6 +22,9 @@ public string Name { get; set; }
 // WBS Information
 // ==========================================
 
+public Guid WbsNodeId { get; set; }
+
+
 public string WbsCode { get; set; }
     = string.Empty;
 
