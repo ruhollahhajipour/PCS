@@ -9,6 +9,12 @@ public class ActivityDto
 public Guid Id { get; set; }
 
 
+/// <summary>
+/// Stable database relationship to the owning WBS node.
+/// </summary>
+public Guid WbsNodeId { get; set; }
+
+
 public string Code { get; set; }
     = string.Empty;
 

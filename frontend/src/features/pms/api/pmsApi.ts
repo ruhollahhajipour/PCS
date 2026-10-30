@@ -9,6 +9,8 @@ export interface PmsActivity {
   code: string;
   name: string;
 
+  /** Stable database ID of the assigned WBS node. */
+  wbsNodeId: string;
   wbsCode: string;
   wbsName?: string | null;
   wbsLevel: number;

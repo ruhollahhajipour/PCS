@@ -32,20 +32,19 @@ public sealed class PmsSheetBuilder
         CreateHeaders(sheet, theme);
 
         var activitiesByWbs = dto.Activities
-            .Where(x => !string.IsNullOrWhiteSpace(x.WbsCode))
-            .GroupBy(x => x.WbsCode, StringComparer.OrdinalIgnoreCase)
+            .Where(x => x.WbsNodeId != Guid.Empty)
+            .GroupBy(x => x.WbsNodeId)
             .ToDictionary(
                 x => x.Key,
-                x => x.OrderBy(a => a.Code, StringComparer.OrdinalIgnoreCase).ToList(),
-                StringComparer.OrdinalIgnoreCase);
+                x => x.OrderBy(a => a.Code, StringComparer.OrdinalIgnoreCase).ToList());
 
         var allWbsNodes = dto.WbsNodes
             .SelectMany(GetAllNodes)
             .ToList();
 
-        var wbsCodes = allWbsNodes
-            .Select(x => x.Code)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var wbsIds = allWbsNodes
+            .Select(x => x.Id)
+            .ToHashSet();
 
         var maxLevel = allWbsNodes
             .Select(x => x.Level)
@@ -61,8 +60,7 @@ public sealed class PmsSheetBuilder
         }
 
         var unassigned = dto.Activities
-            .Where(x => string.IsNullOrWhiteSpace(x.WbsCode) ||
-                        !wbsCodes.Contains(x.WbsCode))
+            .Where(x => !wbsIds.Contains(x.WbsNodeId))
             .OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -222,13 +220,12 @@ public sealed class PmsSheetBuilder
         IXLWorksheet sheet,
         WbsNodeDto node,
         ExportPmsDto dto,
-        IReadOnlyDictionary<string, List<ActivityDto>> activitiesByWbs,
+        IReadOnlyDictionary<Guid, List<ActivityDto>> activitiesByWbs,
         ref int row,
         int maxLevel,
         ThemePalette theme)
     {
         var currentRow = row++;
-        var projectBudget = dto.TotalBudget;
 
         sheet.Cell(currentRow, 1).Value = node.Code;
         sheet.Cell(currentRow, 2).Value = node.ParentCode ?? string.Empty;
@@ -239,9 +236,8 @@ public sealed class PmsSheetBuilder
         sheet.Cell(currentRow, 7).Value = node.WeightFactor / 100m;
         sheet.Cell(currentRow, 8).Value = node.WeightValue / 100m;
         sheet.Cell(currentRow, 9).Value = node.Progress / 100m;
-        sheet.Cell(currentRow, 10).Value = projectBudget == 0
-            ? 0
-            : node.EarnedValue / projectBudget;
+        sheet.Cell(currentRow, 10).Value =
+            node.WeightValue / 100m * node.Progress / 100m;
         sheet.Cell(currentRow, 11).Value = node.EarnedValue;
         sheet.Cell(currentRow, 12).Value = node.PlannedValue;
         sheet.Cell(currentRow, 13).Value = node.ActualCost;
@@ -256,7 +252,7 @@ public sealed class PmsSheetBuilder
             wbsRange.Style.Font.FontColor = XLColor.White;
         sheet.Cell(currentRow, 5).Style.Alignment.Indent = Math.Clamp(node.Level, 0, 15);
 
-        if (activitiesByWbs.TryGetValue(node.Code, out var assignedActivities))
+        if (activitiesByWbs.TryGetValue(node.Id, out var assignedActivities))
         {
             foreach (var activity in assignedActivities)
                 WriteActivity(sheet, row++, activity, node, dto, theme);
@@ -295,9 +291,8 @@ public sealed class PmsSheetBuilder
         sheet.Cell(row, 7).Value = weightFactor;
         sheet.Cell(row, 8).Value = weightValue;
         sheet.Cell(row, 9).Value = activity.Progress / 100m;
-        sheet.Cell(row, 10).Value = projectBudget == 0
-            ? 0
-            : activity.EarnedValue / projectBudget;
+        sheet.Cell(row, 10).Value =
+            activity.WeightValue / 100m * activity.Progress / 100m;
         sheet.Cell(row, 11).Value = activity.EarnedValue;
         sheet.Cell(row, 12).Value = activity.PlannedValue;
         sheet.Cell(row, 13).Value = activity.ActualCost;
