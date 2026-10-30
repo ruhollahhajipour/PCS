@@ -87,7 +87,12 @@ public sealed class PmsBaselineService : IPmsBaselineService
             x => x.ProjectId == projectId && x.IsActive && !x.IsDeleted))
             .ToList();
 
-        var defaultCalendar = calendars.FirstOrDefault(x => x.IsDefault);
+        var defaultCalendars = calendars.Where(x => x.IsDefault).ToList();
+        if (defaultCalendars.Count > 1)
+            throw new InvalidOperationException(
+                "The project has more than one active default calendar. Resolve the calendar configuration before creating a baseline.");
+
+        var defaultCalendar = defaultCalendars.SingleOrDefault();
         var snapshotItems = new List<ProjectBaselineActivity>(activities.Count);
 
         foreach (var activity in activities)
