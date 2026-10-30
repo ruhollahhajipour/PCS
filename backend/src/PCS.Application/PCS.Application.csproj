@@ -10,7 +10,7 @@
   <ItemGroup>
 
     <ProjectReference
-      Include="..\\PCS.Domain\\PCS.Domain.csproj" />
+      Include="..\PCS.Domain\PCS.Domain.csproj" />
 
   </ItemGroup>
 
@@ -48,7 +48,7 @@
   <ItemGroup>
 
     <None
-      Include="Resources\\Branding\\pcs-logo.png"
+      Include="Resources\Branding\pcs-logo.png"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest" />
 
