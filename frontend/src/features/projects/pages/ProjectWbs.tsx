@@ -89,7 +89,7 @@ function WbsRow({
         sx={{
           "& > td": {
             borderBottom:
-              "1px solid #EEF2F7",
+              `1px solid ${theme.palette.divider}`,
           },
         }}
       >
@@ -757,7 +757,7 @@ export default function ProjectWbs() {
             "1px solid #E2E8F0",
           borderRadius: 2.5,
           overflow: "hidden",
-          bgcolor: "#FFFFFF",
+          bgcolor: theme.palette.background.paper,
         }}
       >
         {loading ? (
@@ -805,7 +805,7 @@ export default function ProjectWbs() {
               <AccountTreeRounded
                 sx={{
                   fontSize: 42,
-                  color: "#CBD5E1",
+                  color: theme.palette.text.disabled,
                 }}
               />
 
@@ -813,7 +813,7 @@ export default function ProjectWbs() {
                 sx={{
                   fontSize: 14,
                   fontWeight: 650,
-                  color: "#475569",
+                  color: theme.palette.text.secondary,
                 }}
               >
                 No WBS data available
@@ -846,7 +846,7 @@ export default function ProjectWbs() {
                   <TableCell
                     sx={{
                       minWidth: 300,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -861,7 +861,7 @@ export default function ProjectWbs() {
                     align="center"
                     sx={{
                       minWidth: 90,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -875,7 +875,7 @@ export default function ProjectWbs() {
                   <TableCell
                     sx={{
                       minWidth: 155,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -890,7 +890,7 @@ export default function ProjectWbs() {
                     align="right"
                     sx={{
                       minWidth: 125,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -905,7 +905,7 @@ export default function ProjectWbs() {
                     align="right"
                     sx={{
                       minWidth: 125,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -920,7 +920,7 @@ export default function ProjectWbs() {
                     align="right"
                     sx={{
                       minWidth: 125,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -935,7 +935,7 @@ export default function ProjectWbs() {
                     align="center"
                     sx={{
                       minWidth: 80,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
@@ -950,7 +950,7 @@ export default function ProjectWbs() {
                     align="center"
                     sx={{
                       minWidth: 80,
-                      bgcolor: "#F8FAFC",
+                      bgcolor: theme.palette.background.default,
                       fontSize: 10.5,
                       fontWeight: 750,
                       color: theme.palette.text.secondary,
