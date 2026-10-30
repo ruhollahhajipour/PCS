@@ -43,12 +43,12 @@ public sealed class PmsEvmService : IPmsEvmService
             .Select(x => x.ActivityId)
             .ToList();
 
-        // Chunk IDs to stay below SQL Server's 2,100-parameter limit on large EPC projects.
+        // Chunk IDs to stay below common SQLite and SQL Server parameter limits on large EPC projects.
         var progressEntries = new List<ProgressEntry>();
         var currentActivities = new List<Activity>();
         var progressDateExclusive = dataDate.AddDays(1);
 
-        foreach (var activityIdBatch in activityIds.Chunk(1000))
+        foreach (var activityIdBatch in activityIds.Chunk(500))
         {
             var batchIds = activityIdBatch.ToList();
             var batchProgress = await _progressRepository.FindAsync(
