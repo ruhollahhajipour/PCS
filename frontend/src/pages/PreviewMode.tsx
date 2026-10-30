@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   AppBar,
   Avatar,
@@ -29,7 +29,6 @@ import {
   Inventory2Rounded,
   LocalShippingRounded,
   MenuRounded,
-  MoreHorizRounded,
   NotificationsNoneRounded,
   PaymentsRounded,
   PlaylistAddCheckRounded,
@@ -61,7 +60,7 @@ type ModuleKey =
 const navigation: {
   key: ModuleKey;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   group: string;
 }[] = [
   { key: "dashboard", label: "Executive Dashboard", icon: <DashboardRounded />, group: "WORKSPACE" },
