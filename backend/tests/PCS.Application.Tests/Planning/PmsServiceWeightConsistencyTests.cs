@@ -48,6 +48,56 @@ public sealed class PmsServiceWeightConsistencyTests
         Assert.Equal(10m, childActivity.WeightedProgress);
     }
 
+    [Fact]
+    public async Task ExportPmsAsync_UsesProgressLedgerActualCostForCurrentEvmSnapshot()
+    {
+        var fixture = CreateFixture();
+        var activity = fixture.Activities.Single(x => x.Code == "A-CHILD");
+        var baseline = new ProjectBaselineSnapshotDto
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = fixture.Project.Id,
+            Name = "Approved Baseline",
+            Version = 1,
+            TotalBudget = 500m,
+            IsApproved = true,
+            IsActive = true,
+            Activities = fixture.Activities.Select(x => new ProjectBaselineActivityDto
+            {
+                ActivityId = x.Id,
+                ActivityCode = x.Code,
+                Budget = x.Budget
+            }).ToList()
+        };
+        var progressEntries = new[]
+        {
+            new ProgressEntry
+            {
+                ActivityId = activity.Id,
+                ProgressDate = DateTime.UtcNow.Date,
+                ActualCost = 75m
+            },
+            new ProgressEntry
+            {
+                ActivityId = activity.Id,
+                ProgressDate = DateTime.UtcNow.Date,
+                ActualCost = 50m
+            }
+        };
+
+        var service = fixture.CreateService(baseline, progressEntries);
+
+        var export = await service.ExportPmsAsync(fixture.Project.Id);
+        var exportedActivity = Assert.Single(export.Activities.Where(x => x.Code == "A-CHILD"));
+        var exportedWbs = Assert.Single(Flatten(export.WbsNodes).Where(x => x.Code == "01.01"));
+
+        // Current EVM AC follows PmsEvmService semantics: use the greater of
+        // opening/current Activity.ActualCost and accumulated dated period costs.
+        Assert.Equal(125m, exportedActivity.ActualCost);
+        Assert.Equal(125m, exportedWbs.ActualCost);
+        Assert.Equal(125m, export.ActualCost);
+    }
+
     private static Fixture CreateFixture()
     {
         var projectId = Guid.NewGuid();
@@ -104,6 +154,7 @@ public sealed class PmsServiceWeightConsistencyTests
                 Name = "Child activity",
                 Budget = 100m,
                 Weight = 12m,
+                ActualCost = 100m,
                 Progress = 50m
             },
             new Activity
@@ -151,23 +202,27 @@ public sealed class PmsServiceWeightConsistencyTests
         IReadOnlyList<WbsNode> WbsNodes,
         IReadOnlyList<Activity> Activities)
     {
-        public PmsService CreateService() => new(
+        public PmsService CreateService(
+            ProjectBaselineSnapshotDto? baseline = null,
+            IEnumerable<ProgressEntry>? progressEntries = null) => new(
             new FakeRepository<Project>([Project], x => x.Id),
             new FakeRepository<Company>([Company], x => x.Id),
             new FakeRepository<WbsNode>(WbsNodes, x => x.Id),
             new FakeRepository<Activity>(Activities, x => x.Id),
+            new FakeRepository<ProgressEntry>(progressEntries ?? [], x => x.Id),
             new FakeUnitOfWork(),
             new WbsCalculationService(),
-            new StubBaselineService());
+            new StubBaselineService(baseline));
     }
 
-    private sealed class StubBaselineService : IPmsBaselineService
+    private sealed class StubBaselineService(ProjectBaselineSnapshotDto? snapshot)
+        : IPmsBaselineService
     {
         public Task<ProjectBaselineSnapshotDto?> GetActiveSnapshotAsync(Guid projectId) =>
-            Task.FromResult<ProjectBaselineSnapshotDto?>(null);
+            Task.FromResult(snapshot);
 
         public Task<ProjectBaselineSnapshotDto?> GetSnapshotForDateAsync(Guid projectId, DateTime dataDate) =>
-            Task.FromResult<ProjectBaselineSnapshotDto?>(null);
+            Task.FromResult(snapshot);
 
         public Task<ProjectBaselineSnapshotDto> CreateDraftAsync(
             Guid projectId,
