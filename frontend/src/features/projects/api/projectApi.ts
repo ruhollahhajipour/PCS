@@ -21,7 +21,7 @@ export async function createProject(
     "/Projects",
     {
       ...project,
-      finishDate: project.finishDate ?? project.endDate,
+      endDate: project.finishDate ?? project.endDate,
     }
   );
 
@@ -33,7 +33,10 @@ export async function updateProject(
 ): Promise<void> {
   await http.put(
     `/Projects/${project.id}`,
-    project
+    {
+      ...project,
+      endDate: project.finishDate ?? project.endDate,
+    }
   );
 }
 
