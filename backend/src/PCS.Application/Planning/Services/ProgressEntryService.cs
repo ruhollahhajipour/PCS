@@ -56,9 +56,8 @@ public class ProgressEntryService : IProgressEntryService
 
 
         var progressDate = date.Date;
-        var existingEntries = (await _repository.GetAllAsync())
-            .Where(x => x.ActivityId == activityId && !x.IsDeleted)
-            .ToList();
+        var existingEntries = (await _repository.FindAsync(
+            x => x.ActivityId == activityId && !x.IsDeleted)).ToList();
 
         if (existingEntries.Any(x => x.ProgressDate.Date == progressDate))
             throw new InvalidOperationException(
@@ -115,12 +114,10 @@ public class ProgressEntryService : IProgressEntryService
     public async Task<List<ProgressEntryDto>> GetActivityProgressAsync(
         Guid activityId)
     {
-        var items =
-            await _repository.GetAllAsync();
-
+        var items = await _repository.FindAsync(
+            x => x.ActivityId == activityId && !x.IsDeleted);
 
         return items
-            .Where(x => x.ActivityId == activityId && !x.IsDeleted)
             .OrderBy(x => x.ProgressDate)
             .Select(x => new ProgressEntryDto
             {
