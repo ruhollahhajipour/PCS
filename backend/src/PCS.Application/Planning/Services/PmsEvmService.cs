@@ -35,10 +35,13 @@ public sealed class PmsEvmService : IPmsEvmService
             .Select(x => x.ActivityId)
             .ToHashSet();
 
-        var latestProgressByActivity = (await _progressRepository.GetAllAsync())
+        var progressEntries = (await _progressRepository.GetAllAsync())
             .Where(x => activityIds.Contains(x.ActivityId) &&
                         x.ProgressDate.Date <= dataDate &&
                         !x.IsDeleted)
+            .ToList();
+
+        var latestProgressByActivity = progressEntries
             .GroupBy(x => x.ActivityId)
             .Select(group => group
                 .OrderByDescending(x => x.ProgressDate)
@@ -47,7 +50,8 @@ public sealed class PmsEvmService : IPmsEvmService
             .ToDictionary(x => x.ActivityId);
 
         decimal earnedValue = 0m;
-        decimal actualCost = 0m;
+        // ActualCost on each progress entry is a period cost; accumulate all periods up to the data date.
+        decimal actualCost = progressEntries.Sum(x => Math.Max(x.ActualCost, 0m));
 
         foreach (var baselineActivity in baselineActivities)
         {
@@ -60,7 +64,6 @@ public sealed class PmsEvmService : IPmsEvmService
 
             var physicalProgress = Math.Clamp(progress.Progress, 0m, 100m);
             earnedValue += baselineActivity.Budget * physicalProgress / 100m;
-            actualCost += Math.Max(progress.ActualCost, 0m);
         }
 
         var plannedValue = PmsBaselineCalculator.CalculatePlannedValue(
