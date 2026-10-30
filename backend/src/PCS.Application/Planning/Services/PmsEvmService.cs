@@ -8,13 +8,16 @@ namespace PCS.Application.Planning.Services;
 public sealed class PmsEvmService : IPmsEvmService
 {
     private readonly IGenericRepository<ProgressEntry> _progressRepository;
+    private readonly IGenericRepository<Activity> _activityRepository;
     private readonly IPmsBaselineService _baselineService;
 
     public PmsEvmService(
         IGenericRepository<ProgressEntry> progressRepository,
+        IGenericRepository<Activity> activityRepository,
         IPmsBaselineService baselineService)
     {
         _progressRepository = progressRepository;
+        _activityRepository = activityRepository;
         _baselineService = baselineService;
     }
 
@@ -26,6 +29,11 @@ public sealed class PmsEvmService : IPmsEvmService
             throw new ArgumentException("ProjectId is required.", nameof(projectId));
 
         var dataDate = reportDate.Date;
+        if (dataDate > DateTime.UtcNow.Date)
+            throw new ArgumentOutOfRangeException(
+                nameof(reportDate),
+                "An EVM data date cannot be in the future.");
+
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId)
             ?? throw new InvalidOperationException(
                 "The project does not have an active approved schedule baseline. Create and approve a baseline before calculating EVM.");
@@ -49,21 +57,47 @@ public sealed class PmsEvmService : IPmsEvmService
                 .First())
             .ToDictionary(x => x.ActivityId);
 
+        var currentActivityById = (await _activityRepository.GetAllAsync())
+            .Where(x => activityIds.Contains(x.Id) && !x.IsDeleted)
+            .ToDictionary(x => x.Id);
+
+        var progressEntriesByActivity = progressEntries
+            .GroupBy(x => x.ActivityId)
+            .ToDictionary(x => x.Key, x => x.ToList());
+
         decimal earnedValue = 0m;
-        // ActualCost on each progress entry is a period cost; accumulate all periods up to the data date.
-        decimal actualCost = progressEntries.Sum(x => Math.Max(x.ActualCost, 0m));
+        decimal actualCost = 0m;
+        var isCurrentDataDate = dataDate == DateTime.UtcNow.Date;
 
         foreach (var baselineActivity in baselineActivities)
         {
-            if (!latestProgressByActivity.TryGetValue(
-                    baselineActivity.ActivityId,
-                    out var progress))
+            var hasCurrentActivity = currentActivityById.TryGetValue(
+                baselineActivity.ActivityId,
+                out var currentActivity);
+
+            if (isCurrentDataDate && hasCurrentActivity)
             {
+                // Current project fields include opening costs that may predate the progress-entry ledger.
+                var physicalProgress = Math.Clamp(currentActivity!.Progress, 0m, 100m);
+                earnedValue += baselineActivity.Budget * physicalProgress / 100m;
+                actualCost += Math.Max(currentActivity.ActualCost, 0m);
                 continue;
             }
 
-            var physicalProgress = Math.Clamp(progress.Progress, 0m, 100m);
-            earnedValue += baselineActivity.Budget * physicalProgress / 100m;
+            if (latestProgressByActivity.TryGetValue(
+                    baselineActivity.ActivityId,
+                    out var progress))
+            {
+                var physicalProgress = Math.Clamp(progress.Progress, 0m, 100m);
+                earnedValue += baselineActivity.Budget * physicalProgress / 100m;
+            }
+
+            if (progressEntriesByActivity.TryGetValue(
+                    baselineActivity.ActivityId,
+                    out var activityEntries))
+            {
+                actualCost += activityEntries.Sum(x => Math.Max(x.ActualCost, 0m));
+            }
         }
 
         var plannedValue = PmsBaselineCalculator.CalculatePlannedValue(
