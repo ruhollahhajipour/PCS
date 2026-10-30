@@ -110,6 +110,9 @@ public class PCSDbContext : DbContext
     public DbSet<ProjectBaseline> ProjectBaselines
         => Set<ProjectBaseline>();
 
+    public DbSet<ProjectBaselineActivity> ProjectBaselineActivities
+        => Set<ProjectBaselineActivity>();
+
     public DbSet<ProjectCalendar> ProjectCalendars
         => Set<ProjectCalendar>();
 
