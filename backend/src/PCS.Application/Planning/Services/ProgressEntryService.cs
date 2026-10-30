@@ -52,12 +52,18 @@ public class ProgressEntryService : IProgressEntryService
 
 
         var progressDate = date.Date;
-        var existingEntries = (await _repository.FindAsync(
-            x => x.ActivityId == activityId && !x.IsDeleted)).ToList();
+        // The database unique index covers all rows, including soft-deleted entries.
+        // Check all rows before using only active entries for status and cost calculations.
+        var allEntries = (await _repository.FindAsync(
+            x => x.ActivityId == activityId)).ToList();
 
-        if (existingEntries.Any(x => x.ProgressDate.Date == progressDate))
+        if (allEntries.Any(x => x.ProgressDate.Date == progressDate))
             throw new InvalidOperationException(
                 "A progress entry already exists for this activity and reporting date.");
+
+        var existingEntries = allEntries
+            .Where(x => !x.IsDeleted)
+            .ToList();
 
         var effectiveBaseline = await _baselineService.GetSnapshotForDateAsync(
             activity.ProjectId,
