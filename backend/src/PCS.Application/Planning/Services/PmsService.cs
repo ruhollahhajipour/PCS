@@ -823,7 +823,7 @@ await _unitOfWork
                             wbs.Budget == 0
                             ? 0
                             :
-                            (x.Budget /
+                            (activityBudget /
                              wbs.Budget)
                              * 100m,
 
