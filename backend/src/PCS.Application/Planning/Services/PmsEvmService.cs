@@ -142,6 +142,9 @@ public sealed class PmsEvmService : IPmsEvmService
             BaselineVersion = baseline.Version,
             BaselineActivityCount = baseline.ActivityCount,
             BaselineBudget = baseline.TotalBudget,
+            DataQualityNote = isCurrentDataDate
+                ? null
+                : "Historical Actual Cost is accumulated from dated progress-entry period costs. Opening costs not represented in the progress-entry ledger are not included.",
             PlannedValue = Math.Round(plannedValue, 2, MidpointRounding.AwayFromZero),
             EarnedValue = Math.Round(earnedValue, 2, MidpointRounding.AwayFromZero),
             ActualCost = Math.Round(actualCost, 2, MidpointRounding.AwayFromZero),
