@@ -12,6 +12,7 @@ public class PmsService : IPmsService
     private readonly IGenericRepository<Company> _companyRepository;
     private readonly IGenericRepository<WbsNode> _wbsRepository;
     private readonly IGenericRepository<Activity> _activityRepository;
+    private readonly IGenericRepository<ProgressEntry> _progressRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWbsCalculationService _wbsCalculationService;
     private readonly IPmsBaselineService _baselineService;
@@ -22,6 +23,7 @@ public class PmsService : IPmsService
         IGenericRepository<Company> companyRepository,
         IGenericRepository<WbsNode> wbsRepository,
         IGenericRepository<Activity> activityRepository,
+        IGenericRepository<ProgressEntry> progressRepository,
         IUnitOfWork unitOfWork,
         IWbsCalculationService wbsCalculationService,
         IPmsBaselineService baselineService)
@@ -30,6 +32,7 @@ public class PmsService : IPmsService
         _companyRepository = companyRepository;
         _wbsRepository = wbsRepository;
         _activityRepository = activityRepository;
+        _progressRepository = progressRepository;
         _unitOfWork = unitOfWork;
         _wbsCalculationService = wbsCalculationService;
         _baselineService = baselineService;
@@ -675,10 +678,12 @@ await _unitOfWork
             await _baselineService.GetActiveSnapshotAsync(projectId);
 
         var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             activeBaseline,
-            dataDate);
+            dataDate,
+            progressEntries);
 
         var wbsTree = BuildWbsTree(
             wbsNodes,
@@ -1221,11 +1226,32 @@ await _unitOfWork
         Dictionary<Guid, decimal> PlannedValueByActivity,
         Dictionary<Guid, decimal> ProgressValueByActivity);
 
+    private async Task<List<ProgressEntry>> GetProgressEntriesAsync(
+        IReadOnlyCollection<Activity> activities,
+        DateTime dataDate)
+    {
+        var activityIds = activities.Select(x => x.Id).ToArray();
+        if (activityIds.Length == 0)
+            return [];
+
+        return (await _progressRepository.FindAsync(
+            x => activityIds.Contains(x.ActivityId) &&
+                 x.ProgressDate < dataDate.Date.AddDays(1) &&
+                 !x.IsDeleted)).ToList();
+    }
+
     private static PmsFinancialSnapshot BuildFinancialSnapshot(
         IReadOnlyCollection<Activity> activities,
         ProjectBaselineSnapshotDto? baseline,
-        DateTime dataDate)
+        DateTime dataDate,
+        IReadOnlyCollection<ProgressEntry> progressEntries)
     {
+        var progressCostByActivity = progressEntries
+            .GroupBy(x => x.ActivityId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => Math.Max(x.ActualCost, 0m)));
+
         var baselineByActivity = baseline?.Activities
             .ToDictionary(x => x.ActivityId)
             ?? new Dictionary<Guid, ProjectBaselineActivityDto>();
@@ -1240,9 +1266,13 @@ await _unitOfWork
 
         var actualCostByActivity = activities.ToDictionary(
             x => x.Id,
-            x => baseline == null || baselineByActivity.ContainsKey(x.Id)
+            x => baseline == null
                 ? x.ActualCost
-                : 0m);
+                : baselineByActivity.ContainsKey(x.Id)
+                    ? Math.Max(
+                        Math.Max(x.ActualCost, 0m),
+                        progressCostByActivity.GetValueOrDefault(x.Id))
+                    : 0m);
 
         var progressValueByActivity = activities.ToDictionary(
             x => x.Id,
@@ -1312,10 +1342,13 @@ await _unitOfWork
 
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
-            DateTime.UtcNow.Date);
+            dataDate,
+            progressEntries);
 
         return BuildWbsTree(
             nodes,
@@ -1358,10 +1391,13 @@ await _unitOfWork
 
 
         var baseline = await _baselineService.GetActiveSnapshotAsync(projectId);
+        var dataDate = DateTime.UtcNow.Date;
+        var progressEntries = await GetProgressEntriesAsync(activities, dataDate);
         var financials = BuildFinancialSnapshot(
             activities,
             baseline,
-            DateTime.UtcNow.Date);
+            dataDate,
+            progressEntries);
 
         var totalBudget = financials.TotalBudget;
         var wbsTree = BuildWbsTree(
