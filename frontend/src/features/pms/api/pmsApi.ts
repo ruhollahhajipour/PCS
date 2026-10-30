@@ -125,6 +125,11 @@ export interface PmsDashboard {
 export interface PmsEvm {
   projectId: string;
   reportDate: string;
+  baselineId: string;
+  baselineName: string;
+  baselineVersion: number;
+  baselineActivityCount: number;
+  baselineBudget: number;
 
   plannedValue: number;
   earnedValue: number;
@@ -135,6 +140,28 @@ export interface PmsEvm {
 
   spi: number;
   cpi: number;
+}
+
+export interface ProjectBaseline {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string | null;
+  version: number;
+  plannedStart?: string | null;
+  plannedFinish?: string | null;
+  plannedDuration: number;
+  totalBudget: number;
+  isApproved: boolean;
+  isActive: boolean;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
+  activityCount: number;
+}
+
+export interface CreateProjectBaselineRequest {
+  name: string;
+  description?: string;
 }
 
 
@@ -229,6 +256,44 @@ export async function getPmsEvm(
           reportDate.toISOString(),
       },
     }
+  );
+
+  return response.data;
+}
+
+
+// =====================================================
+// PROJECT BASELINES
+// =====================================================
+
+export async function getProjectBaselines(
+  projectId: string
+): Promise<ProjectBaseline[]> {
+  const response = await http.get(
+    `/pms/${projectId}/baselines`
+  );
+
+  return response.data;
+}
+
+export async function createProjectBaseline(
+  projectId: string,
+  request: CreateProjectBaselineRequest
+): Promise<ProjectBaseline> {
+  const response = await http.post(
+    `/pms/${projectId}/baselines`,
+    request
+  );
+
+  return response.data;
+}
+
+export async function approveProjectBaseline(
+  projectId: string,
+  baselineId: string
+): Promise<ProjectBaseline> {
+  const response = await http.post(
+    `/pms/${projectId}/baselines/${baselineId}/approve`
   );
 
   return response.data;
