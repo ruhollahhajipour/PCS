@@ -12,9 +12,8 @@ public sealed class PmsCalculationService
     {
         foreach (var activity in activities)
         {
-            activity.EarnedValue =
-                activity.Budget *
-                (activity.Progress / 100m);
+            // Earned Value requires an approved baseline budget.
+            activity.EarnedValue = 0m;
         }
     }
 
@@ -106,9 +105,9 @@ public sealed class PmsCalculationService
 
 
 
-        decimal ev =
-            activityList.Sum(
-                x => x.EarnedValue);
+        // This legacy synchronous calculator has no approved baseline input.
+        // Keep physical progress available, but do not publish un-baselined EVM values.
+        decimal ev = 0m;
 
 
 
@@ -118,16 +117,15 @@ public sealed class PmsCalculationService
 
 
 
-        decimal progress =
-            budget == 0
+        decimal physicalProgressValue = activityList.Sum(
+            x => x.Budget * Math.Clamp(x.Progress, 0m, 100m) / 100m);
+
+        decimal progress = budget == 0
             ? 0
-            :
-            (ev / budget) * 100m;
+            : physicalProgressValue / budget * 100m;
 
 
 
-        // This legacy synchronous calculator has no approved baseline input.
-        // Do not fabricate Planned Value; baseline-backed EVM is calculated by IPmsEvmService.
         decimal pv = 0m;
 
 
@@ -154,26 +152,16 @@ public sealed class PmsCalculationService
                 pv,
 
 
-            CostVariance =
-                ev - ac,
+            CostVariance = 0m,
 
 
-            ScheduleVariance =
-                ev - pv,
+            ScheduleVariance = 0m,
 
 
-            CPI =
-                ac == 0
-                ? 0
-                :
-                ev / ac,
+            CPI = 0m,
 
 
-            SPI =
-                pv == 0
-                ? 0
-                :
-                ev / pv,
+            SPI = 0m,
 
 
             OverallProgress =
