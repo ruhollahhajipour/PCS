@@ -52,7 +52,7 @@ public class PmsDashboardService : IPmsDashboardService
 
         var projectActivities =
             activities
-            .Where(x => x.ProjectId == projectId)
+            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
             .ToList();
 
 
