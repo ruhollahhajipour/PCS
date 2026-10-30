@@ -166,11 +166,11 @@ export default function ProjectDetails() {
     },
     {
       title: "SPI",
-      value: project.spi.toFixed(2),
+      value: evmData ? evmData.spi.toFixed(2) : "—",
     },
     {
       title: "CPI",
-      value: project.cpi.toFixed(2),
+      value: evmData ? evmData.cpi.toFixed(2) : "—",
     },
   ];
 
