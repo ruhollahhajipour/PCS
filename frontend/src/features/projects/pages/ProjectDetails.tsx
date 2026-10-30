@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -25,8 +26,8 @@ import {
 
 import ProjectService from "../services/project.service";
 import ProjectDialog from "../dialogs/ProjectDialog";
-import evmCalculator from "../utils/evmCalculator";
 import EVMCard from "../components/EVMCard";
+import { getPmsEvm, type PmsEvm } from "../../pms/api/pmsApi";
 
 import type { Project } from "../../../models/project";
 
@@ -44,21 +45,37 @@ export default function ProjectDetails() {
   const [editOpen, setEditOpen] =
     useState(false);
 
+  const [evmData, setEvmData] =
+    useState<PmsEvm | null>(null);
+
+  const [evmError, setEvmError] =
+    useState<string | null>(null);
+
   const load = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (!id) {
-        return;
-      }
-
-      const data =
-        await ProjectService.getById(id);
-
+      const data = await ProjectService.getById(id);
       setProject(data);
+
+      try {
+        const evm = await getPmsEvm(id);
+        setEvmData(evm);
+        setEvmError(null);
+      } catch (evmLoadError) {
+        console.info("EVM is unavailable until an approved baseline exists.", evmLoadError);
+        setEvmData(null);
+        setEvmError(
+          "برای محاسبه EVM، ابتدا در صفحه WBS یک Baseline زمان‌بندی ایجاد و تأیید کنید."
+        );
+      }
     } catch (error) {
-      console.error(
-        "Project load failed",
-        error
-      );
+      console.error("Project load failed", error);
+      setProject(null);
     } finally {
       setLoading(false);
     }
@@ -115,9 +132,6 @@ export default function ProjectDetails() {
 
   const variance =
     budget - actual;
-
-  const evm =
-    evmCalculator(project);
 
   const statusColor:
     | "default"
@@ -286,7 +300,13 @@ export default function ProjectDetails() {
             Earned Value Management (EVM)
           </Typography>
 
-          <EVMCard data={evm} />
+          {evmData ? (
+            <EVMCard data={evmData} />
+          ) : (
+            <Alert severity="info">
+              {evmError ?? "EVM data is not available for this project."}
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
