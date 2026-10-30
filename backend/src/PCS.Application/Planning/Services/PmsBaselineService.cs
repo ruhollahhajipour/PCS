@@ -59,8 +59,10 @@ public sealed class PmsBaselineService : IPmsBaselineService
         if (project.IsDeleted)
             throw new KeyNotFoundException($"Project '{projectId}' was not found.");
 
+        // Include soft-deleted versions because the database's project/name
+        // uniqueness constraint also includes them; version numbers stay monotonic.
         var existingBaselines = (await _baselineRepository.GetAllAsync())
-            .Where(x => x.ProjectId == projectId && !x.IsDeleted)
+            .Where(x => x.ProjectId == projectId)
             .ToList();
 
         if (existingBaselines.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
