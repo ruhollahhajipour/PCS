@@ -143,7 +143,7 @@ function PmsEntryRoute() {
 
 export default function AppRoutes() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Routes>
 
         {/* =====================================================

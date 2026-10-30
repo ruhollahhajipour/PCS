@@ -217,7 +217,7 @@ export function WorkspaceProvider({
         return;
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated && !__PCS_PREVIEW_AUTH_BYPASS__) {
         if (cancelled) {
           return;
         }

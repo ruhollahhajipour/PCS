@@ -12,11 +12,11 @@ import {
 
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
 
-export default function Login() {
+function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -231,4 +231,16 @@ export default function Login() {
       </Paper>
     </Box>
   );
+}
+
+/**
+ * The login UI is skipped only in the dedicated Vercel Preview build.
+ * The normal login component and authentication flow remain intact.
+ */
+export default function Login() {
+  if (__PCS_PREVIEW_AUTH_BYPASS__) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <LoginForm />;
 }
