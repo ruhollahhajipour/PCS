@@ -62,12 +62,12 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 page.PageColor(Colors.White);
 
                 page.DefaultTextStyle(style => style
-                    .FontFamily("Segoe UI", "Noto Sans Arabic", "Arial", "Lato")
+                    .FontFamily("Segoe UI", "Noto Sans Arabic", "Arial", "Tahoma", "Lato", "DejaVu Sans")
                     .FontSize(7)
                     .FontColor(Colors.Grey.Darken4));
 
                 page.Header()
-                    .Height(58)
+                    .Height(80)
                     .Element(container => ComposeHeader(
                         container,
                         dto,
