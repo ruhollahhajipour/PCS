@@ -293,6 +293,34 @@ public sealed class PmsBaselineService : IPmsBaselineService
         return ToSnapshotDto(baseline, items);
     }
 
+    public async Task<ProjectBaselineSnapshotDto?> GetSnapshotForDateAsync(
+        Guid projectId,
+        DateTime dataDate)
+    {
+        var effectiveBaseline = (await _baselineRepository.GetAllAsync())
+            .Where(x => x.ProjectId == projectId &&
+                        x.IsApproved &&
+                        x.ApprovedAt.HasValue &&
+                        x.ApprovedAt.Value.Date <= dataDate.Date &&
+                        !x.IsDeleted)
+            .OrderByDescending(x => x.ApprovedAt)
+            .ThenByDescending(x => x.Version)
+            .FirstOrDefault();
+
+        if (effectiveBaseline == null)
+            return null;
+
+        var items = (await _baselineActivityRepository.GetAllAsync())
+            .Where(x => x.ProjectBaselineId == effectiveBaseline.Id && !x.IsDeleted)
+            .ToList();
+
+        if (items.Count == 0)
+            throw new InvalidOperationException(
+                $"Approved baseline '{effectiveBaseline.Name}' has no activity snapshots.");
+
+        return ToSnapshotDto(effectiveBaseline, items);
+    }
+
     private static ProjectBaselineDto ToDto(ProjectBaseline baseline, int activityCount) => new()
     {
         Id = baseline.Id,
