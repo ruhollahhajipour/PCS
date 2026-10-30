@@ -729,10 +729,13 @@ await _unitOfWork
 
 
                     var earned = financials.EarnedValueByActivity[x.Id];
-
-
-
                     var pv = financials.PlannedValueByActivity[x.Id];
+                    var costVariance = activeBaseline == null
+                        ? 0m
+                        : earned - activityActualCost;
+                    var scheduleVariance = activeBaseline == null
+                        ? 0m
+                        : earned - pv;
 
 
 
@@ -858,19 +861,17 @@ await _unitOfWork
 
 
                         CostVariance =
-                            earned -
-                            activityActualCost,
+                            costVariance,
 
 
 
                         ScheduleVariance =
-                            earned -
-                            pv,
+                            scheduleVariance,
 
 
 
                         CPI =
-                            activityActualCost == 0
+                            activeBaseline == null || activityActualCost == 0
                             ? 0
                             :
                             earned /
@@ -879,7 +880,7 @@ await _unitOfWork
 
 
                         SPI =
-                            pv == 0
+                            activeBaseline == null || pv == 0
                             ? 0
                             :
                             earned /
@@ -1024,14 +1025,14 @@ await _unitOfWork
                 actualCost,
 
 
-            CostVariance =
-                earnedValue -
-                actualCost,
+            CostVariance = activeBaseline == null
+                ? 0m
+                : earnedValue - actualCost,
 
 
-            ScheduleVariance =
-                earnedValue -
-                plannedValue,
+            ScheduleVariance = activeBaseline == null
+                ? 0m
+                : earnedValue - plannedValue,
 
 
             CPI =
@@ -1111,6 +1112,10 @@ await _unitOfWork
             .GroupBy(x => x.WbsNodeId)
             .ToDictionary(x => x.Key, x => x.ToList());
 
+        var physicalProgressValueByWbs = nodes.ToDictionary(
+            x => x.Id,
+            _ => 0m);
+
         // Aggregate activity-level values first, then roll them up bottom-up.
         foreach (var entity in nodes)
         {
@@ -1122,6 +1127,8 @@ await _unitOfWork
             dto.ActualCost = assigned.Sum(x => financials.ActualCostByActivity[x.Id]);
             dto.EarnedValue = assigned.Sum(x => financials.EarnedValueByActivity[x.Id]);
             dto.PlannedValue = assigned.Sum(x => financials.PlannedValueByActivity[x.Id]);
+            physicalProgressValueByWbs[entity.Id] = assigned.Sum(
+                x => financials.ProgressValueByActivity[x.Id]);
         }
 
         WbsNodeDto RollUp(WbsNodeDto node)
@@ -1133,11 +1140,15 @@ await _unitOfWork
                 node.ActualCost += child.ActualCost;
                 node.EarnedValue += child.EarnedValue;
                 node.PlannedValue += child.PlannedValue;
+                physicalProgressValueByWbs[node.Id] += physicalProgressValueByWbs[child.Id];
             }
 
             node.Progress = node.Budget == 0
                 ? 0
-                : Math.Clamp(node.EarnedValue / node.Budget * 100m, 0m, 100m);
+                : Math.Clamp(
+                    physicalProgressValueByWbs[node.Id] / node.Budget * 100m,
+                    0m,
+                    100m);
 
             node.WeightValue = financials.TotalBudget == 0
                 ? 0
@@ -1185,7 +1196,9 @@ await _unitOfWork
         Dictionary<Guid, decimal> BudgetByActivity,
         Dictionary<Guid, decimal> ActualCostByActivity,
         Dictionary<Guid, decimal> EarnedValueByActivity,
-        Dictionary<Guid, decimal> PlannedValueByActivity);
+        Dictionary<Guid, decimal> PlannedValueByActivity,
+        Dictionary<Guid, decimal> ProgressValueByActivity,
+        bool HasApprovedBaseline);
 
     private static PmsFinancialSnapshot BuildFinancialSnapshot(
         IReadOnlyCollection<Activity> activities,
@@ -1210,9 +1223,13 @@ await _unitOfWork
                 ? x.ActualCost
                 : 0m);
 
+        var progressValueByActivity = activities.ToDictionary(
+            x => x.Id,
+            x => budgetByActivity[x.Id] * Math.Clamp(x.Progress, 0m, 100m) / 100m);
+
         var earnedValueByActivity = activities.ToDictionary(
             x => x.Id,
-            x => budgetByActivity[x.Id] * x.Progress / 100m);
+            x => baseline == null ? 0m : progressValueByActivity[x.Id]);
 
         var plannedValueByActivity = activities.ToDictionary(
             x => x.Id,
@@ -1227,19 +1244,22 @@ await _unitOfWork
                 PmsBaselineCalculator.CalculateActivityPlannedValue(x, dataDate));
         var earnedValue = earnedValueByActivity.Values.Sum();
         var actualCost = actualCostByActivity.Values.Sum();
+        var physicalProgressValue = progressValueByActivity.Values.Sum();
 
         return new PmsFinancialSnapshot(
             totalBudget,
             plannedValue,
             earnedValue,
             actualCost,
-            totalBudget == 0m ? 0m : earnedValue / totalBudget * 100m,
-            actualCost == 0m ? 0m : earnedValue / actualCost,
-            plannedValue == 0m ? 0m : earnedValue / plannedValue,
+            totalBudget == 0m ? 0m : physicalProgressValue / totalBudget * 100m,
+            baseline == null || actualCost == 0m ? 0m : earnedValue / actualCost,
+            baseline == null || plannedValue == 0m ? 0m : earnedValue / plannedValue,
             budgetByActivity,
             actualCostByActivity,
             earnedValueByActivity,
-            plannedValueByActivity);
+            plannedValueByActivity,
+            progressValueByActivity,
+            baseline != null);
     }
 
     // =====================================================
