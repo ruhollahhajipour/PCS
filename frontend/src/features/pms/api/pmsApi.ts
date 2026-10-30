@@ -327,3 +327,21 @@ export async function exportPmsExcel(
 
   return response.data;
 }
+
+
+// =====================================================
+// EXPORT PMS PDF
+// =====================================================
+
+export async function exportPmsPdf(
+  projectId: string
+): Promise<Blob> {
+  const response = await http.get(
+    `/pms/export/${projectId}/pdf`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+}
