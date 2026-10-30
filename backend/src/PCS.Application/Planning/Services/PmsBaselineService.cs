@@ -159,14 +159,16 @@ public sealed class PmsBaselineService : IPmsBaselineService
                 WbsName = wbs.Name,
                 PlannedStart = activity.PlannedStart,
                 PlannedFinish = activity.PlannedFinish,
-                PlannedDuration = activity.Duration > 0
-                    ? activity.Duration
-                    : activity.PlannedStart.HasValue && activity.PlannedFinish.HasValue
-                        ? CountWorkingDays(
-                            activity.PlannedStart.Value.Date,
-                            activity.PlannedFinish.Value.Date,
-                            workingDaysMask)
-                        : 0,
+                PlannedDuration = isMilestone
+                    ? 0
+                    : activity.Duration > 0
+                        ? activity.Duration
+                        : activity.PlannedStart.HasValue && activity.PlannedFinish.HasValue
+                            ? CountWorkingDays(
+                                activity.PlannedStart.Value.Date,
+                                activity.PlannedFinish.Value.Date,
+                                workingDaysMask)
+                            : 0,
                 Budget = activity.Budget,
                 WorkingDaysMask = workingDaysMask,
                 WorkingHoursPerDay = calendar is { WorkingHoursPerDay: > 0m }
