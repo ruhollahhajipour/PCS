@@ -8,7 +8,12 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   LinearProgress,
   Paper,
   Stack,
@@ -18,11 +23,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 
 import {
   AccountTreeRounded,
+  AddRounded,
+  CheckCircleRounded,
   FolderRounded,
   InsertDriveFileRounded,
   PictureAsPdfRounded,
@@ -32,9 +40,13 @@ import { useTheme } from "@mui/material/styles";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 
 import {
+  approveProjectBaseline,
+  createProjectBaseline,
   exportPmsPdf,
   getPmsWbs,
   getPmsActivities,
+  getProjectBaselines,
+  type ProjectBaseline,
   type WbsNode,
 } from "../../pms/api/pmsApi";
 
@@ -409,6 +421,70 @@ export default function ProjectWbs() {
   );
 
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [baselines, setBaselines] = useState<ProjectBaseline[]>([]);
+  const [baselineLoading, setBaselineLoading] = useState(false);
+  const [baselineDialogOpen, setBaselineDialogOpen] = useState(false);
+  const [baselineName, setBaselineName] = useState("");
+  const [baselineDescription, setBaselineDescription] = useState("");
+  const [baselineSaving, setBaselineSaving] = useState(false);
+  const [approvingBaselineId, setApprovingBaselineId] = useState<string | null>(null);
+
+  const activeBaseline = baselines.find(
+    baseline => baseline.isApproved && baseline.isActive
+  );
+  const draftBaselines = baselines.filter(
+    baseline => !baseline.isApproved
+  );
+
+  const refreshBaselines = async (projectId: string) => {
+    setBaselineLoading(true);
+    try {
+      setBaselines(await getProjectBaselines(projectId));
+    } finally {
+      setBaselineLoading(false);
+    }
+  };
+
+  const handleCreateBaseline = async () => {
+    const projectId = workspace.project.id;
+    const name = baselineName.trim();
+    if (!projectId || !name || baselineSaving) return;
+
+    try {
+      setBaselineSaving(true);
+      setError(null);
+      await createProjectBaseline(projectId, {
+        name,
+        description: baselineDescription.trim() || undefined,
+      });
+      await refreshBaselines(projectId);
+      setBaselineName("");
+      setBaselineDescription("");
+      setBaselineDialogOpen(false);
+    } catch (baselineError) {
+      console.error("Failed to create schedule baseline", baselineError);
+      setError("Unable to create the baseline. Check that all budgeted activities have valid planned dates.");
+    } finally {
+      setBaselineSaving(false);
+    }
+  };
+
+  const handleApproveBaseline = async (baselineId: string) => {
+    const projectId = workspace.project.id;
+    if (!projectId || approvingBaselineId) return;
+
+    try {
+      setApprovingBaselineId(baselineId);
+      setError(null);
+      await approveProjectBaseline(projectId, baselineId);
+      await refreshBaselines(projectId);
+    } catch (baselineError) {
+      console.error("Failed to approve schedule baseline", baselineError);
+      setError("Unable to approve this baseline. Please review the baseline data and try again.");
+    } finally {
+      setApprovingBaselineId(null);
+    }
+  };
 
   const handleExportPdf = async () => {
     if (!workspace.project.id || exportingPdf) return;
@@ -445,6 +521,7 @@ export default function ProjectWbs() {
         !workspace.project.id
       ) {
         setData([]);
+        setBaselines([]);
         setLoading(false);
         return;
       }
@@ -454,10 +531,15 @@ export default function ProjectWbs() {
         setLoading(true);
         setError(null);
 
-        const [wbsResult, activities] = await Promise.all([
+        const [wbsResult, activities, baselineResult] = await Promise.all([
           getPmsWbs(workspace.project.id),
           getPmsActivities(workspace.project.id),
+          getProjectBaselines(workspace.project.id),
         ]);
+
+        if (!cancelled) {
+          setBaselines(baselineResult);
+        }
 
         const activitiesByWbs = new Map<string, typeof activities>();
         for (const activity of activities) {
@@ -777,6 +859,100 @@ export default function ProjectWbs() {
       </Stack>
 
 
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 2,
+          p: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2.5,
+          bgcolor: theme.palette.background.paper,
+        }}
+      >
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={1.5}
+          alignItems={{ xs: "flex-start", md: "center" }}
+          justifyContent="space-between"
+        >
+          <Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography sx={{ fontSize: 13, fontWeight: 750 }}>
+                Schedule Baseline
+              </Typography>
+              {activeBaseline ? (
+                <Chip
+                  size="small"
+                  color="success"
+                  icon={<CheckCircleRounded />}
+                  label={`Approved · V${activeBaseline.version}`}
+                />
+              ) : (
+                <Chip
+                  size="small"
+                  color="warning"
+                  label="No approved baseline"
+                />
+              )}
+            </Stack>
+            <Typography sx={{ mt: 0.5, fontSize: 11.5, color: theme.palette.text.secondary }}>
+              {baselineLoading
+                ? "Loading baseline versions..."
+                : activeBaseline
+                  ? `${activeBaseline.name} · ${activeBaseline.activityCount} activities · Budget ${formatNumber(activeBaseline.totalBudget)}`
+                  : "EVM Planned Value remains zero until a schedule baseline is created and approved."}
+            </Typography>
+          </Box>
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<AddRounded />}
+            disabled={!workspace.project.id || baselineLoading || baselineSaving}
+            onClick={() => setBaselineDialogOpen(true)}
+          >
+            Create Baseline Draft
+          </Button>
+        </Stack>
+
+        {draftBaselines.length > 0 && (
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}
+          >
+            {draftBaselines.map(baseline => (
+              <Stack
+                key={baseline.id}
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{
+                  px: 1,
+                  py: 0.75,
+                  borderRadius: 1.5,
+                  bgcolor: theme.palette.action.hover,
+                }}
+              >
+                <Typography sx={{ fontSize: 11.5, flex: 1 }}>
+                  {baseline.name} · V{baseline.version}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={!!approvingBaselineId}
+                  onClick={() => handleApproveBaseline(baseline.id)}
+                >
+                  {approvingBaselineId === baseline.id
+                    ? <CircularProgress size={15} color="inherit" />
+                    : "Approve"}
+                </Button>
+              </Stack>
+            ))}
+          </Stack>
+        )}
+      </Paper>
+
       {/* =================================================
           CONTENT
       ================================================= */}
@@ -1022,6 +1198,55 @@ export default function ProjectWbs() {
           </TableContainer>
         )}
       </Paper>
+      <Dialog
+        open={baselineDialogOpen}
+        onClose={() => !baselineSaving && setBaselineDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Create Schedule Baseline</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              autoFocus
+              required
+              fullWidth
+              label="Baseline name"
+              value={baselineName}
+              onChange={event => setBaselineName(event.target.value)}
+              inputProps={{ maxLength: 200 }}
+            />
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="Description"
+              value={baselineDescription}
+              onChange={event => setBaselineDescription(event.target.value)}
+              inputProps={{ maxLength: 500 }}
+            />
+            <Alert severity="info">
+              The draft captures activity dates, budgets, WBS assignments and current project-calendar working days. It does not become the EVM reference until approved.
+            </Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setBaselineDialogOpen(false)}
+            disabled={baselineSaving}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateBaseline}
+            disabled={!baselineName.trim() || baselineSaving}
+            startIcon={baselineSaving ? <CircularProgress size={15} color="inherit" /> : <AddRounded />}
+          >
+            Create Draft
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
