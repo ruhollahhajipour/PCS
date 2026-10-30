@@ -67,10 +67,16 @@ export default function ProjectDetails() {
         setEvmData(evm);
         setEvmError(null);
       } catch (evmLoadError) {
-        console.info("EVM is unavailable until an approved baseline exists.", evmLoadError);
+        console.info("EVM data could not be loaded.", evmLoadError);
+        const status = (
+          evmLoadError as { response?: { status?: number } }
+        )?.response?.status;
+
         setEvmData(null);
         setEvmError(
-          "برای محاسبه EVM، ابتدا در صفحه WBS یک Baseline زمان‌بندی ایجاد و تأیید کنید."
+          status === 409
+            ? "برای محاسبه EVM در این تاریخ، ابتدا یک Baseline زمان‌بندی ایجاد و تأیید کنید."
+            : "بارگذاری اطلاعات EVM ناموفق بود. اتصال API و دسترسی پروژه را بررسی کنید."
         );
       }
     } catch (error) {
