@@ -228,6 +228,10 @@ public sealed class PmsBaselineService : IPmsBaselineService
             if (baseline.ProjectId != projectId || baseline.IsDeleted)
                 throw new KeyNotFoundException($"Baseline '{baselineId}' was not found in this project.");
 
+            if (baseline.IsApproved)
+                throw new InvalidOperationException(
+                    "An approved baseline is immutable. Create a new draft version to re-baseline the project.");
+
             var snapshotItems = (await _baselineActivityRepository.GetAllAsync())
                 .Where(x => x.ProjectBaselineId == baselineId && !x.IsDeleted)
                 .ToList();
