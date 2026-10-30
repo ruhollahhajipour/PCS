@@ -382,10 +382,10 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     {
         var background = row.IsWbs
             ? row.Level <= 1
-                ? theme.Dark
+                ? Color.FromHex(theme.Dark)
                 : row.Level == 2
-                    ? theme.Secondary
-                    : "#EFF6FF"
+                    ? Color.FromHex(theme.Secondary)
+                    : Color.FromHex("#EFF6FF")
             : row.IsMilestone
                 ? Colors.Yellow.Lighten4
                 : Colors.White;
@@ -394,7 +394,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
             ? Colors.White
             : row.IsCritical
                 ? Colors.Red.Darken2
-                : theme.Dark;
+                : Color.FromHex(theme.Dark);
 
         var cell = container
             .Background(background)
@@ -442,13 +442,19 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .AlignCenter()
                     .Text(text =>
                     {
-                        text.Span("صفحه ");
-                        text.CurrentPageNumber();
-                        text.Span(" از ");
-                        text.TotalPages();
-                    })
-                    .FontSize(7)
-                    .FontColor(Colors.Grey.Darken1);
+                        text.Span("صفحه ")
+                            .FontSize(7)
+                            .FontColor(Colors.Grey.Darken1);
+                        text.CurrentPageNumber()
+                            .FontSize(7)
+                            .FontColor(Colors.Grey.Darken1);
+                        text.Span(" از ")
+                            .FontSize(7)
+                            .FontColor(Colors.Grey.Darken1);
+                        text.TotalPages()
+                            .FontSize(7)
+                            .FontColor(Colors.Grey.Darken1);
+                    });
 
                 row.RelativeItem()
                     .AlignLeft()
