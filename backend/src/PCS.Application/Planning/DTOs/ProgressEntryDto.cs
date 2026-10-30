@@ -13,4 +13,6 @@ public class ProgressEntryDto
     public decimal ActualCost { get; set; }
 
     public decimal EarnedValue { get; set; }
+
+    public decimal PlannedValue { get; set; }
 }
