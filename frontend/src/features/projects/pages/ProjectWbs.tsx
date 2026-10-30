@@ -435,6 +435,9 @@ export default function ProjectWbs() {
   const draftBaselines = baselines.filter(
     baseline => !baseline.isApproved
   );
+  const previousBaselines = baselines.filter(
+    baseline => baseline.isApproved && !baseline.isActive
+  );
 
   const refreshBaselines = async (projectId: string) => {
     setBaselineLoading(true);
@@ -522,6 +525,7 @@ export default function ProjectWbs() {
       ) {
         setData([]);
         setBaselines([]);
+        setBaselineLoading(false);
         setLoading(false);
         return;
       }
@@ -529,6 +533,7 @@ export default function ProjectWbs() {
       try {
 
         setLoading(true);
+        setBaselineLoading(true);
         setError(null);
 
         const [wbsResult, activities, baselineResult] = await Promise.all([
@@ -613,6 +618,7 @@ export default function ProjectWbs() {
 
         if (!cancelled) {
           setLoading(false);
+          setBaselineLoading(false);
         }
 
       }
@@ -948,6 +954,27 @@ export default function ProjectWbs() {
                     : "Approve"}
                 </Button>
               </Stack>
+            ))}
+          </Stack>
+        )}
+
+        {previousBaselines.length > 0 && (
+          <Stack
+            direction="row"
+            spacing={0.75}
+            alignItems="center"
+            sx={{ mt: 1.25, flexWrap: "wrap" }}
+          >
+            <Typography sx={{ fontSize: 10.5, color: theme.palette.text.disabled }}>
+              Previous approved versions:
+            </Typography>
+            {previousBaselines.map(baseline => (
+              <Chip
+                key={baseline.id}
+                size="small"
+                variant="outlined"
+                label={`V${baseline.version} · ${baseline.name}`}
+              />
             ))}
           </Stack>
         )}
