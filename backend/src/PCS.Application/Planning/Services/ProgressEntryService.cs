@@ -52,38 +52,49 @@ public class ProgressEntryService : IProgressEntryService
 
 
 
+        var progressDate = date.Date;
+        var existingEntries = (await _repository.GetAllAsync())
+            .Where(x => x.ActivityId == activityId && !x.IsDeleted)
+            .ToList();
+
+        if (existingEntries.Any(x => x.ProgressDate.Date == progressDate))
+            throw new InvalidOperationException(
+                "A progress entry already exists for this activity and reporting date.");
+
         var activeBaseline = await _baselineService.GetActiveSnapshotAsync(activity.ProjectId);
         var baselineActivity = activeBaseline?.Activities
             .FirstOrDefault(x => x.ActivityId == activity.Id);
 
         var baselineBudget = baselineActivity?.Budget ?? 0m;
-        var earnedValue = baselineBudget * progress / 100m;
         var plannedValue = baselineActivity == null
             ? 0m
             : PmsBaselineCalculator.CalculateActivityPlannedValue(
                 baselineActivity,
-                date.Date);
-
-
+                progressDate);
 
         var entry = new ProgressEntry
         {
             ActivityId = activityId,
-
-            ProgressDate = date,
-
+            ProgressDate = progressDate,
             Progress = progress,
-
             ActualCost = actualCost,
-
-            EarnedValue = earnedValue,
-
+            EarnedValue = baselineBudget * progress / 100m,
             PlannedValue = plannedValue
         };
 
+        var latestExistingDate = existingEntries.Count == 0
+            ? DateTime.MinValue
+            : existingEntries.Max(x => x.ProgressDate);
+
+        if (progressDate >= latestExistingDate)
+            activity.Progress = progress;
+
+        // Progress-entry ActualCost is a period amount; the Activity field is cumulative.
+        activity.ActualCost += actualCost;
+        activity.EarnedValue = baselineBudget * activity.Progress / 100m;
+        _activityRepository.Update(activity);
 
         await _repository.AddAsync(entry);
-
         await _repository.SaveChangesAsync();
     }
 
@@ -99,7 +110,8 @@ public class ProgressEntryService : IProgressEntryService
 
 
         return items
-            .Where(x => x.ActivityId == activityId)
+            .Where(x => x.ActivityId == activityId && !x.IsDeleted)
+            .OrderBy(x => x.ProgressDate)
             .Select(x => new ProgressEntryDto
             {
                 Id = x.Id,
