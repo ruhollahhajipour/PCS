@@ -13,26 +13,35 @@ public class PmsEvmController : ControllerBase
 {
     private readonly IPmsEvmService _evmService;
 
-
-    public PmsEvmController(
-        IPmsEvmService evmService)
+    public PmsEvmController(IPmsEvmService evmService)
     {
         _evmService = evmService;
     }
-
 
     [HttpGet("{projectId}")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
         Guid projectId,
-        [FromQuery] DateTime reportDate)
+        [FromQuery] DateTime? reportDate = null)
     {
-        var result =
-            await _evmService.CalculateAsync(
+        if (projectId == Guid.Empty)
+            return BadRequest("ProjectId is required.");
+
+        try
+        {
+            var result = await _evmService.CalculateAsync(
                 projectId,
-                reportDate);
+                reportDate ?? DateTime.UtcNow);
 
-
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new
+            {
+                Code = "ACTIVE_APPROVED_BASELINE_REQUIRED",
+                Message = ex.Message
+            });
+        }
     }
 }
