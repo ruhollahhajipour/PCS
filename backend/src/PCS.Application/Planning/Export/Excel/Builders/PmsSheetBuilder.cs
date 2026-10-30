@@ -156,7 +156,10 @@ public sealed class PmsSheetBuilder
             label.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             var value = sheet.Cell(5, card.Start);
-            value.Value = XLCellValue.FromObject(card.Value);
+            if (card.Value is int count)
+                value.Value = count;
+            else if (card.Value is decimal amount)
+                value.Value = amount;
             value.Style.Font.Bold = true;
             value.Style.Font.FontSize = 12;
             value.Style.Font.FontColor = XLColor.FromHtml(theme.Dark);
