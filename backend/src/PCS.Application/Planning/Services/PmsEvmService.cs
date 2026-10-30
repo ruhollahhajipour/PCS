@@ -29,7 +29,7 @@ public sealed class PmsEvmService : IPmsEvmService
             throw new ArgumentException("ProjectId is required.", nameof(projectId));
 
         var dataDate = reportDate.Date;
-        if (dataDate > DateTime.UtcNow.Date)
+        if (dataDate > DateTime.UtcNow.Date.AddDays(1))
             throw new ArgumentOutOfRangeException(
                 nameof(reportDate),
                 "An EVM data date cannot be in the future.");
@@ -79,7 +79,7 @@ public sealed class PmsEvmService : IPmsEvmService
 
         decimal earnedValue = 0m;
         decimal actualCost = 0m;
-        var isCurrentDataDate = dataDate == DateTime.UtcNow.Date;
+        var isCurrentDataDate = dataDate >= DateTime.UtcNow.Date;
 
         foreach (var baselineActivity in baselineActivities)
         {
