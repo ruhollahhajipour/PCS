@@ -151,5 +151,17 @@ public sealed class CPMSchedulerTests
             Task.FromResult(_relationships
                 .Where(x => x.SuccessorId == activityId)
                 .ToList());
+
+        public Task AddRangeAsync(IEnumerable<ActivityRelationship> relationships)
+        {
+            _relationships.AddRange(relationships);
+            return Task.CompletedTask;
+        }
+
+        public void DeleteRange(IEnumerable<ActivityRelationship> relationships)
+        {
+            var ids = relationships.Select(x => x.Id).ToHashSet();
+            _relationships.RemoveAll(x => ids.Contains(x.Id));
+        }
     }
 }
