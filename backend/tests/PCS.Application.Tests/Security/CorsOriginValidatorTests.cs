@@ -32,6 +32,64 @@ public sealed class CorsOriginValidatorTests
             result);
     }
 
+    [Fact]
+    public async Task AddPcsCors_AllowsOnlyConfiguredOrigins()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPcsCors(["https://app.example.com"]);
+
+        using var provider = services.BuildServiceProvider();
+
+        var policyProvider = provider.GetRequiredService<ICorsPolicyProvider>();
+        var policy = await policyProvider.GetPolicyAsync(
+            new DefaultHttpContext(),
+            "PCS");
+
+        Assert.NotNull(policy);
+
+        var corsService = provider.GetRequiredService<ICorsService>();
+
+        var allowedContext = new DefaultHttpContext();
+        allowedContext.Request.Headers.Origin = "https://app.example.com";
+        Assert.True(
+            corsService.EvaluatePolicy(allowedContext, policy!).IsOriginAllowed);
+
+        var deniedContext = new DefaultHttpContext();
+        deniedContext.Request.Headers.Origin = "https://evil.example.com";
+        Assert.False(
+            corsService.EvaluatePolicy(deniedContext, policy!).IsOriginAllowed);
+
+        Assert.True(policy!.AllowAnyHeader);
+        Assert.True(policy.AllowAnyMethod);
+    }
+
+    [Fact]
+    public async Task AddPcsCors_WithEmptyAllowList_DoesNotAllowCrossOriginRequests()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPcsCors(Array.Empty<string>());
+
+        using var provider = services.BuildServiceProvider();
+
+        var policyProvider = provider.GetRequiredService<ICorsPolicyProvider>();
+        var policy = await policyProvider.GetPolicyAsync(
+            new DefaultHttpContext(),
+            "PCS");
+
+        Assert.NotNull(policy);
+
+        var context = new DefaultHttpContext();
+        context.Request.Headers.Origin = "https://external.example.com";
+
+        var result = provider
+            .GetRequiredService<ICorsService>()
+            .EvaluatePolicy(context, policy!);
+
+        Assert.False(result.IsOriginAllowed);
+    }
+
     [Theory]
     [InlineData("*")]
     [InlineData("https://*.example.com")]
