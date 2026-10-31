@@ -89,11 +89,17 @@ jobs:
         working-directory: .
         shell: pwsh
         run: |
-          git grep -n "__PCS_PREVIEW_AUTH_BYPASS__" -- frontend
-          if ($LASTEXITCODE -eq 0) {
-            Write-Error "Preview authentication bypass must never enter a release candidate."
-            exit 1
+          # PowerShell 7.4 can treat native-command exit code 1 as an error.
+          # git grep uses exit code 1 for the normal "no matches" result.
+          $PSNativeCommandUseErrorActionPreference = $false
+          $matches = git grep -n "__PCS_PREVIEW_AUTH_BYPASS__" -- frontend
+          $grepExitCode = $LASTEXITCODE
+
+          if ($grepExitCode -eq 0) {
+            $matches | ForEach-Object { Write-Host $_ }
+            throw "Preview authentication bypass must never enter a release candidate."
           }
-          if ($LASTEXITCODE -ne 1) {
-            exit $LASTEXITCODE
+
+          if ($grepExitCode -ne 1) {
+            throw "git grep failed with exit code $grepExitCode."
           }
