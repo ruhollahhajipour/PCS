@@ -26,19 +26,22 @@ public class PmsController : ControllerBase
     private readonly IPmsService _pmsService;
     private readonly IPmsBaselineService _baselineService;
     private readonly IPmsTemplateService _templateService;
+    private readonly IProjectAccessGuard _accessGuard;
 
     public PmsController(
         IPmsExcelService excelService,
         IPmsPdfExporter pdfExporter,
         IPmsService pmsService,
         IPmsBaselineService baselineService,
-        IPmsTemplateService templateService)
+        IPmsTemplateService templateService,
+        IProjectAccessGuard accessGuard)
     {
         _excelService = excelService;
         _pdfExporter = pdfExporter;
         _pmsService = pmsService;
         _baselineService = baselineService;
         _templateService = templateService;
+        _accessGuard = accessGuard;
     }
 
     [HttpPost("import")]
@@ -256,6 +259,30 @@ public class PmsController : ControllerBase
     {
         if (projectId == Guid.Empty || baselineId == Guid.Empty)
             return BadRequest("ProjectId and BaselineId are required.");
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+            return NotFound();
+
 
         try
         {
