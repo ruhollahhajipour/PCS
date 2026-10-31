@@ -89,14 +89,14 @@ jobs:
         working-directory: .
         shell: pwsh
         run: |
-          git grep -n -I "__PCS_PREVIEW_AUTH_BYPASS__" -- frontend > preview-bypass-matches.txt
-          $grepExitCode = $LASTEXITCODE
+          $scan = Start-Process -FilePath "git" -ArgumentList @("grep", "-n", "-I", "__PCS_PREVIEW_AUTH_BYPASS__", "--", "frontend") -NoNewWindow -Wait -PassThru -RedirectStandardOutput "preview-bypass-matches.txt"
+          $grepExitCode = $scan.ExitCode
           if ($grepExitCode -eq 0) {
             $matchDetails = Get-Content preview-bypass-matches.txt -Raw
             throw "Preview authentication bypass must never enter a release candidate. Matches: $matchDetails"
           }
           if ($grepExitCode -ne 1) {
-            exit $grepExitCode
+            throw "Preview bypass scan failed with exit code $grepExitCode."
           }
 
       - name: Upload preview bypass scan diagnostics
