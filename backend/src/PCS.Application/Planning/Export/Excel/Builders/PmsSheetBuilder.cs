@@ -32,20 +32,19 @@ public sealed class PmsSheetBuilder
         CreateHeaders(sheet, theme);
 
         var activitiesByWbs = dto.Activities
-            .Where(x => !string.IsNullOrWhiteSpace(x.WbsCode))
-            .GroupBy(x => x.WbsCode, StringComparer.OrdinalIgnoreCase)
+            .Where(x => x.WbsNodeId.HasValue && x.WbsNodeId.Value != Guid.Empty)
+            .GroupBy(x => x.WbsNodeId!.Value)
             .ToDictionary(
                 x => x.Key,
-                x => x.OrderBy(a => a.Code, StringComparer.OrdinalIgnoreCase).ToList(),
-                StringComparer.OrdinalIgnoreCase);
+                x => x.OrderBy(a => a.Code, StringComparer.OrdinalIgnoreCase).ToList());
 
         var allWbsNodes = dto.WbsNodes
             .SelectMany(GetAllNodes)
             .ToList();
 
-        var wbsCodes = allWbsNodes
-            .Select(x => x.Code)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var wbsIds = allWbsNodes
+            .Select(x => x.Id)
+            .ToHashSet();
 
         var maxLevel = allWbsNodes
             .Select(x => x.Level)
@@ -61,8 +60,7 @@ public sealed class PmsSheetBuilder
         }
 
         var unassigned = dto.Activities
-            .Where(x => string.IsNullOrWhiteSpace(x.WbsCode) ||
-                        !wbsCodes.Contains(x.WbsCode))
+            .Where(x => !x.WbsNodeId.HasValue || !wbsIds.Contains(x.WbsNodeId.Value))
             .OrderBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -222,7 +220,7 @@ public sealed class PmsSheetBuilder
         IXLWorksheet sheet,
         WbsNodeDto node,
         ExportPmsDto dto,
-        IReadOnlyDictionary<string, List<ActivityDto>> activitiesByWbs,
+        IReadOnlyDictionary<Guid, List<ActivityDto>> activitiesByWbs,
         ref int row,
         int maxLevel,
         ThemePalette theme)
@@ -255,7 +253,7 @@ public sealed class PmsSheetBuilder
             wbsRange.Style.Font.FontColor = XLColor.White;
         sheet.Cell(currentRow, 5).Style.Alignment.Indent = Math.Clamp(node.Level, 0, 15);
 
-        if (activitiesByWbs.TryGetValue(node.Code, out var assignedActivities))
+        if (activitiesByWbs.TryGetValue(node.Id, out var assignedActivities))
         {
             foreach (var activity in assignedActivities)
                 WriteActivity(sheet, row++, activity, node, dto, theme);
