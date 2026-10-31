@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using PCS.API.Middleware;
+using Xunit;
 
 namespace PCS.Application.Tests.Security;
 
@@ -11,6 +12,7 @@ public sealed class ExceptionMiddlewareTests
     public async Task InvokeAsync_WhenNextThrows_ReturnsSanitizedResponseWithCorrelationId()
     {
         var context = new DefaultHttpContext();
+        context.TraceIdentifier = "pcs-test-trace-id";
         context.Response.Body = new MemoryStream();
 
         var middleware = new ExceptionMiddleware(
