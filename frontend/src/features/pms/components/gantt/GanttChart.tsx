@@ -1012,7 +1012,10 @@ export default function GanttChart(
                 statusDate,
                 calendars,
                 projectCalendarId,
-                activityCalendarIds
+                activityCalendarIds,
+                // Explicit invalidation token: schedule mutations must refresh the derived schedule.
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+                scheduleRevision
             ]
         );
     const displayRows = useMemo(
