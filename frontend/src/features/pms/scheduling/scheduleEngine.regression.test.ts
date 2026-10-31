@@ -737,6 +737,52 @@ describe("CPM scheduling engine regression", () => {
         });
     });
 
+    it("uses successor calendar for backward lag and free float calculations", () => {
+        const fridayStart = localDate(2026, 9, 11, 8);
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Five-day predecessor", 1),
+            createActivity(
+                "B",
+                "Six-day successor",
+                1,
+                [createRelationship("A", "B", "FS", 4, "hours")],
+                { calendarId: "six-day" }
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: fridayStart,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 12,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.A.lateFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.A.lateStart, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 8
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
+    });
+
     it("respects the 5-day calendar weekend", () => {
         const activities: ScheduleActivity[] = [
             createActivity(
