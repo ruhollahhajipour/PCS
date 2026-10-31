@@ -604,27 +604,7 @@ string[] configuredCorsOrigins =
         .Get<string[]>()
     ?? [];
 
-var allowedCorsOrigins =
-    CorsOriginValidator.Normalize(
-        configuredCorsOrigins);
-
-builder.Services.AddCors(
-    options =>
-    {
-        options.AddPolicy(
-            "PCS",
-            policy =>
-            {
-                if (allowedCorsOrigins.Length > 0)
-                {
-                    policy.WithOrigins(allowedCorsOrigins);
-                }
-
-                policy
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            });
-    });
+builder.Services.AddPcsCors(configuredCorsOrigins);
 
 
 // ============================================================
