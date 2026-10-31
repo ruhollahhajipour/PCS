@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-
 using PCS.API.Security;
-
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
@@ -12,22 +10,28 @@ namespace PCS.API.Controllers;
 public class PmsProgressEntryController : ControllerBase
 {
     private readonly IProgressEntryService _service;
-
+    private readonly IProjectAccessGuard _accessGuard;
 
     public PmsProgressEntryController(
-        IProgressEntryService service)
+        IProgressEntryService service,
+        IProjectAccessGuard accessGuard)
     {
         _service = service;
+        _accessGuard = accessGuard;
     }
-
 
     [HttpPost]
     [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Add(
-        [FromBody] AddProgressEntryRequest request)
+        [FromBody] AddProgressEntryRequest request,
+        CancellationToken cancellationToken)
     {
-        if (request == null)
+        if (request is null)
             return BadRequest("Progress entry request is required.");
+
+        if (!await _accessGuard.CanAccessActivityAsync(
+                User, request.ActivityId, cancellationToken))
+            return NotFound();
 
         try
         {
@@ -37,10 +41,7 @@ public class PmsProgressEntryController : ControllerBase
                 request.Progress,
                 request.ActualCost);
 
-            return Ok(new
-            {
-                Message = "Progress entry added successfully"
-            });
+            return Ok(new { Message = "Progress entry added successfully" });
         }
         catch (KeyNotFoundException ex)
         {
@@ -56,28 +57,23 @@ public class PmsProgressEntryController : ControllerBase
         }
     }
 
-
     [HttpGet("activity/{activityId}")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
-        Guid activityId)
+        Guid activityId,
+        CancellationToken cancellationToken)
     {
-        var result =
-            await _service.GetActivityProgressAsync(
-                activityId);
+        if (!await _accessGuard.CanAccessActivityAsync(User, activityId, cancellationToken))
+            return NotFound();
 
-
-        return Ok(result);
+        return Ok(await _service.GetActivityProgressAsync(activityId));
     }
 }
-
 
 public class AddProgressEntryRequest
 {
     public Guid ActivityId { get; set; }
-
     public DateTime ProgressDate { get; set; }
-
     public decimal Progress { get; set; }
 
     /// <summary>
