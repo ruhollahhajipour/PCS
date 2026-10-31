@@ -71,4 +71,20 @@ public class ActivityRelationshipRepository
 
             .ToListAsync();
     }
+
+    public async Task AddRangeAsync(
+        IEnumerable<ActivityRelationship> relationships)
+    {
+        await _context
+            .Set<ActivityRelationship>()
+            .AddRangeAsync(relationships);
+    }
+
+    public void DeleteRange(
+        IEnumerable<ActivityRelationship> relationships)
+    {
+        _context
+            .Set<ActivityRelationship>()
+            .RemoveRange(relationships);
+    }
 }
