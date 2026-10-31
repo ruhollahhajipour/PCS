@@ -12,6 +12,7 @@ import {
     addWorkingDays,
     addWorkingHours,
     calculateWorkingDuration,
+    endOfWorkingTime,
     getDefaultCalendar,
     isEndOfWorkingDay,
     nextWorkingDay,
@@ -1080,11 +1081,16 @@ function backwardFinishCandidate(
     const lagCalendar = successor.calendar;
 
     if (type === "FS") {
-        return subtractLag(
+        const allowedFinish = subtractLag(
             lagCalendar,
             successor.lateStart,
             lag,
             unit
+        );
+
+        return endOfWorkingTime(
+            predecessorCalendar,
+            allowedFinish
         );
     }
 
@@ -1105,11 +1111,16 @@ function backwardFinishCandidate(
     }
 
     if (type === "FF") {
-        return subtractLag(
+        const allowedFinish = subtractLag(
             lagCalendar,
             successor.lateFinish,
             lag,
             unit
+        );
+
+        return endOfWorkingTime(
+            predecessorCalendar,
+            allowedFinish
         );
     }
 
@@ -1415,7 +1426,7 @@ function calculateFreeFloat(
 
         const allowed =
             subtractLag(
-                current.calendar,
+                successor.calendar,
                 successor.earlyFinish,
                 lag,
                 unit
