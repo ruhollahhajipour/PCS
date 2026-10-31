@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation.AspNetCore;
 
 using PCS.API.Middleware;
+using PCS.API.Security;
 using PCS.Application;
 using PCS.Application.Common.Security;
 using PCS.Application.Identity;
@@ -597,22 +598,17 @@ builder.Services.AddAuthorization(
 // CORS
 // ============================================================
 
-builder.Services.AddCors(
-    options =>
-    {
-        options.AddPolicy(
-            "PCS",
-            policy =>
-            {
-                policy
-                    .AllowAnyOrigin()
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            });
-    });
+string[] configuredCorsOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+builder.Services.AddPcsCors(configuredCorsOrigins);
 
 
 // ============================================================
+
 // Build
 // ============================================================
 
@@ -813,10 +809,11 @@ app.UseAuthorization();
 // Swagger
 // ============================================================
 
-app.UseSwagger();
-
-
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ============================================================
