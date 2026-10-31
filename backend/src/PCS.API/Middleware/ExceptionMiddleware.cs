@@ -8,7 +8,6 @@ public sealed class ExceptionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
 
-
     public ExceptionMiddleware(
         RequestDelegate next,
         ILogger<ExceptionMiddleware> logger)
@@ -17,61 +16,40 @@ public sealed class ExceptionMiddleware
         _logger = logger;
     }
 
-
-
-    public async Task InvokeAsync(
-        HttpContext context)
+    public async Task InvokeAsync(HttpContext context)
     {
         try
         {
             await _next(context);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
+            var traceId = context.TraceIdentifier;
+
             _logger.LogError(
-                ex,
-                "Unhandled exception occurred");
+                exception,
+                "Unhandled exception occurred. TraceId: {TraceId}",
+                traceId);
 
-
-            context.Response.ContentType =
-                "application/json";
-
-
-            context.Response.StatusCode =
-                (int)HttpStatusCode.InternalServerError;
-
-
-
-            var errors = new List<string>();
-
-
-            var current = ex;
-
-
-            while (current != null)
+            if (context.Response.HasStarted)
             {
-                if (!string.IsNullOrWhiteSpace(
-                    current.Message))
-                {
-                    errors.Add(
-                        current.Message);
-                }
+                _logger.LogWarning(
+                    "The response has already started. The exception cannot be converted to an API error response. TraceId: {TraceId}",
+                    traceId);
 
-
-                current = current.InnerException;
+                throw;
             }
 
+            context.Response.Clear();
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            context.Response.Headers["X-Correlation-ID"] = traceId;
 
+            var response = ApiResponse<object>.Fail(
+                "An unexpected error occurred.",
+                new[] { $"Reference: {traceId}" });
 
-            var response =
-                ApiResponse<object>.Fail(
-                    "An unexpected error occurred.",
-                    errors.ToArray());
-
-
-
-            await context.Response.WriteAsJsonAsync(
-                response);
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
