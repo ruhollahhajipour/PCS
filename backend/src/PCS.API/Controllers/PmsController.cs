@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-
 using PCS.API.Security;
-
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 using PCS.Application.Planning.DTOs;
@@ -48,58 +46,38 @@ public class PmsController : ControllerBase
     [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Import(
         IFormFile file,
-        [FromQuery] Guid projectId)
+        [FromQuery] Guid projectId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
-        {
-            return BadRequest(
-                "ProjectId is required.");
-        }
+            return BadRequest("ProjectId is required.");
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
         if (file == null || file.Length == 0)
-        {
-            return BadRequest(
-                "Excel file is empty.");
-        }
+            return BadRequest("Excel file is empty.");
 
-        var extension =
-            Path.GetExtension(file.FileName)
-                .ToLowerInvariant();
-
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!AllowedExtensions.Contains(extension))
-        {
-            return BadRequest(
-                $"Extension '{extension}' is not supported.");
-        }
+            return BadRequest($"Extension '{extension}' is not supported.");
 
-        var tempPath =
-            Path.Combine(
-                Path.GetTempPath(),
-                $"{Guid.NewGuid()}{extension}");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{extension}");
 
         try
         {
-            await using (var stream =
-                System.IO.File.Create(tempPath))
-            {
-                await file.CopyToAsync(stream);
-            }
+            await using (var stream = System.IO.File.Create(tempPath))
+                await file.CopyToAsync(stream, cancellationToken);
 
-            var dto =
-                await _excelService.ReadPmsExcelAsync(
-                    tempPath);
-
+            var dto = await _excelService.ReadPmsExcelAsync(tempPath);
             dto.ProjectId = projectId;
-
             await _pmsService.ImportPmsAsync(dto);
 
             return Ok(new
             {
                 Success = true,
-                Message =
-                    "PMS imported successfully.",
-                FileName =
-                    file.FileName
+                Message = "PMS imported successfully.",
+                FileName = file.FileName
             });
         }
         catch (Exception ex)
@@ -107,39 +85,31 @@ public class PmsController : ControllerBase
             return BadRequest(new
             {
                 Success = false,
-                Message =
-                    ex.Message,
-                Inner =
-                    ex.InnerException?.Message
+                Message = ex.Message,
+                Inner = ex.InnerException?.Message
             });
         }
         finally
         {
             if (System.IO.File.Exists(tempPath))
-            {
                 System.IO.File.Delete(tempPath);
-            }
         }
     }
 
     [HttpGet("export/{projectId}")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Export(
-        Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
-        {
-            return BadRequest(
-                "ProjectId is required.");
-        }
+            return BadRequest("ProjectId is required.");
 
-        var dto =
-            await _pmsService.ExportPmsAsync(
-                projectId);
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
-        var file =
-            await _excelService.GeneratePmsExcelAsync(
-                dto);
+        var dto = await _pmsService.ExportPmsAsync(projectId);
+        var file = await _excelService.GeneratePmsExcelAsync(dto);
 
         return File(
             file,
@@ -150,77 +120,78 @@ public class PmsController : ControllerBase
     [HttpGet("export/{projectId}/pdf")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> ExportPdf(
-        Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
-        {
             return BadRequest("ProjectId is required.");
-        }
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
         var dto = await _pmsService.ExportPmsAsync(projectId);
         var file = _pdfExporter.Generate(dto);
 
-        return File(
-            file,
-            "application/pdf",
-            "PCS-PMS-Report.pdf");
+        return File(file, "application/pdf", "PCS-PMS-Report.pdf");
     }
 
     [HttpGet("{projectId}/activities")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> GetActivities(
-        Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
-        {
-            return BadRequest(
-                "ProjectId is required.");
-        }
+            return BadRequest("ProjectId is required.");
 
-        var result =
-            await _pmsService.GetActivitiesAsync(
-                projectId);
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
-        return Ok(result);
+        return Ok(await _pmsService.GetActivitiesAsync(projectId));
     }
 
     [HttpGet("{projectId}/wbs")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> GetWbs(
-        Guid projectId)
-    {
-        if (projectId == Guid.Empty)
-        {
-            return BadRequest(
-                "ProjectId is required.");
-        }
-
-        var result =
-            await _pmsService.GetWbsTreeAsync(
-                projectId);
-
-        return Ok(result);
-    }
-
-    [HttpGet("{projectId}/baselines")]
-    [Permission(Permissions.ProjectView)]
-    public async Task<IActionResult> GetBaselines(Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
             return BadRequest("ProjectId is required.");
 
-        var result = await _baselineService.GetAllAsync(projectId);
-        return Ok(result);
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
+
+        return Ok(await _pmsService.GetWbsTreeAsync(projectId));
+    }
+
+    [HttpGet("{projectId}/baselines")]
+    [Permission(Permissions.ProjectView)]
+    public async Task<IActionResult> GetBaselines(
+        Guid projectId,
+        CancellationToken cancellationToken)
+    {
+        if (projectId == Guid.Empty)
+            return BadRequest("ProjectId is required.");
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
+
+        return Ok(await _baselineService.GetAllAsync(projectId));
     }
 
     [HttpPost("{projectId}/baselines")]
     [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> CreateBaseline(
         Guid projectId,
-        [FromBody] CreateProjectBaselineDto request)
+        [FromBody] CreateProjectBaselineDto request,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty)
             return BadRequest("ProjectId is required.");
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
         if (request == null)
             return BadRequest("Baseline request is required.");
@@ -232,10 +203,7 @@ public class PmsController : ControllerBase
                 request,
                 User.Identity?.Name);
 
-            return CreatedAtAction(
-                nameof(GetBaselines),
-                new { projectId },
-                result);
+            return CreatedAtAction(nameof(GetBaselines), new { projectId }, result);
         }
         catch (KeyNotFoundException ex)
         {
@@ -255,34 +223,14 @@ public class PmsController : ControllerBase
     [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> ApproveBaseline(
         Guid projectId,
-        Guid baselineId)
+        Guid baselineId,
+        CancellationToken cancellationToken)
     {
         if (projectId == Guid.Empty || baselineId == Guid.Empty)
             return BadRequest("ProjectId and BaselineId are required.");
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
 
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
             return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
-        if (!await _accessGuard.CanAccessProjectAsync(User, projectId))
-            return NotFound();
-
 
         try
         {
@@ -307,8 +255,7 @@ public class PmsController : ControllerBase
     [Permission(Permissions.ProjectView)]
     public IActionResult DownloadTemplate()
     {
-        var file =
-            _templateService.GenerateTemplate();
+        var file = _templateService.GenerateTemplate();
 
         return File(
             file,
