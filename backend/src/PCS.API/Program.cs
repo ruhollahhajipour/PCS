@@ -597,6 +597,12 @@ builder.Services.AddAuthorization(
 // CORS
 // ============================================================
 
+string[] allowedCorsOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
 builder.Services.AddCors(
     options =>
     {
@@ -604,13 +610,16 @@ builder.Services.AddCors(
             "PCS",
             policy =>
             {
+                if (allowedCorsOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedCorsOrigins);
+                }
+
                 policy
-                    .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
     });
-
 
 // ============================================================
 // Build
@@ -813,10 +822,11 @@ app.UseAuthorization();
 // Swagger
 // ============================================================
 
-app.UseSwagger();
-
-
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ============================================================
