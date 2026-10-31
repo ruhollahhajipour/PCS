@@ -64,7 +64,8 @@ jobs:
         run: |
           $env:ASPNETCORE_ENVIRONMENT = "Production"
           $env:ASPNETCORE_URLS = "http://127.0.0.1:5079"
-          $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\\pcs-windows-smoke.db"
+          $dbPath = Join-Path $env:RUNNER_TEMP "pcs-windows-smoke.db"
+          $env:ConnectionStrings__DefaultConnection = "Data Source=$dbPath"
           $env:Jwt__Secret = "PCS-CI-Only-Signing-Key-Not-For-Production-2026"
           $env:Jwt__Issuer = "PCS.CI"
           $env:Jwt__Audience = "PCS.CI"
