@@ -698,12 +698,6 @@ function earliestStartForFinishAtLeast(
                 requiredFinish
             );
 
-        candidateFinish =
-            addDuration(
-                calendar,
-                candidate,
-                duration
-            );
     }
 
     /*
