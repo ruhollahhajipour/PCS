@@ -46,7 +46,8 @@ public class PlantService : IPlantService
         return plants
             .Where(x =>
                 x.CompanyId == companyId &&
-                x.IsActive)
+                x.IsActive &&
+                !x.IsDeleted)
             .Select(MapToDto);
     }
 
