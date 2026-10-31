@@ -443,6 +443,9 @@ var activityDtos =
                 Id =
                 Guid.Empty,
 
+                WbsNodeId =
+                    wbsMap[x.WbsCode.Trim()].Id,
+
                 Code =
                     x.Code,
 
