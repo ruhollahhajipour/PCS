@@ -545,7 +545,8 @@ export default function GanttChart(
         projectDuration,
         wbsCount,
         statusDate,
-        onRowUpdate
+        onRowUpdate,
+        onSaveRelationships
     } = props;
     const theme = useTheme();
     const [
@@ -1493,10 +1494,17 @@ export default function GanttChart(
         [selectedActivity, runSchedule]
     );
     const handleRelationshipSave = useCallback(
-        (rowId: string, predecessors: NonNullable<ApiGanttRow["predecessors"]>) => {
-            updateRow(rowId, { predecessors });
+        async (
+            rowId: string,
+            predecessors: NonNullable<ApiGanttRow["predecessors"]>
+        ) => {
+            if (!onSaveRelationships) {
+                throw new Error("Relationship persistence is not configured.");
+            }
+
+            await onSaveRelationships(rowId, predecessors);
         },
-        [updateRow]
+        [onSaveRelationships]
     );
     const zoomIn =
         useCallback(() => {
