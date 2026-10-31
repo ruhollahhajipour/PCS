@@ -12,7 +12,11 @@ import {
     addWorkingDays,
     addWorkingHours,
     calculateWorkingDuration,
+    endOfDay,
+    endOfWorkingTime,
     getDefaultCalendar,
+    nextWorkingDay,
+    previousWorkingDay,
     startOfWorkingTime,
     subtractWorkingDays,
     subtractWorkingHours,
@@ -170,6 +174,49 @@ function subtractDuration(
     );
 }
 
+function shiftWorkingDays(
+    calendar: ScheduleCalendar,
+    date: Date,
+    days: number
+): Date {
+    if (!Number.isFinite(days) || Math.abs(days) <= EPSILON) {
+        return new Date(date.getTime());
+    }
+
+    const direction = Math.sign(days);
+    const wholeDays = Math.floor(Math.abs(days));
+    let result = new Date(date.getTime());
+
+    for (let index = 0; index < wholeDays; index += 1) {
+        result =
+            direction > 0
+                ? nextWorkingDay(calendar, result, false)
+                : previousWorkingDay(calendar, result, false);
+
+        result.setHours(
+            date.getHours(),
+            date.getMinutes(),
+            date.getSeconds(),
+            date.getMilliseconds()
+        );
+
+        result = normalizeStart(calendar, result);
+    }
+
+    const fractionalDay = Math.abs(days) - wholeDays;
+    const fractionalHours =
+        fractionalDay * Math.max(0, calendar.hoursPerDay || 0);
+
+    if (fractionalHours > EPSILON) {
+        result =
+            direction > 0
+                ? addWorkingHours(calendar, result, fractionalHours)
+                : subtractWorkingHours(calendar, result, fractionalHours);
+    }
+
+    return result;
+}
+
 function addLag(
     calendar: ScheduleCalendar,
     date: Date,
@@ -191,7 +238,7 @@ function addLag(
               date,
               lag
           )
-        : addWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
               lag
@@ -219,10 +266,10 @@ function subtractLag(
               date,
               lag
           )
-        : subtractWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
-              lag
+              -lag
           );
 }
 
@@ -310,6 +357,15 @@ function normalizeStart(
     calendar: ScheduleCalendar,
     date: Date
 ): Date {
+    const endBoundary = endOfWorkingTime(
+        calendar,
+        date
+    );
+
+    if (endBoundary.getTime() === date.getTime()) {
+        return new Date(date.getTime());
+    }
+
     return startOfWorkingTime(
         calendar,
         date,
@@ -633,63 +689,14 @@ function earliestStartForFinishAtLeast(
         );
 
     if (
-        candidateFinish.getTime() >=
+        candidateFinish.getTime() <
         requiredFinish.getTime()
     ) {
-        return candidate;
-    }
-
-    /*
-     * The backward-derived candidate fell before the required
-     * boundary because the calendar contains a non-working
-     * interval/day.
-     *
-     * Move to the first working boundary at/after the required
-     * finish and calculate the task forward from there.
-     */
-    candidate =
-        normalizeStart(
-            calendar,
-            requiredFinish
-        );
-
-    candidateFinish =
-        addDuration(
-            calendar,
-            candidate,
-            duration
-        );
-
-    /*
-     * Defensive guard for unusual calendars.
-     */
-    let guard = 0;
-
-    while (
-        candidateFinish.getTime() <
-            requiredFinish.getTime() &&
-        guard < 10000
-    ) {
-        const next =
+        candidate =
             normalizeStart(
                 calendar,
-                new Date(
-                    candidate.getTime() +
-                        24 *
-                            60 *
-                            60 *
-                            1000
-                )
+                requiredFinish
             );
-
-        if (
-            next.getTime() ===
-            candidate.getTime()
-        ) {
-            break;
-        }
-
-        candidate = next;
 
         candidateFinish =
             addDuration(
@@ -697,8 +704,48 @@ function earliestStartForFinishAtLeast(
                 candidate,
                 duration
             );
+    }
 
-        guard++;
+    /*
+     * A task may start at the previous working interval's finish
+     * boundary. Check earlier boundaries so FF/SF constraints select
+     * the earliest feasible start, not merely the result of subtracting
+     * working hours from the required finish.
+     */
+    for (let index = 0; index < 10000; index += 1) {
+        const previousDay =
+            previousWorkingDay(
+                calendar,
+                candidate,
+                false
+            );
+
+        const previousEnd =
+            endOfWorkingTime(
+                calendar,
+                endOfDay(previousDay)
+            );
+
+        if (previousEnd.getTime() >= candidate.getTime()) {
+            break;
+        }
+
+        const previousFinish =
+            addDuration(
+                calendar,
+                previousEnd,
+                duration
+            );
+
+        if (
+            previousFinish.getTime() <
+            requiredFinish.getTime()
+        ) {
+            break;
+        }
+
+        candidate = previousEnd;
+        candidateFinish = previousFinish;
     }
 
     return candidate;
