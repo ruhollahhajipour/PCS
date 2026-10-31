@@ -606,6 +606,7 @@ export default function GanttChart(
                 JSON.stringify(colorSettings)
             );
         } catch {
+            // Browser storage can be unavailable; keep the in-memory settings.
         }
     }, [colorSettings]);
     const effectiveCustomColors =
@@ -918,6 +919,7 @@ export default function GanttChart(
                 JSON.stringify(activityCalendarIds)
             );
         } catch {
+            // Browser storage can be unavailable; keep the in-memory calendar assignments.
         }
     }, [activityCalendarIds]);
     const [
