@@ -1006,6 +1006,7 @@ export default function GanttChart(
                     result
                 );
             },
+            // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRevision intentionally invalidates derived scheduling output after mutations.
             [
                 editableRows,
                 schedulingMode,
@@ -1013,8 +1014,6 @@ export default function GanttChart(
                 calendars,
                 projectCalendarId,
                 activityCalendarIds,
-                // Explicit invalidation token: schedule mutations must refresh the derived schedule.
-                // eslint-disable-next-line react-hooks/exhaustive-deps
                 scheduleRevision
             ]
         );
