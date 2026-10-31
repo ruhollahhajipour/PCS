@@ -35,6 +35,27 @@ public sealed class ExceptionMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenResponseHasStarted_RethrowsOriginalException()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.StatusCode = StatusCodes.Status202Accepted;
+        context.Response.Body = new MemoryStream();
+        await context.Response.StartAsync();
+
+        Assert.True(context.Response.HasStarted);
+
+        var middleware = new ExceptionMiddleware(
+            _ => throw new InvalidOperationException("response already started"),
+            NullLogger<ExceptionMiddleware>.Instance);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => middleware.InvokeAsync(context));
+
+        Assert.Equal("response already started", exception.Message);
+        Assert.Equal(StatusCodes.Status202Accepted, context.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenNextSucceeds_ContinuesNormally()
     {
         var invoked = false;
