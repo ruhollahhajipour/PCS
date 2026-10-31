@@ -792,20 +792,25 @@ export default function GanttChart(
                 effectiveColumnAlignments
             ]
         );
+    const {
+        visibleColumns: pmsVisibleColumns,
+        setAlignment: setPmsColumnAlignment,
+        setColumnStyle: setPmsColumnStyle
+    } = columns;
     const applyGlobalPmsAlignment =
         useCallback(
             (value: PmsHorizontalAlignment) => {
                 setGlobalPmsAlignment(value);
-                for (const column of columns.visibleColumns) {
-                    columns.setAlignment(
+                for (const column of pmsVisibleColumns) {
+                    setPmsColumnAlignment(
                         column.key,
                         value
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setAlignment
+                pmsVisibleColumns,
+                setPmsColumnAlignment
             ]
         );
     const [pmsFontFamily, setPmsFontFamily] =
@@ -823,16 +828,16 @@ export default function GanttChart(
     const applyPmsStyle =
         useCallback(
             (patch: Record<string, unknown>) => {
-                for (const column of columns.visibleColumns) {
-                    columns.setColumnStyle(
+                for (const column of pmsVisibleColumns) {
+                    setPmsColumnStyle(
                         column.key,
                         patch
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setColumnStyle
+                pmsVisibleColumns,
+                setPmsColumnStyle
             ]
         );
     const [
@@ -1007,8 +1012,7 @@ export default function GanttChart(
                 statusDate,
                 calendars,
                 projectCalendarId,
-                activityCalendarIds,
-                scheduleRevision
+                activityCalendarIds
             ]
         );
     const displayRows = useMemo(
