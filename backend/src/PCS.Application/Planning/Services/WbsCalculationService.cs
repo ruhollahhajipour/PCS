@@ -3,264 +3,165 @@ using PCS.Application.Planning.Interfaces;
 
 namespace PCS.Application.Planning.Services;
 
-public sealed class WbsCalculationService
-    : IWbsCalculationService
+public sealed class WbsCalculationService : IWbsCalculationService
 {
     public List<WbsNodeDto> Calculate(
         List<WbsNodeDto> nodes,
         List<ActivityDto> activities)
     {
-        if(nodes.Count == 0)
-            return nodes;
+        ArgumentNullException.ThrowIfNull(nodes);
+        ArgumentNullException.ThrowIfNull(activities);
 
-
-
-        var lookup =
-            nodes.ToDictionary(
-                x => x.Id);
-
-
-
-        var codeLookup =
-            nodes.ToDictionary(
-                x => x.Code,
-                StringComparer.OrdinalIgnoreCase);
-
-        var physicalProgressValueByWbs = nodes.ToDictionary(
-            x => x.Id,
-            _ => 0m);
-
-
-
-
-
-        // =====================================================
-        // Reset Calculated Values
-        // =====================================================
-
-        foreach(var node in nodes)
+        if (nodes.Count == 0)
         {
-            node.Budget = 0;
-
-            node.ActualCost = 0;
-
-            node.EarnedValue = 0;
-
-            node.PlannedValue = 0;
-
-
-            node.WeightFactor = 0;
-
-            node.WeightValue = 0;
-
-
-            node.Progress = 0;
-        }
-
-
-
-
-
-
-        // =====================================================
-        // Activity Aggregation
-        // =====================================================
-
-        foreach(var activity in activities)
-        {
-            if(!codeLookup.TryGetValue(
-                    activity.WbsCode,
-                    out var wbs))
+            if (activities.Count > 0)
             {
-                continue;
+                throw new InvalidOperationException(
+                    "Activities cannot be calculated without WBS nodes.");
             }
 
+            return nodes;
+        }
 
+        if (nodes.Any(node => node.Id == Guid.Empty))
+        {
+            throw new InvalidOperationException(
+                "Every WBS node must have a persisted identifier.");
+        }
 
-            wbs.Budget +=
-                activity.Budget;
+        var lookup = nodes.ToDictionary(node => node.Id);
+        var physicalProgressValueByWbs = nodes.ToDictionary(
+            node => node.Id,
+            _ => 0m);
 
+        foreach (var node in nodes)
+        {
+            node.Budget = 0m;
+            node.ActualCost = 0m;
+            node.EarnedValue = 0m;
+            node.PlannedValue = 0m;
+            node.WeightFactor = 0m;
+            node.WeightValue = 0m;
+            node.Progress = 0m;
 
+            if (node.ParentId.HasValue &&
+                !lookup.ContainsKey(node.ParentId.Value))
+            {
+                throw new InvalidOperationException(
+                    $"WBS node '{node.Code}' references missing parent '{node.ParentId}'.");
+            }
+        }
 
-            wbs.ActualCost +=
-                activity.ActualCost;
+        // Activity ownership is a relational concern: use the persisted WBS ID,
+        // never the mutable/display-oriented WBS code.
+        foreach (var activity in activities)
+        {
+            if (!activity.WbsNodeId.HasValue ||
+                activity.WbsNodeId.Value == Guid.Empty ||
+                !lookup.TryGetValue(activity.WbsNodeId.Value, out var wbs))
+            {
+                throw new InvalidOperationException(
+                    $"Activity '{activity.Code}' references a missing or invalid WBS node " +
+                    $"'{activity.WbsNodeId}'.");
+            }
 
-
-
-            wbs.EarnedValue +=
-                activity.EarnedValue;
-
-
-
-            wbs.PlannedValue +=
-                activity.PlannedValue;
+            wbs.Budget += activity.Budget;
+            wbs.ActualCost += activity.ActualCost;
+            wbs.EarnedValue += activity.EarnedValue;
+            wbs.PlannedValue += activity.PlannedValue;
 
             physicalProgressValueByWbs[wbs.Id] +=
                 activity.Budget * Math.Clamp(activity.Progress, 0m, 100m) / 100m;
         }
 
+        var childrenByParent = nodes
+            .Where(node => node.ParentId.HasValue)
+            .GroupBy(node => node.ParentId!.Value)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderBy(child => child.SortOrder)
+                    .ThenBy(child => child.Code, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
 
+        // ParentId is authoritative; Level is display metadata and may be stale.
+        // A post-order traversal makes roll-up independent of input row order.
+        var visitStateById = new Dictionary<Guid, byte>();
+        var postOrder = new List<WbsNodeDto>(nodes.Count);
 
-
-
-
-
-
-        // =====================================================
-        // Bottom-Up Rollup
-        // =====================================================
-
-        foreach(var node in nodes
-            .OrderByDescending(
-                x => x.Level))
+        void Visit(WbsNodeDto node)
         {
-
-            if(!node.ParentId.HasValue)
-                continue;
-
-
-
-            if(!lookup.TryGetValue(
-                    node.ParentId.Value,
-                    out var parent))
+            if (visitStateById.TryGetValue(node.Id, out var state))
             {
-                continue;
+                if (state == 1)
+                {
+                    throw new InvalidOperationException(
+                        $"WBS hierarchy contains a cycle at node '{node.Code}' ({node.Id}).");
+                }
+
+                if (state == 2)
+                    return;
             }
 
+            visitStateById[node.Id] = 1;
 
+            if (childrenByParent.TryGetValue(node.Id, out var children))
+            {
+                foreach (var child in children)
+                    Visit(child);
+            }
 
+            visitStateById[node.Id] = 2;
+            postOrder.Add(node);
+        }
 
-            parent.Budget +=
-                node.Budget;
+        foreach (var root in nodes.Where(node => !node.ParentId.HasValue))
+            Visit(root);
 
+        // Also visit any disconnected component so a rootless cycle is rejected.
+        foreach (var node in nodes)
+            Visit(node);
 
+        foreach (var node in postOrder)
+        {
+            if (!node.ParentId.HasValue)
+                continue;
 
-            parent.ActualCost +=
-                node.ActualCost;
-
-
-
-            parent.EarnedValue +=
-                node.EarnedValue;
-
-
-
-            parent.PlannedValue +=
-                node.PlannedValue;
-
+            var parent = lookup[node.ParentId.Value];
+            parent.Budget += node.Budget;
+            parent.ActualCost += node.ActualCost;
+            parent.EarnedValue += node.EarnedValue;
+            parent.PlannedValue += node.PlannedValue;
             physicalProgressValueByWbs[parent.Id] +=
                 physicalProgressValueByWbs[node.Id];
         }
 
+        var projectBudget = nodes
+            .Where(node => !node.ParentId.HasValue)
+            .Sum(node => node.Budget);
 
-
-
-
-
-
-
-        // =====================================================
-        // Total Project Budget
-        // =====================================================
-
-        var projectBudget =
-            nodes
-            .Where(x =>
-                x.ParentId == null)
-            .Sum(x =>
-                x.Budget);
-
-
-
-
-        if(projectBudget == 0)
+        // Zero-budget progress policy remains explicitly zero until the project
+        // defines an approved non-financial weighting basis.
+        if (projectBudget <= 0m)
             return nodes;
 
-
-
-
-
-
-
-
-        // =====================================================
-        // W.F / W.V / Progress
-        // =====================================================
-
-        foreach(var node in nodes)
+        foreach (var node in nodes)
         {
+            node.WeightValue = node.Budget / projectBudget * 100m;
 
-            // -------------------------------------------------
-            // W.V
-            // Budget / Total Project Budget
-            // -------------------------------------------------
+            node.WeightFactor = node.ParentId.HasValue
+                ? lookup[node.ParentId.Value].Budget <= 0m
+                    ? 0m
+                    : node.Budget / lookup[node.ParentId.Value].Budget * 100m
+                : 100m;
 
-            node.WeightValue =
-                (
-                    node.Budget /
-                    projectBudget
-                )
-                * 100m;
-
-
-
-
-
-
-            // -------------------------------------------------
-            // W.F
-            // Budget / Parent Budget
-            // -------------------------------------------------
-
-            if(node.ParentId.HasValue &&
-               lookup.TryGetValue(
-                    node.ParentId.Value,
-                    out var parent))
-            {
-
-                node.WeightFactor =
-                    parent.Budget == 0
-                    ? 0
-                    :
-                    (
-                        node.Budget /
-                        parent.Budget
-                    )
-                    * 100m;
-
-            }
-            else
-            {
-
-                // Root WBS
-                node.WeightFactor =
-                    100m;
-
-            }
-
-
-
-
-
-
-            // -------------------------------------------------
-            // Physical Progress
-            // Budget-weighted activity progress, independent of EVM.
-            // -------------------------------------------------
-
-            node.Progress =
-                node.Budget == 0
-                ? 0
-                :
-                physicalProgressValueByWbs[node.Id] /
-                node.Budget *
-                100m;
-
+            node.Progress = node.Budget <= 0m
+                ? 0m
+                : Math.Clamp(
+                    physicalProgressValueByWbs[node.Id] / node.Budget * 100m,
+                    0m,
+                    100m);
         }
-
-
-
-
 
         return nodes;
     }
