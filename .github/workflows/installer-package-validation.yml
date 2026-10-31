@@ -67,21 +67,37 @@ jobs:
         run: |
           $env:ASPNETCORE_ENVIRONMENT = "Production"
           $env:ASPNETCORE_URLS = "http://127.0.0.1:5079"
+
+          # Recreate the installed folder layout so Program.cs exercises
+          # its real per-user installation configuration path.
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "pcs-installed-smoke"
+          $backendDirectory = Join-Path $smokeRoot "Backend"
+          $configDirectory = Join-Path $smokeRoot "Config"
+          New-Item -ItemType Directory -Path $backendDirectory -Force | Out-Null
+          New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null
+          Copy-Item "backend/publish/PCS.API/*" $backendDirectory -Recurse -Force
+
+          $appSettingsPath = Join-Path $backendDirectory "appsettings.json"
+          $appSettings = Get-Content $appSettingsPath -Raw | ConvertFrom-Json -AsHashtable
+          $appSettings["Jwt"]["Secret"] = "PCS-CI-Only-Signing-Key-Not-For-Production-2026"
+          $appSettings["Jwt"]["Issuer"] = "PCS.CI"
+          $appSettings["Jwt"]["Audience"] = "PCS.CI"
+          $appSettings["InitialAdmin"]["Username"] = "ci-admin"
+          $appSettings["InitialAdmin"]["Password"] = "PCS-CI-Only-Initial-Admin-Password-2026!"
+          $appSettings["InitialAdmin"]["FirstName"] = "CI"
+          $appSettings["InitialAdmin"]["LastName"] = "Administrator"
+          $appSettings["InitialAdmin"]["Email"] = "ci-admin@pcs.local"
+          $appSettings | ConvertTo-Json -Depth 100 | Set-Content $appSettingsPath -Encoding utf8
+
           $dbPath = Join-Path $env:RUNNER_TEMP "pcs-windows-smoke.db"
-          $env:ConnectionStrings__DefaultConnection = "Data Source=$dbPath"
-          $env:Jwt__Secret = "PCS-CI-Only-Signing-Key-Not-For-Production-2026"
-          $env:Jwt__Issuer = "PCS.CI"
-          $env:Jwt__Audience = "PCS.CI"
-          $env:InitialAdmin__Username = "ci-admin"
-          $env:InitialAdmin__Password = "PCS-CI-Only-Initial-Admin-Password-2026!"
-          $env:InitialAdmin__FirstName = "CI"
-          $env:InitialAdmin__LastName = "Administrator"
-          $env:InitialAdmin__Email = "ci-admin@pcs.local"
+          @{ ConnectionString = "Data Source=$dbPath" } |
+            ConvertTo-Json |
+            Set-Content (Join-Path $configDirectory "pcs.config.json") -Encoding utf8
 
           $stdout = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stdout.log"
           $stderr = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stderr.log"
-          $apiPath = "backend/publish/PCS.API/PCS.API.exe"
-          $api = Start-Process -FilePath $apiPath -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $apiPath = Join-Path $backendDirectory "PCS.API.exe"
+          $api = Start-Process -FilePath $apiPath -WorkingDirectory $backendDirectory -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 
           try {
             $ready = $false
@@ -105,17 +121,29 @@ jobs:
             }
 
             if (-not $ready) {
-              throw "Published PCS API did not become healthy. STDOUT: $(Get-Content $stdout -Raw -ErrorAction SilentlyContinue) STDERR: $(Get-Content $stderr -Raw -ErrorAction SilentlyContinue)"
+              $apiStdout = Get-Content $stdout -Raw -ErrorAction SilentlyContinue
+              $apiStderr = Get-Content $stderr -Raw -ErrorAction SilentlyContinue
+              throw "Published PCS API did not become healthy. STDOUT: $apiStdout STDERR: $apiStderr"
             }
 
-            $body = @{ username = "ci-admin"; password = "invalid-ci-password" } | ConvertTo-Json
-            $login = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $body -SkipHttpErrorCheck -TimeoutSec 10
+            $validBody = @{
+              username = "ci-admin"
+              password = "PCS-CI-Only-Initial-Admin-Password-2026!"
+            } | ConvertTo-Json
+            $validLogin = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $validBody -SkipHttpErrorCheck -TimeoutSec 10
 
-            if ($login.StatusCode -ne 401) {
-              throw "Expected SQLite-backed invalid login to return HTTP 401, received HTTP $($login.StatusCode)."
+            if ($validLogin.StatusCode -ne 200) {
+              throw "Expected seeded initial administrator login to return HTTP 200, received HTTP $($validLogin.StatusCode)."
             }
 
-            Write-Host "Published Windows API started, migrated SQLite, and completed an authentication query."
+            $invalidBody = @{ username = "ci-admin"; password = "invalid-ci-password" } | ConvertTo-Json
+            $invalidLogin = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $invalidBody -SkipHttpErrorCheck -TimeoutSec 10
+
+            if ($invalidLogin.StatusCode -ne 401) {
+              throw "Expected SQLite-backed invalid login to return HTTP 401, received HTTP $($invalidLogin.StatusCode)."
+            }
+
+            Write-Host "Installed-layout Windows API started, migrated SQLite, seeded the initial administrator, and passed valid/invalid authentication checks."
           }
           finally {
             if (-not $api.HasExited) {
