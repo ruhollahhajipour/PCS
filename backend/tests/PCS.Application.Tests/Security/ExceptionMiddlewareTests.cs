@@ -57,7 +57,7 @@ public sealed class ExceptionMiddlewareTests
 
     private sealed class StartedHttpResponseFeature : IHttpResponseFeature
     {
-        public int? StatusCode { get; set; } = StatusCodes.Status202Accepted;
+        public int StatusCode { get; set; } = StatusCodes.Status202Accepted;
         public string? ReasonPhrase { get; set; }
         public IHeaderDictionary Headers { get; set; } = new HeaderDictionary();
         public Stream Body { get; set; } = new MemoryStream();
