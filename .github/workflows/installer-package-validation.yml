@@ -147,7 +147,13 @@ jobs:
             throw "Installer manifest is not configured for non-elevated execution."
           }
 
+          $packagedSqlite = Get-ChildItem "backend/src/PCS.Installer/Setup/Resources/Publish/API" -Filter "e_sqlite3.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $packagedSqlite) {
+            throw "The installer staging area does not contain the e_sqlite3.dll native runtime."
+          }
+
           Write-Host "Installer size: $($setupInfo.Length) bytes"
+          Write-Host "Packaged SQLite native runtime: $($packagedSqlite.FullName)"
           Write-Host "SQLite native runtime: $($nativeSqlite.FullName)"
           Write-Host "Installer execution level: asInvoker"
 
