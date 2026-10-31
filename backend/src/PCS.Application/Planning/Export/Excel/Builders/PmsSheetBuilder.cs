@@ -239,9 +239,9 @@ public sealed class PmsSheetBuilder
         sheet.Cell(currentRow, 7).Value = node.WeightFactor / 100m;
         sheet.Cell(currentRow, 8).Value = node.WeightValue / 100m;
         sheet.Cell(currentRow, 9).Value = node.Progress / 100m;
-        sheet.Cell(currentRow, 10).Value = projectBudget == 0
-            ? 0
-            : node.EarnedValue / projectBudget;
+        sheet.Cell(currentRow, 10).Value =
+            node.WeightValue / 100m *
+            Math.Clamp(node.Progress, 0m, 100m) / 100m;
         sheet.Cell(currentRow, 11).Value = node.EarnedValue;
         sheet.Cell(currentRow, 12).Value = node.PlannedValue;
         sheet.Cell(currentRow, 13).Value = node.ActualCost;
@@ -295,9 +295,8 @@ public sealed class PmsSheetBuilder
         sheet.Cell(row, 7).Value = weightFactor;
         sheet.Cell(row, 8).Value = weightValue;
         sheet.Cell(row, 9).Value = activity.Progress / 100m;
-        sheet.Cell(row, 10).Value = projectBudget == 0
-            ? 0
-            : activity.EarnedValue / projectBudget;
+        sheet.Cell(row, 10).Value =
+            weightValue * Math.Clamp(activity.Progress, 0m, 100m) / 100m;
         sheet.Cell(row, 11).Value = activity.EarnedValue;
         sheet.Cell(row, 12).Value = activity.PlannedValue;
         sheet.Cell(row, 13).Value = activity.ActualCost;
