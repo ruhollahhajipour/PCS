@@ -258,3 +258,20 @@ export async function getProjectGantt(
 
     return response.data;
 }
+
+export interface ReplaceActivityPredecessor {
+    predecessorId: string;
+    type: "FS" | "SS" | "FF" | "SF";
+    lag: number;
+}
+
+export async function replaceActivityPredecessors(
+    projectId: string,
+    activityId: string,
+    predecessors: ReplaceActivityPredecessor[]
+): Promise<void> {
+    await http.put(
+        `/pms/gantt/${projectId}/activities/${activityId}/relationships`,
+        { predecessors }
+    );
+}
