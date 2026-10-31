@@ -548,45 +548,64 @@ export default function ProjectWbs() {
           setBaselines(baselineResult);
         }
 
-        const activitiesByWbs = new Map<string, typeof activities>();
+        const activitiesByWbsId = new Map<string, typeof activities>();
+        const activitiesByWbsCode = new Map<string, typeof activities>();
+
         for (const activity of activities) {
-          const assigned = activitiesByWbs.get(activity.wbsCode) ?? [];
-          assigned.push(activity);
-          activitiesByWbs.set(activity.wbsCode, assigned);
+          if (activity.wbsNodeId) {
+            const assigned = activitiesByWbsId.get(activity.wbsNodeId) ?? [];
+            assigned.push(activity);
+            activitiesByWbsId.set(activity.wbsNodeId, assigned);
+          } else if (activity.wbsCode?.trim()) {
+            const code = activity.wbsCode.trim().toLowerCase();
+            const assigned = activitiesByWbsCode.get(code) ?? [];
+            assigned.push(activity);
+            activitiesByWbsCode.set(code, assigned);
+          }
         }
+
+        const attachedActivityIds = new Set<string>();
+
+        const toActivityNode = (activity: typeof activities[number], parent?: WbsNode): WbsNode => ({
+          id: activity.id,
+          parentId: parent?.id ?? null,
+          code: activity.code,
+          parentCode: parent?.code ?? null,
+          path: parent ? `${parent.path}/${activity.code}` : `UNASSIGNED/${activity.code}`,
+          name: activity.name,
+          level: (parent?.level ?? 0) + 1,
+          sortOrder: 0,
+          isActivity: true,
+          budget: activity.budget,
+          actualCost: activity.actualCost,
+          plannedValue: activity.plannedValue,
+          earnedValue: activity.earnedValue,
+          weightFactor: parent?.budget && parent.budget > 0
+            ? activity.budget / parent.budget * 100
+            : 0,
+          weightValue: activity.weightValue,
+          weight: activity.weight,
+          progress: activity.progress,
+          cpi: activity.actualCost > 0
+            ? activity.earnedValue / activity.actualCost
+            : 0,
+          spi: activity.plannedValue > 0
+            ? activity.earnedValue / activity.plannedValue
+            : 0,
+          children: [],
+        });
 
         const attachActivities = (nodes: WbsNode[]): WbsNode[] =>
           nodes.map(node => {
-            const activityNodes: WbsNode[] = (activitiesByWbs.get(node.code) ?? [])
-              .sort((a, b) => a.code.localeCompare(b.code))
-              .map(activity => ({
-                id: activity.id,
-                parentId: node.id,
-                code: activity.code,
-                parentCode: node.code,
-                path: `${node.path}/${activity.code}`,
-                name: activity.name,
-                level: node.level + 1,
-                sortOrder: 0,
-                isActivity: true,
-                budget: activity.budget,
-                actualCost: activity.actualCost,
-                plannedValue: activity.plannedValue,
-                earnedValue: activity.earnedValue,
-                weightFactor: node.budget > 0
-                  ? activity.budget / node.budget * 100
-                  : 0,
-                weightValue: activity.weightValue,
-                weight: activity.weight,
-                progress: activity.progress,
-                cpi: activity.actualCost > 0
-                  ? activity.earnedValue / activity.actualCost
-                  : 0,
-                spi: activity.plannedValue > 0
-                  ? activity.earnedValue / activity.plannedValue
-                  : 0,
-                children: [],
-              }));
+            const assignedActivities = [
+              ...(activitiesByWbsId.get(node.id) ?? []),
+              ...(activitiesByWbsCode.get(node.code.trim().toLowerCase()) ?? []),
+            ].sort((a, b) => a.code.localeCompare(b.code));
+
+            const activityNodes = assignedActivities.map(activity => {
+              attachedActivityIds.add(activity.id);
+              return toActivityNode(activity, node);
+            });
 
             return {
               ...node,
@@ -597,8 +616,41 @@ export default function ProjectWbs() {
             };
           });
 
+        const attachedTree = attachActivities(wbsResult);
+        const unassignedActivityNodes = activities
+          .filter(activity => !attachedActivityIds.has(activity.id))
+          .sort((a, b) => a.code.localeCompare(b.code))
+          .map(activity => toActivityNode(activity));
+
+        const resultTree = [...attachedTree];
+
+        if (unassignedActivityNodes.length > 0) {
+          resultTree.push({
+            id: "unassigned-activities",
+            parentId: null,
+            code: "UNASSIGNED",
+            parentCode: null,
+            path: "UNASSIGNED",
+            name: "فعالیت‌های بدون انتساب به WBS",
+            level: 0,
+            sortOrder: Number.MAX_SAFE_INTEGER,
+            isActivity: false,
+            budget: 0,
+            actualCost: 0,
+            plannedValue: 0,
+            earnedValue: 0,
+            weightFactor: 0,
+            weightValue: 0,
+            weight: 0,
+            progress: 0,
+            cpi: 0,
+            spi: 0,
+            children: unassignedActivityNodes,
+          });
+        }
+
         if (!cancelled) {
-          setData(attachActivities(wbsResult));
+          setData(resultTree);
         }
 
       }
