@@ -445,9 +445,9 @@ describe("CPM scheduling engine regression", () => {
 
         /*
          * SF means the successor finish must be at or after
-         * the predecessor start. With a one-day duration,
-         * the earliest feasible finish is Monday 16:00.
-         * The task can start at the previous Friday 16:00 boundary.
+         * the predecessor start. The project start anchor is
+         * Monday 08:00, so the successor cannot start on Friday.
+         * Its earliest feasible finish is Monday 16:00.
          */
         expect(b.earlyFinish!.getTime()).toBeGreaterThanOrEqual(
             a.earlyStart!.getTime()
@@ -468,8 +468,8 @@ describe("CPM scheduling engine regression", () => {
             {
                 year: 2026,
                 month: 9,
-                day: 4,
-                hour: 16
+                day: 7,
+                hour: 8
             }
         );
     });
