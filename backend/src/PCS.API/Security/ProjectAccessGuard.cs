@@ -22,17 +22,11 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         ClaimsPrincipal principal,
         CancellationToken cancellationToken = default)
     {
-        var userId = await GetActiveUserIdAsync(principal, cancellationToken);
-        if (!userId.HasValue)
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
             return Array.Empty<Guid>();
 
-        var isSystemUser = await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == userId.Value && x.IsActive && !x.IsDeleted && x.IsSystemUser,
-                cancellationToken);
-
-        if (isSystemUser)
+        if (user.IsSystemUser)
         {
             // System administrators must be able to inspect and reactivate
             // disabled companies; deleted companies remain inaccessible.
@@ -46,7 +40,7 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         return await _dbContext.CompanyUsers
             .AsNoTracking()
             .Where(x =>
-                x.UserId == userId.Value &&
+                x.UserId == user.Id &&
                 x.IsActive &&
                 !x.IsDeleted &&
                 x.Company.IsActive &&
@@ -60,18 +54,8 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         ClaimsPrincipal principal,
         CancellationToken cancellationToken = default)
     {
-        var userId = await GetActiveUserIdAsync(principal, cancellationToken);
-        if (!userId.HasValue)
-            return false;
-
-        return await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == userId.Value &&
-                     x.IsActive &&
-                     !x.IsDeleted &&
-                     x.IsSystemUser,
-                cancellationToken);
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        return user?.IsSystemUser == true;
     }
 
     public async Task<bool> CanAccessCompanyAsync(
@@ -82,20 +66,11 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (companyId == Guid.Empty)
             return false;
 
-        var userId = await GetActiveUserIdAsync(principal, cancellationToken);
-        if (!userId.HasValue)
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
             return false;
 
-        var isSystemUser = await _dbContext.Users
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == userId.Value &&
-                     x.IsActive &&
-                     !x.IsDeleted &&
-                     x.IsSystemUser,
-                cancellationToken);
-
-        if (isSystemUser)
+        if (user.IsSystemUser)
         {
             return await _dbContext.Companies
                 .AsNoTracking()
@@ -104,22 +79,15 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
                     cancellationToken);
         }
 
-        var companyIsActive = await _dbContext.Companies
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == companyId && x.IsActive && !x.IsDeleted,
-                cancellationToken);
-
-        if (!companyIsActive)
-            return false;
-
         return await _dbContext.CompanyUsers
             .AsNoTracking()
             .AnyAsync(
-                x => x.UserId == userId.Value &&
+                x => x.UserId == user.Id &&
                      x.CompanyId == companyId &&
                      x.IsActive &&
-                     !x.IsDeleted,
+                     !x.IsDeleted &&
+                     x.Company.IsActive &&
+                     !x.Company.IsDeleted,
                 cancellationToken);
     }
 
@@ -131,14 +99,29 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (projectId == Guid.Empty)
             return false;
 
-        var companyId = await _dbContext.Projects
-            .AsNoTracking()
-            .Where(x => x.Id == projectId && !x.IsDeleted)
-            .Select(x => (Guid?)x.CompanyId)
-            .SingleOrDefaultAsync(cancellationToken);
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
+            return false;
 
-        return companyId.HasValue &&
-               await CanAccessCompanyAsync(principal, companyId.Value, cancellationToken);
+        var projects = _dbContext.Projects
+            .AsNoTracking()
+            .Where(x => x.Id == projectId && !x.IsDeleted);
+
+        if (user.IsSystemUser)
+        {
+            return await projects.AnyAsync(
+                x => !x.Company.IsDeleted,
+                cancellationToken);
+        }
+
+        return await projects.AnyAsync(
+            x => x.Company.IsActive &&
+                 !x.Company.IsDeleted &&
+                 x.Company.Users.Any(membership =>
+                     membership.UserId == user.Id &&
+                     membership.IsActive &&
+                     !membership.IsDeleted),
+            cancellationToken);
     }
 
     public async Task<bool> CanAccessActivityAsync(
@@ -149,14 +132,30 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (activityId == Guid.Empty)
             return false;
 
-        var projectId = await _dbContext.Activities
-            .AsNoTracking()
-            .Where(x => x.Id == activityId && !x.IsDeleted)
-            .Select(x => (Guid?)x.ProjectId)
-            .SingleOrDefaultAsync(cancellationToken);
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
+            return false;
 
-        return projectId.HasValue &&
-               await CanAccessProjectAsync(principal, projectId.Value, cancellationToken);
+        var activities = _dbContext.Activities
+            .AsNoTracking()
+            .Where(x => x.Id == activityId && !x.IsDeleted);
+
+        if (user.IsSystemUser)
+        {
+            return await activities.AnyAsync(
+                x => !x.Project.IsDeleted && !x.Project.Company.IsDeleted,
+                cancellationToken);
+        }
+
+        return await activities.AnyAsync(
+            x => !x.Project.IsDeleted &&
+                 x.Project.Company.IsActive &&
+                 !x.Project.Company.IsDeleted &&
+                 x.Project.Company.Users.Any(membership =>
+                     membership.UserId == user.Id &&
+                     membership.IsActive &&
+                     !membership.IsDeleted),
+            cancellationToken);
     }
 
     public async Task<bool> CanAccessWbsAsync(
@@ -167,14 +166,30 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (wbsNodeId == Guid.Empty)
             return false;
 
-        var projectId = await _dbContext.WbsNodes
-            .AsNoTracking()
-            .Where(x => x.Id == wbsNodeId && !x.IsDeleted)
-            .Select(x => (Guid?)x.ProjectId)
-            .SingleOrDefaultAsync(cancellationToken);
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
+            return false;
 
-        return projectId.HasValue &&
-               await CanAccessProjectAsync(principal, projectId.Value, cancellationToken);
+        var nodes = _dbContext.WbsNodes
+            .AsNoTracking()
+            .Where(x => x.Id == wbsNodeId && !x.IsDeleted);
+
+        if (user.IsSystemUser)
+        {
+            return await nodes.AnyAsync(
+                x => !x.Project.IsDeleted && !x.Project.Company.IsDeleted,
+                cancellationToken);
+        }
+
+        return await nodes.AnyAsync(
+            x => !x.Project.IsDeleted &&
+                 x.Project.Company.IsActive &&
+                 !x.Project.Company.IsDeleted &&
+                 x.Project.Company.Users.Any(membership =>
+                     membership.UserId == user.Id &&
+                     membership.IsActive &&
+                     !membership.IsDeleted),
+            cancellationToken);
     }
 
     public async Task<bool> CanAccessPlantAsync(
@@ -186,22 +201,35 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (plantId == Guid.Empty)
             return false;
 
-        var companyId = await _dbContext.Plants
-            .AsNoTracking()
-            .Where(x => x.Id == plantId && !x.IsDeleted)
-            .Select(x => (Guid?)x.CompanyId)
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (!companyId.HasValue ||
-            (expectedCompanyId.HasValue && expectedCompanyId.Value != companyId.Value))
-        {
+        var user = await GetUserContextAsync(principal, cancellationToken);
+        if (user is null)
             return false;
+
+        var plants = _dbContext.Plants
+            .AsNoTracking()
+            .Where(x => x.Id == plantId && !x.IsDeleted);
+
+        if (expectedCompanyId.HasValue)
+            plants = plants.Where(x => x.CompanyId == expectedCompanyId.Value);
+
+        if (user.IsSystemUser)
+        {
+            return await plants.AnyAsync(
+                x => !x.Company.IsDeleted,
+                cancellationToken);
         }
 
-        return await CanAccessCompanyAsync(principal, companyId.Value, cancellationToken);
+        return await plants.AnyAsync(
+            x => x.Company.IsActive &&
+                 !x.Company.IsDeleted &&
+                 x.Company.Users.Any(membership =>
+                     membership.UserId == user.Id &&
+                     membership.IsActive &&
+                     !membership.IsDeleted),
+            cancellationToken);
     }
 
-    private async Task<Guid?> GetActiveUserIdAsync(
+    private async Task<UserContext?> GetUserContextAsync(
         ClaimsPrincipal principal,
         CancellationToken cancellationToken)
     {
@@ -209,12 +237,12 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (!Guid.TryParse(claimValue, out var userId) || userId == Guid.Empty)
             return null;
 
-        var isActive = await _dbContext.Users
+        return await _dbContext.Users
             .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == userId && x.IsActive && !x.IsDeleted,
-                cancellationToken);
-
-        return isActive ? userId : null;
+            .Where(x => x.Id == userId && x.IsActive && !x.IsDeleted)
+            .Select(x => new UserContext(x.Id, x.IsSystemUser))
+            .SingleOrDefaultAsync(cancellationToken);
     }
+
+    private sealed record UserContext(Guid Id, bool IsSystemUser);
 }
