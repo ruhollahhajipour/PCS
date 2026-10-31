@@ -597,6 +597,37 @@ builder.Services.AddAuthorization(
 // CORS
 // ============================================================
 
+string[] configuredCorsOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+var allowedCorsOrigins = new List<string>();
+
+foreach (var configuredOrigin in configuredCorsOrigins)
+{
+    if (!Uri.TryCreate(configuredOrigin, UriKind.Absolute, out var origin) ||
+        (origin.Scheme != Uri.UriSchemeHttp && origin.Scheme != Uri.UriSchemeHttps) ||
+        string.IsNullOrWhiteSpace(origin.Host) ||
+        origin.Host == "*" ||
+        origin.UserInfo.Length > 0 ||
+        origin.AbsolutePath != "/" ||
+        origin.Query.Length > 0 ||
+        origin.Fragment.Length > 0)
+    {
+        throw new InvalidOperationException(
+            "PCS CORS origins must be exact HTTP or HTTPS origins without paths, credentials, query strings, or fragments.");
+    }
+
+    var normalizedOrigin = origin.GetLeftPart(UriPartial.Authority);
+
+    if (!allowedCorsOrigins.Contains(normalizedOrigin, StringComparer.OrdinalIgnoreCase))
+    {
+        allowedCorsOrigins.Add(normalizedOrigin);
+    }
+}
+
 builder.Services.AddCors(
     options =>
     {
@@ -604,8 +635,12 @@ builder.Services.AddCors(
             "PCS",
             policy =>
             {
+                if (allowedCorsOrigins.Count > 0)
+                {
+                    policy.WithOrigins(allowedCorsOrigins.ToArray());
+                }
+
                 policy
-                    .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -613,6 +648,7 @@ builder.Services.AddCors(
 
 
 // ============================================================
+
 // Build
 // ============================================================
 
@@ -813,10 +849,11 @@ app.UseAuthorization();
 // Swagger
 // ============================================================
 
-app.UseSwagger();
-
-
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ============================================================
