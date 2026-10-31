@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging.Abstractions;
 using PCS.API.Middleware;
 using Xunit;
@@ -38,9 +39,8 @@ public sealed class ExceptionMiddlewareTests
     public async Task InvokeAsync_WhenResponseHasStarted_RethrowsOriginalException()
     {
         var context = new DefaultHttpContext();
-        context.Response.StatusCode = StatusCodes.Status202Accepted;
-        context.Response.Body = new MemoryStream();
-        await context.Response.StartAsync();
+        var responseFeature = new StartedHttpResponseFeature();
+        context.Features.Set<IHttpResponseFeature>(responseFeature);
 
         Assert.True(context.Response.HasStarted);
 
@@ -53,6 +53,23 @@ public sealed class ExceptionMiddlewareTests
 
         Assert.Equal("response already started", exception.Message);
         Assert.Equal(StatusCodes.Status202Accepted, context.Response.StatusCode);
+    }
+
+    private sealed class StartedHttpResponseFeature : IHttpResponseFeature
+    {
+        public int? StatusCode { get; set; } = StatusCodes.Status202Accepted;
+        public string? ReasonPhrase { get; set; }
+        public IHeaderDictionary Headers { get; set; } = new HeaderDictionary();
+        public Stream Body { get; set; } = new MemoryStream();
+        public bool HasStarted => true;
+
+        public void OnStarting(Func<object, Task> callback, object state)
+        {
+        }
+
+        public void OnCompleted(Func<object, Task> callback, object state)
+        {
+        }
     }
 
     [Fact]
