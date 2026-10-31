@@ -33,6 +33,30 @@ public class CompanyService : ICompanyService
         });
     }
 
+    public async Task<IEnumerable<CompanyDto>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> companyIds)
+    {
+        ArgumentNullException.ThrowIfNull(companyIds);
+
+        if (companyIds.Count == 0)
+            return Array.Empty<CompanyDto>();
+
+        var companies = await _repository.FindAsync(
+            x => companyIds.Contains(x.Id) && x.IsActive && !x.IsDeleted);
+
+        return companies.Select(x => new CompanyDto
+        {
+            Id = x.Id,
+            Code = x.Code,
+            Name = x.Name,
+            NationalId = x.NationalId,
+            Address = x.Address,
+            Phone = x.Phone,
+            Email = x.Email,
+            IsActive = x.IsActive
+        });
+    }
+
     public async Task<CompanyDto?> GetByIdAsync(Guid id)
     {
         var company =
