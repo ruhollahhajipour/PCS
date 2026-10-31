@@ -392,6 +392,44 @@ public sealed class PmsExcelService
 
 
         // -------------------------------------------------
+        // Reject indirect parent cycles before persistence.
+        // -------------------------------------------------
+
+        var wbsByCode = dto.WbsNodes.ToDictionary(
+            wbs => wbs.Code.Trim(),
+            StringComparer.OrdinalIgnoreCase);
+
+        var hierarchyState = new Dictionary<string, byte>(
+            StringComparer.OrdinalIgnoreCase);
+
+        void ValidateParentChain(string code)
+        {
+            if (hierarchyState.TryGetValue(code, out var state))
+            {
+                if (state == 1)
+                {
+                    throw new Exception(
+                        $"WBS hierarchy contains a parent cycle involving '{code}'.");
+                }
+
+                if (state == 2)
+                    return;
+            }
+
+            hierarchyState[code] = 1;
+
+            var parentCode = wbsByCode[code].ParentCode?.Trim();
+            if (!string.IsNullOrWhiteSpace(parentCode))
+                ValidateParentChain(parentCode);
+
+            hierarchyState[code] = 2;
+        }
+
+        foreach (var code in wbsByCode.Keys)
+            ValidateParentChain(code);
+
+
+        // -------------------------------------------------
         // Activities
         // -------------------------------------------------
 
