@@ -69,191 +69,121 @@ public class PmsService : IPmsService
 
         var existingWbs =
             (await _wbsRepository.GetAllAsync())
-            .Where(x =>
-                x.ProjectId == dto.ProjectId)
+            .Where(x => x.ProjectId == dto.ProjectId)
             .ToDictionary(
-                x => x.Code);
+                x => x.Code,
+                StringComparer.OrdinalIgnoreCase);
 
+        var wbsItems = dto.WbsNodes
+            .Where(x => !string.IsNullOrWhiteSpace(x.Code))
+            .ToDictionary(
+                x => x.Code.Trim(),
+                StringComparer.OrdinalIgnoreCase);
 
+        var wbsMap = new Dictionary<string, WbsNode>(
+            StringComparer.OrdinalIgnoreCase);
 
-
-        var wbsMap =
-            new Dictionary<string, WbsNode>();
-
-
-
-
-
-        // =====================================================
-        // IMPORT WBS STRUCTURE
-        // =====================================================
-
-        foreach(var item in dto.WbsNodes)
+        // First pass: create/update every node before resolving parent links.
+        // This makes the import independent of the row order in Excel.
+        foreach (var item in dto.WbsNodes)
         {
-            if(string.IsNullOrWhiteSpace(item.Code))
+            if (string.IsNullOrWhiteSpace(item.Code))
                 continue;
 
+            var code = item.Code.Trim();
+            existingWbs.TryGetValue(code, out var currentWbs);
 
-
-            existingWbs.TryGetValue(
-                item.Code.Trim(),
-                out var currentWbs);
-
-
-
-            Guid? parentId = null;
-
-
-            string path =
-                item.Code.Trim();
-
-
-
-
-            if(!string.IsNullOrWhiteSpace(item.ParentCode)
-                &&
-                wbsMap.TryGetValue(
-                    item.ParentCode.Trim(),
-                    out var parent))
+            if (currentWbs is not null)
             {
-                parentId =
-                    parent.Id;
+                currentWbs.Name = item.Name.Trim();
+                currentWbs.Level = item.Level;
+                currentWbs.Budget = 0;
+                currentWbs.ActualCost = 0;
+                currentWbs.EarnedValue = 0;
+                currentWbs.PlannedValue = 0;
+                currentWbs.Weight = 0;
+                currentWbs.WeightFactor = 0;
+                currentWbs.WeightValue = 0;
+                currentWbs.Progress = 0;
 
-
-                path =
-                    $"{parent.Path}/{item.Code.Trim()}";
-            }
-
-
-
-
-            if(currentWbs != null)
-            {
-                currentWbs.Name =
-                    item.Name.Trim();
-
-
-                currentWbs.ParentId =
-                    parentId;
-
-
-                currentWbs.Level =
-                    item.Level;
-
-
-                currentWbs.Path =
-                    path;
-
-
-
-                // Budget WBS بعداً از Activity Rollup می‌شود
-                currentWbs.Budget =
-                    0;
-
-
-
-                currentWbs.Weight =
-                    0;
-
-
-
-                currentWbs.Progress =
-                    0;
-
-
-
-                _wbsRepository.Update(
-                    currentWbs);
-
-
-
-                wbsMap[item.Code.Trim()] =
-                    currentWbs;
-
-
+                _wbsRepository.Update(currentWbs);
+                wbsMap[code] = currentWbs;
                 continue;
             }
 
+            var wbs = new WbsNode
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = dto.ProjectId,
+                Code = code,
+                Name = item.Name.Trim(),
+                Level = item.Level,
+                SortOrder = 0,
+                Path = code,
+                Budget = 0,
+                ActualCost = 0,
+                EarnedValue = 0,
+                PlannedValue = 0,
+                Weight = 0,
+                WeightFactor = 0,
+                WeightValue = 0,
+                Progress = 0,
+                IsActive = true
+            };
 
-
-
-
-            var wbs =
-                new WbsNode
-                {
-                    Id =
-                        Guid.NewGuid(),
-
-
-
-                    ProjectId =
-                        dto.ProjectId,
-
-
-
-                    ParentId =
-                        parentId,
-
-
-
-                    Code =
-                        item.Code.Trim(),
-
-
-
-                    Name =
-                        item.Name.Trim(),
-
-
-
-                    Level =
-                        item.Level,
-
-
-
-                    SortOrder =
-                        0,
-
-
-
-                    Path =
-                        path,
-
-
-
-                    // مقدار واقعی بعداً محاسبه می‌شود
-                    Budget =
-                        0,
-
-
-
-                    Weight =
-                        0,
-
-
-
-                    Progress =
-                        0,
-
-
-
-                    IsActive =
-                        true
-                };
-
-
-
-
-            await _wbsRepository
-                .AddAsync(wbs);
-
-
-
-
-            wbsMap[item.Code.Trim()] =
-                wbs;
+            await _wbsRepository.AddAsync(wbs);
+            wbsMap[code] = wbs;
         }
-                // =====================================================
+
+        // Second pass: resolve the complete hierarchy recursively so parents
+        // can appear after children in the source workbook.
+        var hierarchyState = new Dictionary<string, byte>(
+            StringComparer.OrdinalIgnoreCase);
+
+        string ResolveWbsPath(string code)
+        {
+            if (hierarchyState.TryGetValue(code, out var state))
+            {
+                if (state == 1)
+                    throw new InvalidOperationException(
+                        $"WBS hierarchy contains a parent cycle at '{code}'.");
+
+                if (state == 2)
+                    return wbsMap[code].Path;
+            }
+
+            hierarchyState[code] = 1;
+
+            var item = wbsItems[code];
+            var node = wbsMap[code];
+            var parentCode = item.ParentCode?.Trim();
+
+            if (string.IsNullOrWhiteSpace(parentCode))
+            {
+                node.ParentId = null;
+                node.Path = code;
+            }
+            else
+            {
+                if (!wbsMap.TryGetValue(parentCode, out var parent))
+                {
+                    throw new InvalidOperationException(
+                        $"WBS '{code}' references unknown parent '{parentCode}'.");
+                }
+
+                node.ParentId = parent.Id;
+                node.Path = $"{ResolveWbsPath(parentCode)}/{code}";
+            }
+
+            _wbsRepository.Update(node);
+            hierarchyState[code] = 2;
+            return node.Path;
+        }
+
+        foreach (var code in wbsMap.Keys.ToList())
+            ResolveWbsPath(code);
+
+        // =====================================================
         // IMPORT ACTIVITIES
         // =====================================================
 
