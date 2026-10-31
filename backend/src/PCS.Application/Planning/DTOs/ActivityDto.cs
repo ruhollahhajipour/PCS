@@ -26,6 +26,9 @@ public string WbsCode { get; set; }
     = string.Empty;
 
 
+public Guid? WbsNodeId { get; set; }
+
+
 public string? WbsName { get; set; }
 
 
