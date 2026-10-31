@@ -59,6 +59,64 @@ jobs:
       - name: Publish API for Windows x64
         run: dotnet publish backend/src/PCS.API/PCS.API.csproj --configuration Release --runtime win-x64 --self-contained true --output backend/publish/PCS.API
 
+      - name: Smoke test published API with native SQLite on Windows
+        shell: pwsh
+        run: |
+          $env:ASPNETCORE_ENVIRONMENT = "Production"
+          $env:ASPNETCORE_URLS = "http://127.0.0.1:5079"
+          $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\\pcs-windows-smoke.db"
+          $env:Jwt__Secret = "PCS-CI-Only-Signing-Key-Not-For-Production-2026"
+          $env:Jwt__Issuer = "PCS.CI"
+          $env:Jwt__Audience = "PCS.CI"
+          $env:InitialAdmin__Username = "ci-admin"
+          $env:InitialAdmin__Password = "PCS-CI-Only-Initial-Admin-Password-2026!"
+          $env:InitialAdmin__FirstName = "CI"
+          $env:InitialAdmin__LastName = "Administrator"
+          $env:InitialAdmin__Email = "ci-admin@pcs.local"
+
+          $stdout = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stdout.log"
+          $stderr = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stderr.log"
+          $apiPath = "backend/publish/PCS.API/PCS.API.exe"
+          $api = Start-Process -FilePath $apiPath -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              if ($api.HasExited) {
+                throw "Published PCS API exited during startup with code $($api.ExitCode)."
+              }
+
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:5079/api/health" -TimeoutSec 2
+                if ($health.status -eq "ok") {
+                  $ready = $true
+                  break
+                }
+              }
+              catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            if (-not $ready) {
+              throw "Published PCS API did not become healthy. STDOUT: $(Get-Content $stdout -Raw -ErrorAction SilentlyContinue) STDERR: $(Get-Content $stderr -Raw -ErrorAction SilentlyContinue)"
+            }
+
+            $body = @{ username = "ci-user-that-does-not-exist"; password = "invalid-ci-password" } | ConvertTo-Json
+            $login = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $body -SkipHttpErrorCheck -TimeoutSec 10
+
+            if ($login.StatusCode -ne 401) {
+              throw "Expected SQLite-backed invalid login to return HTTP 401, received HTTP $($login.StatusCode)."
+            }
+
+            Write-Host "Published Windows API started, migrated SQLite, and completed an authentication query."
+          }
+          finally {
+            if (-not $api.HasExited) {
+              Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+
       - name: Publish launcher
         run: dotnet publish backend/src/PCS.Launcher/PCS.Launcher.csproj --configuration Release --runtime win-x64 --self-contained true
 
