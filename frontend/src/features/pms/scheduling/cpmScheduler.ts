@@ -1896,7 +1896,7 @@ export function scheduleProject(
                 earlyStart
             );
 
-        let earlyFinish =
+        const earlyFinish =
             addDuration(
                 current.calendar,
                 earlyStart,
@@ -1948,9 +1948,6 @@ export function scheduleProject(
                 )
         );
 
-    let projectFinish =
-        networkFinish;
-
     const requestedStart =
         toDate(
             options.projectStart
@@ -1993,14 +1990,10 @@ export function scheduleProject(
             )
         );
 
-    if (!requestedFinish) {
-        projectFinish =
-            terminalFinish ??
-            networkFinish;
-    } else {
-        projectFinish =
-            requestedFinish;
-    }
+    const projectFinish =
+        requestedFinish ??
+        terminalFinish ??
+        networkFinish;
 
     // ------------------------------------------------------------
     // Backward Pass
@@ -2080,7 +2073,7 @@ export function scheduleProject(
             continue;
         }
 
-        let lateStart =
+        const lateStart =
             subtractDuration(
                 current.calendar,
                 lateFinish,

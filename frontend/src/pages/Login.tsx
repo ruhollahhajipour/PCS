@@ -1,3 +1,5 @@
+import { isAxiosError } from "axios";
+
 import {
   Alert,
   Box,
@@ -52,12 +54,12 @@ export default function Login() {
       navigate("/dashboard", {
         replace: true,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("LOGIN ERROR", err);
 
-      const message =
-        err?.response?.data?.message ??
-        "Invalid username or password.";
+      const message = isAxiosError<{ message?: string }>(err)
+        ? err.response?.data?.message ?? "Invalid username or password."
+        : "Invalid username or password.";
 
       setError(message);
     } finally {
