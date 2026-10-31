@@ -9,4 +9,8 @@ public interface IActivityRelationshipRepository
     Task<List<ActivityRelationship>> GetSuccessorsAsync(Guid activityId);
 
     Task<List<ActivityRelationship>> GetPredecessorsAsync(Guid activityId);
+
+    Task AddRangeAsync(IEnumerable<ActivityRelationship> relationships);
+
+    void DeleteRange(IEnumerable<ActivityRelationship> relationships);
 }
