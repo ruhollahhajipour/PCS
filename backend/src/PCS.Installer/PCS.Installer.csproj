@@ -137,9 +137,6 @@
       Include="Microsoft.EntityFrameworkCore.SqlServer"
       Version="10.0.10" />
 
-    <PackageReference
-      Include="System.Security.Cryptography.Pkcs"
-      Version="10.0.13" />
 
     <PackageReference
       Include="Newtonsoft.Json"
