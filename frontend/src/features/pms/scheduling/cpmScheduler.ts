@@ -406,13 +406,6 @@ function buildEdges(
                 continue;
             }
 
-            if (
-                predecessorId ===
-                successorId
-            ) {
-                continue;
-            }
-
             edges.push({
                 relationship: relation,
                 predecessorId,
@@ -522,23 +515,11 @@ function topologicalOrder(
 
     if (
         result.length !==
-        activities.length
+        new Set(activities.map(activity => activity.id)).size
     ) {
         warnings.push(
-            "Circular relationship detected. The unresolved activities were kept in input order; CPM results for that cycle are not reliable."
+            "Circular relationship detected. CPM calculation was stopped; schedule dates, float values, and critical path are invalid until the cycle is resolved."
         );
-
-        for (const activity of activities) {
-            if (
-                !result.includes(
-                    activity.id
-                )
-            ) {
-                result.push(
-                    activity.id
-                );
-            }
-        }
     }
 
     return result;
@@ -1718,7 +1699,8 @@ export function scheduleProject(
             projectDuration: 0,
             projectDurationHours: 0,
             criticalPath: [],
-            warnings
+            warnings,
+            isValid: true
         };
     }
 
@@ -1751,6 +1733,61 @@ export function scheduleProject(
             edges,
             warnings
         );
+
+    const hasDuplicateActivityIds =
+        new Set(activities.map(activity => activity.id)).size !==
+        activities.length;
+
+    if (hasDuplicateActivityIds) {
+        warnings.push(
+            "Duplicate activity IDs detected. CPM calculation was stopped because activity identity must be unique."
+        );
+    }
+
+    if (
+        hasDuplicateActivityIds ||
+        order.length !== activities.length
+    ) {
+        const invalidActivities: Record<string, ScheduledActivity> = {};
+
+        for (const activity of activities) {
+            const calendar = getCalendar(
+                activity,
+                calendarMap,
+                options.defaultCalendarId
+            );
+            const durationDays = durationOf(
+                activity,
+                calendar,
+                options
+            );
+
+            invalidActivities[activity.id] = {
+                id: activity.id,
+                earlyStart: null,
+                earlyFinish: null,
+                lateStart: null,
+                lateFinish: null,
+                duration: durationDays,
+                durationHours: durationHoursOf(calendar, durationDays),
+                totalFloat: 0,
+                freeFloat: 0,
+                drivingFloat: 0,
+                isCritical: false
+            };
+        }
+
+        return {
+            activities: invalidActivities,
+            projectStart: null,
+            projectFinish: null,
+            projectDuration: 0,
+            projectDurationHours: 0,
+            criticalPath: [],
+            warnings,
+            isValid: false
+        };
+    }
 
     const schedules =
         new Map<
@@ -2255,7 +2292,8 @@ export function scheduleProject(
         projectDurationHours,
 
         criticalPath,
-        warnings
+        warnings,
+        isValid: true
     };
 }
 

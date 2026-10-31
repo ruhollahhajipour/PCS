@@ -1,4 +1,0 @@
-namespace PCS.Application.Projects.Commands.Delete;
-
-public sealed record DeleteProjectCommand(
-    Guid Id);

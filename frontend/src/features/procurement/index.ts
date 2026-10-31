@@ -1,1 +1,0 @@
-export { default as Procurement } from "./pages/Procurement";
