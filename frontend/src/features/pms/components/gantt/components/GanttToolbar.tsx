@@ -76,6 +76,47 @@ export interface GanttToolbarProps {
     onOpenViewMenu?: () => void;
 }
 
+function ToolbarGroup({
+    title,
+    children,
+    colors
+}: {
+    title: string;
+    children: React.ReactNode;
+    colors: GanttPalette;
+}) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.2,
+                height: 34,
+                px: 0.3,
+                borderRadius: 0.8,
+                backgroundColor: alpha(colors.background, 0.36),
+                border: `1px solid ${alpha(colors.border, 0.72)}`
+            }}
+        >
+            <Typography
+                sx={{
+                    px: 0.55,
+                    fontSize: 7,
+                    lineHeight: 1,
+                    fontWeight: 800,
+                    color: colors.muted,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    userSelect: "none"
+                }}
+            >
+                {title}
+            </Typography>
+            {children}
+        </Box>
+    );
+}
+
 export default function GanttToolbar({
     colors,
 
@@ -163,30 +204,6 @@ export default function GanttToolbar({
         userSelect: "none" as const
     };
 
-    const Group = ({
-        title,
-        children
-    }: {
-        title: string;
-        children: React.ReactNode;
-    }) => (
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.2,
-                height: 34,
-                px: 0.3,
-                borderRadius: 0.8,
-                backgroundColor: alpha(colors.background, 0.36),
-                border: `1px solid ${alpha(colors.border, 0.72)}`
-            }}
-        >
-            <Typography sx={groupLabelSx}>{title}</Typography>
-            {children}
-        </Box>
-    );
-
     return (
         <Box
             sx={{
@@ -264,7 +281,7 @@ export default function GanttToolbar({
             {/* =========================================================
              * VIEW
              * ========================================================= */}
-            <Group title="View">
+            <ToolbarGroup title="View" colors={colors}>
                 <Tooltip title="Columns">
                     <IconButton
                         size="small"
@@ -283,14 +300,14 @@ export default function GanttToolbar({
                         <AppsOutlined sx={{ fontSize: 17 }} />
                     </IconButton>
                 </Tooltip>
-            </Group>
+            </ToolbarGroup>
 
             <Divider orientation="vertical" flexItem sx={{ my: 0.8, borderColor: colors.border }} />
 
             {/* =========================================================
              * WBS
              * ========================================================= */}
-            <Group title="WBS">
+            <ToolbarGroup title="WBS" colors={colors}>
                 <Tooltip title="WBS expansion level">
                     <span>
                         <IconButton
@@ -321,7 +338,7 @@ export default function GanttToolbar({
                 >
                     {levelLabel}
                 </Typography>
-            </Group>
+            </ToolbarGroup>
 
             <Menu
                 anchorEl={wbsMenuAnchor}
@@ -394,7 +411,7 @@ export default function GanttToolbar({
             {/* =========================================================
              * TIMESCALE
              * ========================================================= */}
-            <Group title="Timescale">
+            <ToolbarGroup title="Timescale" colors={colors}>
                 <FormControl
                     size="small"
                     sx={{
@@ -436,14 +453,14 @@ export default function GanttToolbar({
                         ))}
                     </Select>
                 </FormControl>
-            </Group>
+            </ToolbarGroup>
 
             <Divider orientation="vertical" flexItem sx={{ my: 0.8, borderColor: colors.border }} />
 
             {/* =========================================================
              * ZOOM
              * ========================================================= */}
-            <Group title="Zoom">
+            <ToolbarGroup title="Zoom" colors={colors}>
                 <Tooltip title="Zoom out">
                     <span>
                         <IconButton
@@ -498,7 +515,7 @@ export default function GanttToolbar({
                         </IconButton>
                     </span>
                 </Tooltip>
-            </Group>
+            </ToolbarGroup>
 
             <Tooltip title="Fit timeline">
                 <IconButton
