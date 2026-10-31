@@ -692,6 +692,10 @@ await _unitOfWork
                             string.Empty,
 
 
+                        WbsNodeId =
+                            x.WbsNodeId,
+
+
 
                         WbsName =
                             wbs?.Name,
@@ -1299,6 +1303,10 @@ await _unitOfWork
                         node?.Code
                         ??
                         string.Empty,
+
+
+                    WbsNodeId =
+                        x.WbsNodeId,
 
 
                     WbsName =
