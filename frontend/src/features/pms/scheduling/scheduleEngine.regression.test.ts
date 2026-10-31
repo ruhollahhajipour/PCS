@@ -187,6 +187,51 @@ function expectSameDate(
 }
 
 describe("CPM scheduling engine regression", () => {
+    it("stops CPM calculation when a dependency cycle is detected", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Activity A", 1, [createRelationship("B", "A", "FS")]),
+            createActivity("B", "Activity B", 1, [createRelationship("A", "B", "FS")])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
+        expect(result.projectStart).toBeNull();
+        expect(result.projectFinish).toBeNull();
+        expect(result.projectDuration).toBe(0);
+        expect(result.criticalPath).toEqual([]);
+
+        for (const activity of Object.values(result.activities)) {
+            expect(activity.earlyStart).toBeNull();
+            expect(activity.earlyFinish).toBeNull();
+            expect(activity.lateStart).toBeNull();
+            expect(activity.lateFinish).toBeNull();
+            expect(activity.isCritical).toBe(false);
+        }
+    });
+
+    it("treats a self-referencing dependency as an invalid cycle", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Self-dependent activity", 1, [
+                createRelationship("A", "A", "FS")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
+        expect(result.criticalPath).toEqual([]);
+        expect(result.activities.A.earlyStart).toBeNull();
+    });
+
     it("calculates a basic FS network with working duration", () => {
         const activities: ScheduleActivity[] = [
             createActivity(
