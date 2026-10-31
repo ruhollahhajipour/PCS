@@ -34,6 +34,8 @@ public sealed class CorsOriginValidatorTests
 
     [Theory]
     [InlineData("*")]
+    [InlineData("https://*.example.com")]
+    [InlineData("https://api.*.example.com")]
     [InlineData("ftp://example.com")]
     [InlineData("https://user:password@example.com")]
     [InlineData("https://example.com/api")]
