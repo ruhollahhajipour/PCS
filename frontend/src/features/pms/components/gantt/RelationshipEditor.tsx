@@ -29,7 +29,7 @@ interface RelationshipEditorProps {
     row: GanttRow | null;
     rows: GanttRow[];
     colors: GanttPalette;
-    onSave: (rowId: string, predecessors: GanttRelationship[]) => void;
+    onSave: (rowId: string, predecessors: GanttRelationship[]) => Promise<void>;
 }
 
 type RelationshipType = "FS" | "SS" | "FF" | "SF";
@@ -52,16 +52,24 @@ function createsCycle(
     const activities = flattenActivities(rows);
 
     for (const activity of activities) {
-        graph.set(
-            activity.id,
-            (activity.predecessors ?? []).map(item => item.activityId)
-        );
+        graph.set(activity.id, []);
     }
 
-    graph.set(
-        successorId,
-        currentPredecessors.map(item => item.activityId)
-    );
+    for (const activity of activities) {
+        if (activity.id === successorId) continue;
+
+        for (const relationship of activity.predecessors ?? []) {
+            const successors = graph.get(relationship.activityId) ?? [];
+            successors.push(activity.id);
+            graph.set(relationship.activityId, successors);
+        }
+    }
+
+    for (const relationship of currentPredecessors) {
+        const successors = graph.get(relationship.activityId) ?? [];
+        successors.push(successorId);
+        graph.set(relationship.activityId, successors);
+    }
 
     const visited = new Set<string>();
     const stack = new Set<string>();
@@ -74,8 +82,8 @@ function createsCycle(
         visited.add(id);
         stack.add(id);
 
-        for (const predecessor of graph.get(id) ?? []) {
-            if (visit(predecessor)) return true;
+        for (const successor of graph.get(id) ?? []) {
+            if (visit(successor)) return true;
         }
 
         stack.delete(id);
@@ -103,6 +111,7 @@ export default function RelationshipEditor({
     const [newType, setNewType] = useState<RelationshipType>("FS");
     const [newLag, setNewLag] = useState("0");
     const [error, setError] = useState("");
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setRelationships(row?.predecessors ? row.predecessors.map(item => ({ ...item })) : []);
@@ -141,8 +150,8 @@ export default function RelationshipEditor({
         }
 
         const lag = Number(newLag);
-        if (!Number.isFinite(lag)) {
-            setError("Lag must be a valid number.");
+        if (!Number.isInteger(lag)) {
+            setError("Lag must be a whole number of days.");
             return;
         }
 
@@ -166,15 +175,45 @@ export default function RelationshipEditor({
         setError("");
     };
 
-    const save = () => {
-        onSave(row.id, relationships);
-        onClose();
+    const save = async () => {
+        if (relationships.some(item => !Number.isInteger(item.lag))) {
+            setError("Lag must be a whole number of days.");
+            return;
+        }
+
+        setSaving(true);
+        setError("");
+
+        try {
+            await onSave(row.id, relationships);
+            onClose();
+        } catch (saveError) {
+            const response = saveError as {
+                message?: string;
+                response?: {
+                    data?: {
+                        message?: string;
+                        Message?: string;
+                    };
+                };
+            };
+            setError(
+                response.response?.data?.message ??
+                response.response?.data?.Message ??
+                response.message ??
+                "Failed to save activity relationships."
+            );
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={() => {
+                if (!saving) onClose();
+            }}
             fullWidth
             maxWidth="md"
             PaperProps={{
@@ -265,7 +304,7 @@ export default function RelationshipEditor({
                                 type="number"
                                 value={relationship.lag ?? 0}
                                 onChange={event => updateRelationship(index, { lag: Number(event.target.value) })}
-                                inputProps={{ step: 0.5 }}
+                                inputProps={{ step: 1 }}
                                 sx={{ "& input": { fontSize: 10, py: 0.9 } }}
                             />
                             <IconButton
@@ -327,7 +366,7 @@ export default function RelationshipEditor({
                             type="number"
                             value={newLag}
                             onChange={event => setNewLag(event.target.value)}
-                            inputProps={{ step: 0.5 }}
+                            inputProps={{ step: 1 }}
                             InputLabelProps={{ sx: { fontSize: 10 } }}
                             sx={{ "& input": { fontSize: 10, py: 0.9 } }}
                         />
@@ -351,11 +390,11 @@ export default function RelationshipEditor({
             </DialogContent>
 
             <DialogActions sx={{ px: 1.2, py: 0.8, borderTop: `1px solid ${colors.border}` }}>
-                <Button size="small" onClick={onClose} sx={{ fontSize: 9, textTransform: "none" }}>
+                <Button size="small" disabled={saving} onClick={onClose} sx={{ fontSize: 9, textTransform: "none" }}>
                     Cancel
                 </Button>
-                <Button size="small" variant="contained" onClick={save} sx={{ fontSize: 9, textTransform: "none" }}>
-                    Apply Relationships
+                <Button size="small" disabled={saving} variant="contained" onClick={save} sx={{ fontSize: 9, textTransform: "none" }}>
+                    {saving ? "Saving..." : "Apply Relationships"}
                 </Button>
             </DialogActions>
         </Dialog>
