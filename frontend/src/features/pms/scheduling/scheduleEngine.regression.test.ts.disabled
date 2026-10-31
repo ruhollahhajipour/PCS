@@ -1,0 +1,478 @@
+import { describe, expect, it } from "vitest";
+
+import { scheduleProject } from "./cpmScheduler";
+
+import type {
+ScheduleActivity,
+ScheduleCalendar,
+ScheduleRelationship
+} from "./scheduleTypes";
+
+const STANDARD_CALENDAR: ScheduleCalendar = {
+id: "standard",
+name: "Standard 5-Day",
+hoursPerDay: 8,
+
+
+defaultIntervals: [
+    {
+        startHour: 8,
+        endHour: 16
+    }
+],
+
+week: {
+    0: {
+        working: false
+    },
+    1: {
+        working: true,
+        intervals: [
+            {
+                startHour: 8,
+                endHour: 16
+            }
+        ]
+    },
+    2: {
+        working: true,
+        intervals: [
+            {
+                startHour: 8,
+                endHour: 16
+            }
+        ]
+    },
+    3: {
+        working: true,
+        intervals: [
+            {
+                startHour: 8,
+                endHour: 16
+            }
+        ]
+    },
+    4: {
+        working: true,
+        intervals: [
+            {
+                startHour: 8,
+                endHour: 16
+            }
+        ]
+    },
+    5: {
+        working: true,
+        intervals: [
+            {
+                startHour: 8,
+                endHour: 16
+            }
+        ]
+    },
+    6: {
+        working: false
+    }
+},
+
+exceptions: []
+
+
+};
+
+const CALENDARS: Record<string, ScheduleCalendar> = {
+standard: STANDARD_CALENDAR
+};
+
+const PROJECT_START = new Date("2026-09-07T08:00:00");
+
+function createRelationship(
+predecessorId: string,
+successorId: string,
+type: ScheduleRelationship["type"],
+lag = 0,
+lagUnit: ScheduleRelationship["lagUnit"] = "days"
+): ScheduleRelationship {
+return {
+predecessorId,
+successorId,
+type,
+lag,
+lagUnit
+};
+}
+
+function createActivity(
+id: string,
+name: string,
+duration: number,
+predecessors: ScheduleRelationship[] = []
+): ScheduleActivity {
+return {
+id,
+code: id,
+name,
+duration,
+calendarId: "standard",
+predecessors
+};
+}
+
+function expectDate(
+value: Date | null,
+expected: string
+): void {
+expect(value).not.toBeNull();
+expect(value!.toISOString()).toBe(expected);
+}
+
+describe("CPM scheduling engine regression", () => {
+
+
+it("calculates FS, SS+lag and FF relationships correctly", () => {
+    const activities: ScheduleActivity[] = [
+        createActivity(
+            "A",
+            "Activity A",
+            2
+        ),
+
+        createActivity(
+            "B",
+            "Activity B",
+            3,
+            [
+                createRelationship(
+                    "A",
+                    "B",
+                    "FS"
+                )
+            ]
+        ),
+
+        createActivity(
+            "C",
+            "Activity C",
+            2,
+            [
+                createRelationship(
+                    "B",
+                    "C",
+                    "SS",
+                    1
+                )
+            ]
+        ),
+
+        createActivity(
+            "D",
+            "Activity D",
+            1,
+            [
+                createRelationship(
+                    "B",
+                    "D",
+                    "FF"
+                )
+            ]
+        )
+    ];
+
+    const result = scheduleProject(
+        activities,
+        CALENDARS,
+        {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        }
+    );
+
+    const a = result.activities.A;
+    const b = result.activities.B;
+    const c = result.activities.C;
+    const d = result.activities.D;
+
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    expect(c).toBeDefined();
+    expect(d).toBeDefined();
+
+    /*
+     * Project start:
+     * Monday 07-Sep-2026 08:00 local
+     *
+     * A = 2 working days
+     * Monday 08:00 -> Tuesday 16:00
+     */
+    expectDate(
+        a.earlyStart,
+        "2026-09-07T04:00:00.000Z"
+    );
+
+    expectDate(
+        a.earlyFinish,
+        "2026-09-08T12:00:00.000Z"
+    );
+
+    /*
+     * B = FS from A
+     * Tuesday 16:00 -> Friday 16:00
+     */
+    expectDate(
+        b.earlyStart,
+        "2026-09-08T12:00:00.000Z"
+    );
+
+    expectDate(
+        b.earlyFinish,
+        "2026-09-11T12:00:00.000Z"
+    );
+
+    /*
+     * C = SS + 1 working day from B
+     *
+     * B starts Tuesday 16:00.
+     * + 1 working day => Wednesday 16:00.
+     */
+    expectDate(
+        c.earlyStart,
+        "2026-09-09T12:00:00.000Z"
+    );
+
+    expectDate(
+        c.earlyFinish,
+        "2026-09-11T12:00:00.000Z"
+    );
+
+    /*
+     * D = FF with B
+     *
+     * D has one working day duration, therefore it starts
+     * Thursday 16:00 and finishes Friday 16:00.
+     */
+    expectDate(
+        d.earlyStart,
+        "2026-09-10T12:00:00.000Z"
+    );
+
+    expectDate(
+        d.earlyFinish,
+        "2026-09-11T12:00:00.000Z"
+    );
+
+    expectDate(
+        result.projectStart,
+        "2026-09-07T04:00:00.000Z"
+    );
+
+    expectDate(
+        result.projectFinish,
+        "2026-09-11T12:00:00.000Z"
+    );
+
+    expect(result.projectDuration).toBe(5);
+    expect(result.projectDurationHours).toBe(40);
+
+    expect(result.criticalPath).toEqual([
+        "A",
+        "B",
+        "D"
+    ]);
+
+    expect(a.isCritical).toBe(true);
+    expect(b.isCritical).toBe(true);
+    expect(d.isCritical).toBe(true);
+    expect(c.isCritical).toBe(false);
+});
+
+
+it("respects the 5-day calendar weekend", () => {
+    const activities: ScheduleActivity[] = [
+        createActivity(
+            "A",
+            "Weekend Test",
+            2
+        )
+    ];
+
+    const result = scheduleProject(
+        activities,
+        CALENDARS,
+        {
+            projectStart: new Date(
+                "2026-09-11T08:00:00"
+            ),
+            defaultCalendarId: "standard"
+        }
+    );
+
+    const activity = result.activities.A;
+
+    expect(activity).toBeDefined();
+
+    /*
+     * Friday 08:00 + 2 working days
+     * => Monday 16:00
+     */
+    expectDate(
+        activity.earlyStart,
+        "2026-09-11T04:00:00.000Z"
+    );
+
+    expectDate(
+        activity.earlyFinish,
+        "2026-09-14T12:00:00.000Z"
+    );
+});
+
+
+it("uses working-time duration rather than calendar-time duration", () => {
+    const activities: ScheduleActivity[] = [
+        createActivity(
+            "A",
+            "Two Working Days",
+            2
+        )
+    ];
+
+    const result = scheduleProject(
+        activities,
+        CALENDARS,
+        {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        }
+    );
+
+    const activity = result.activities.A;
+
+    expect(activity).toBeDefined();
+
+    expect(activity.duration).toBe(2);
+    expect(activity.durationHours).toBe(16);
+
+    expectDate(
+        activity.earlyStart,
+        "2026-09-07T04:00:00.000Z"
+    );
+
+    expectDate(
+        activity.earlyFinish,
+        "2026-09-08T12:00:00.000Z"
+    );
+});
+
+
+it("interprets SS lag in working days", () => {
+    const activities: ScheduleActivity[] = [
+        createActivity(
+            "A",
+            "Predecessor",
+            2
+        ),
+
+        createActivity(
+            "B",
+            "Successor",
+            1,
+            [
+                createRelationship(
+                    "A",
+                    "B",
+                    "SS",
+                    1
+                )
+            ]
+        )
+    ];
+
+    const result = scheduleProject(
+        activities,
+        CALENDARS,
+        {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        }
+    );
+
+    const a = result.activities.A;
+    const b = result.activities.B;
+
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+
+    /*
+     * A starts Monday 08:00.
+     * SS + 1 working day => B starts Tuesday 08:00.
+     *
+     * In UTC+4 this is Tuesday 04:00 UTC.
+     */
+    expectDate(
+        b.earlyStart,
+        "2026-09-08T04:00:00.000Z"
+    );
+});
+
+
+it("synchronizes FF relationships correctly", () => {
+    const activities: ScheduleActivity[] = [
+        createActivity(
+            "A",
+            "Predecessor",
+            3
+        ),
+
+        createActivity(
+            "B",
+            "Successor",
+            1,
+            [
+                createRelationship(
+                    "A",
+                    "B",
+                    "FF"
+                )
+            ]
+        )
+    ];
+
+    const result = scheduleProject(
+        activities,
+        CALENDARS,
+        {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        }
+    );
+
+    const a = result.activities.A;
+    const b = result.activities.B;
+
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+
+    expectDate(
+        b.earlyFinish,
+        a.earlyFinish!.toISOString()
+    );
+
+    /*
+     * A:
+     * Monday 08:00 -> Thursday 16:00
+     *
+     * B:
+     * Thursday 16:00 -> Friday 16:00
+     */
+    expectDate(
+        b.earlyStart,
+        "2026-09-10T12:00:00.000Z"
+    );
+
+    expectDate(
+        b.earlyFinish,
+        "2026-09-11T12:00:00.000Z"
+    );
+});
+
+
+});

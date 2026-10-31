@@ -1,0 +1,690 @@
+Folder PATH listing
+Volume serial number is 6855-EC08
+D:\PROJECTS\PCS\FRONTEND\SRC
+¦   App.css
+¦   App.tsx
+¦   index.css
+¦   main.tsx
+¦   
++---api
+¦       http.ts
+¦       index.ts
+¦       
++---assets
+¦   ¦   hero.png
+¦   ¦   react.svg
+¦   ¦   vite.svg
+¦   ¦   
+¦   +---logo
+¦           kgn-logo.png
+¦           
++---components
+¦   +---Common
+¦   ¦   ¦   EntityCard.tsx
+¦   ¦   ¦   PageHeader.tsx
+¦   ¦   ¦   StatItem.tsx
+¦   ¦   ¦   
+¦   ¦   +---Card
+¦   ¦   ¦       BaseCard.tsx
+¦   ¦   ¦       
+¦   ¦   +---ConfirmDialog
+¦   ¦   ¦       ConfirmDialog.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---CRUD
+¦   ¦   ¦       CRUDHeader.tsx
+¦   ¦   ¦       CRUDPage.tsx
+¦   ¦   ¦       CRUDTable.tsx
+¦   ¦   ¦       CRUDToolbar.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---DeleteDialog
+¦   ¦   ¦       DeleteDialog.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---Dialog
+¦   ¦   ¦       ConfirmDialog.tsx
+¦   ¦   ¦       DeleteConfirmDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---EmptyState
+¦   ¦   ¦       EmptyState.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---fields
+¦   ¦   ¦   ¦   index.ts
+¦   ¦   ¦   ¦   
+¦   ¦   ¦   +---CheckboxField
+¦   ¦   ¦   ¦       CheckboxField.tsx
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---CurrencyField
+¦   ¦   ¦   ¦       CurrencyField.tsx
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---DateField
+¦   ¦   ¦   ¦       DateField.tsx
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---NumberField
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       NumberField.tsx
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---RadioGroupField
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       RadioGroupField.tsx
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---SelectField
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       SelectField.tsx
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---SwitchField
+¦   ¦   ¦   ¦       index.ts
+¦   ¦   ¦   ¦       SwitchField.tsx
+¦   ¦   ¦   ¦       
+¦   ¦   ¦   +---TextField
+¦   ¦   ¦           index.ts
+¦   ¦   ¦           TextField.tsx
+¦   ¦   ¦           
+¦   ¦   +---FilterPanel
+¦   ¦   ¦       FilterPanel.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---Form
+¦   ¦   ¦       PCSDialog.tsx
+¦   ¦   ¦       PCSFormActions.tsx
+¦   ¦   ¦       PCSSelect.tsx
+¦   ¦   ¦       PCSTextField.tsx
+¦   ¦   ¦       
+¦   ¦   +---InfoCard
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       InfoCard.tsx
+¦   ¦   ¦       
+¦   ¦   +---KPI
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       KPICard.tsx
+¦   ¦   ¦       
+¦   ¦   +---Loading
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       Loading.tsx
+¦   ¦   ¦       
+¦   ¦   +---PageHeader
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PageHeader.tsx
+¦   ¦   ¦       
+¦   ¦   +---Pagination
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSPagination.tsx
+¦   ¦   ¦       
+¦   ¦   +---PCSCard
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSCard.tsx
+¦   ¦   ¦       
+¦   ¦   +---PCSDataGrid
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSDataGrid.tsx
+¦   ¦   ¦       
+¦   ¦   +---PCSDialog
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---PCSForm
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSForm.tsx
+¦   ¦   ¦       
+¦   ¦   +---PCSToolbar
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       PCSToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---SearchBox
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       SearchBox.tsx
+¦   ¦   ¦       
+¦   ¦   +---StatusChip
+¦   ¦           index.ts
+¦   ¦           StatusChip.tsx
+¦   ¦           
+¦   +---Company
+¦   ¦       CompanyAvatar.tsx
+¦   ¦       CompanyCard.tsx
+¦   ¦       CompanyStatus.tsx
+¦   ¦       CompanyToolbar.tsx
+¦   ¦       index.ts
+¦   ¦       
+¦   +---Dashboard
+¦   ¦       KPICard.tsx
+¦   ¦       
+¦   +---Header
+¦   +---KPI
+¦   ¦       KPICard.tsx
+¦   ¦       
+¦   +---Sidebar
+¦   ¦       Sidebar.tsx
+¦   ¦       
+¦   +---UI
+¦           index.ts
+¦           PCSButton.tsx
+¦           PCSCard.tsx
+¦           PCSPage.tsx
+¦           PCSSection.tsx
+¦           
++---config
+¦       app.config.ts
+¦       index.ts
+¦       
++---constants
+¦       index.ts
+¦       routes.ts
+¦       storageKeys.ts
+¦       
++---context
+¦       AppProviders.tsx
+¦       AuthContext.tsx
+¦       index.ts
+¦       WorkspaceContext.tsx
+¦       
++---core
+¦   +---api
+¦   +---auth
+¦   +---database
+¦   ¦       IDatabase.ts
+¦   ¦       index.ts
+¦   ¦       
+¦   +---localization
+¦   +---repositories
+¦   ¦       BaseRepository.ts
+¦   ¦       index.ts
+¦   ¦       
+¦   +---security
+¦   +---services
+¦   ¦       BaseService.ts
+¦   ¦       index.ts
+¦   ¦       
+¦   +---theme
+¦   +---utils
++---data
+¦       index.ts
+¦       menu.ts
+¦       permissions.ts
+¦       systemPermissions.ts
+¦       workspace.ts
+¦       
++---features
+¦   +---auth
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   +---services
+¦   ¦   ¦       auth.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---companies
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       CompanyActions.tsx
+¦   ¦   ¦       CompanyToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       companies.ts
+¦   ¦   ¦       company.mock.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   ¦       CompanyDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   ¦       useCompanies.ts
+¦   ¦   ¦       
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Companies.tsx
+¦   ¦   ¦       CompanyDetails.tsx
+¦   ¦   ¦       CompanyForm.tsx
+¦   ¦   ¦       CompanyList.tsx
+¦   ¦   ¦       CompanyTable.tsx
+¦   ¦   ¦       CompanyToolbar.tsx
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       types.ts
+¦   ¦   ¦       
+¦   ¦   +---services
+¦   ¦   ¦       company.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   ¦           company.ts
+¦   ¦           
+¦   +---cost-control
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       CostBreakdownChart.tsx
+¦   ¦   ¦       WBSTree.tsx
+¦   ¦   ¦       
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       cost.mock.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   ¦       CostControlDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   ¦       useCostControl.ts
+¦   ¦   ¦       
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       CostControl.tsx
+¦   ¦   ¦       CostControlTable.tsx
+¦   ¦   ¦       
+¦   ¦   +---services
+¦   ¦   ¦       cost.service.ts
+¦   ¦   ¦       costControl.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   ¦           costItem.ts
+¦   ¦           
+¦   +---dashboard
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       dashboard.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Dashboard.tsx
+¦   ¦   ¦       DashboardBudgetChart.tsx
+¦   ¦   ¦       DashboardCashFlowChart.tsx
+¦   ¦   ¦       DashboardChart.tsx
+¦   ¦   ¦       DashboardCostChart.tsx
+¦   ¦   ¦       DashboardCPIChart.tsx
+¦   ¦   ¦       DashboardProcurementChart.tsx
+¦   ¦   ¦       DashboardProgressChart.tsx
+¦   ¦   ¦       DashboardSPIChart.tsx
+¦   ¦   ¦       DashboardWarehouseChart.tsx
+¦   ¦   ¦       ExecutiveDashboard.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   ¦       index.ts
+¦   ¦   ¦       
+¦   ¦   +---services
+¦   ¦   ¦       dashboard.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---documents
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Documents.tsx
+¦   ¦   ¦       
+¦   ¦   +---services
+¦   ¦   ¦       document.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---materials
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   ¦       MaterialDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       MaterialDetails.tsx
+¦   ¦   ¦       MaterialForm.tsx
+¦   ¦   ¦       Materials.tsx
+¦   ¦   ¦       MaterialTable.tsx
+¦   ¦   ¦       MaterialToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   ¦       material.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---plants
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       PlantToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       plant.mock.ts
+¦   ¦   ¦       plants.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   ¦       PlantDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   ¦       usePlants.ts
+¦   ¦   ¦       
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Plants.tsx
+¦   ¦   ¦       PlantTable.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   ¦       plant.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   ¦           plant.ts
+¦   ¦           
+¦   +---procurement
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   procurement.routes.tsx
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       ProcurementCharts.tsx
+¦   ¦   ¦       ProcurementKPIs.tsx
+¦   ¦   ¦       ProcurementSummary.tsx
+¦   ¦   ¦       ProcurementToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       procurement.mock.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   ¦       ProcurementDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   ¦       useProcurement.ts
+¦   ¦   ¦       
+¦   ¦   +---models
+¦   ¦   ¦       procurement.routes.tsx
+¦   ¦   ¦       
+¦   ¦   +---pages
+¦   ¦   ¦       Procurement.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   ¦       procurement.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   ¦           procurement.ts
+¦   ¦           
+¦   +---projects
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       ProjectToolbar.tsx
+¦   ¦   ¦       
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       project.mock.ts
+¦   ¦   ¦       projects.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   ¦       ProjectDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   ¦       useProjects.ts
+¦   ¦   ¦       
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Projects.tsx
+¦   ¦   ¦       ProjectTable.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   ¦       project.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   ¦           project.ts
+¦   ¦           
+¦   +---reports
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Reports.tsx
+¦   ¦   ¦       
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   ¦       report.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---roles
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   ¦       roles.ts
+¦   ¦   ¦       
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   +---repository
+¦   ¦   +---services
+¦   ¦   +---types
+¦   +---settings
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---Branding
+¦   ¦   +---CompanyProfile
+¦   ¦   +---Currency
+¦   ¦   +---Email
+¦   ¦   +---Language
+¦   ¦   +---Notification
+¦   ¦   +---Numbering
+¦   ¦   +---Permissions
+¦   ¦   +---Roles
+¦   ¦   +---services
+¦   ¦   ¦       settings.service.ts
+¦   ¦   ¦       
+¦   ¦   +---Theme
+¦   ¦   +---Users
+¦   +---users
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   +---services
+¦   ¦   ¦       user.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---vendors
+¦   ¦   ¦   index.ts
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   +---constants
+¦   ¦   +---data
+¦   ¦   +---dialogs
+¦   ¦   ¦       VendorDialog.tsx
+¦   ¦   ¦       
+¦   ¦   +---hooks
+¦   ¦   +---models
+¦   ¦   +---pages
+¦   ¦   ¦       Vendors.tsx
+¦   ¦   ¦       VendorTable.tsx
+¦   ¦   ¦       
+¦   ¦   +---services
+¦   ¦   ¦       vendor.service.ts
+¦   ¦   ¦       
+¦   ¦   +---types
+¦   +---warehouse
+¦       ¦   index.ts
+¦       ¦   
+¦       +---Charts
+¦       +---components
+¦       ¦       WarehouseKPIs.tsx
+¦       ¦       WarehouseToolbar.tsx
+¦       ¦       
+¦       +---constants
+¦       +---Dashboard
+¦       +---data
+¦       +---dialogs
+¦       ¦       WarehouseDialog.tsx
+¦       ¦       
+¦       +---hooks
+¦       ¦       useWarehouse.ts
+¦       ¦       
+¦       +---InventoryCount
+¦       +---IssueMaterial
+¦       ¦   ¦   index.ts
+¦       ¦   ¦   
+¦       ¦   +---components
+¦       ¦   ¦       IssueKPIs.tsx
+¦       ¦   ¦       IssueToolbar.tsx
+¦       ¦   ¦       
+¦       ¦   +---dialogs
+¦       ¦   ¦       IssueDialog.tsx
+¦       ¦   ¦       
+¦       ¦   +---hooks
+¦       ¦   ¦       useIssue.ts
+¦       ¦   ¦       
+¦       ¦   +---pages
+¦       ¦   ¦       Issue.tsx
+¦       ¦   ¦       
+¦       ¦   +---services
+¦       ¦   ¦       issue.service.ts
+¦       ¦   ¦       
+¦       ¦   +---types
+¦       ¦           issue.ts
+¦       ¦           
+¦       +---models
+¦       +---pages
+¦       ¦       Warehouse.tsx
+¦       ¦       WarehouseTable.tsx
+¦       ¦       
+¦       +---Receipt
+¦       ¦   +---components
+¦       ¦   ¦       ReceiptKPIs.tsx
+¦       ¦   ¦       ReceiptToolbar.tsx
+¦       ¦   ¦       
+¦       ¦   +---dialogs
+¦       ¦   ¦       ReceiptDialog.tsx
+¦       ¦   ¦       
+¦       ¦   +---hooks
+¦       ¦   ¦       useReceipt.ts
+¦       ¦   ¦       
+¦       ¦   +---pages
+¦       ¦   ¦       Receipt.tsx
+¦       ¦   ¦       
+¦       ¦   +---services
+¦       ¦   ¦       receipt.service.ts
+¦       ¦   ¦       
+¦       ¦   +---types
+¦       ¦           receipt.ts
+¦       ¦           
+¦       +---ReceiveMaterial
+¦       +---Reports
+¦       +---Search
+¦       +---services
+¦       ¦       warehouse.service.ts
+¦       ¦       
+¦       +---Stock
+¦       +---Transfer
+¦       +---types
+¦               warehouse.ts
+¦               
++---hooks
+¦       index.ts
+¦       useWorkspace.ts
+¦       
++---layouts
+¦       Header.tsx
+¦       MainLayout.tsx
+¦       
++---models
+¦       auth.service.ts
+¦       auth.ts
+¦       base.ts
+¦       company.ts
+¦       costControl.ts
+¦       document.ts
+¦       index.ts
+¦       material.ts
+¦       permission.ts
+¦       plant.ts
+¦       project.ts
+¦       purchaseOrder.ts
+¦       user.ts
+¦       vendor.ts
+¦       warehouse.ts
+¦       
++---pages
+¦       Login.tsx
+¦       
++---routes
+¦       AppRoutes.tsx
+¦       index.ts
+¦       ProtectedRoute.tsx
+¦       
++---services
+¦       company.service.ts
+¦       export.service.ts
+¦       import.service.ts
+¦       index.ts
+¦       logger.service.ts
+¦       notification.service.ts
+¦       purchaseOrder.service.ts
+¦       storage.service.ts
+¦       workspace.service.ts
+¦       
++---shared
+¦   +---constants
+¦   +---hooks
+¦   +---types
++---theme
+¦       colors.ts
+¦       shadows.ts
+¦       theme.ts
+¦       typography.ts
+¦       
++---types
+¦       api.ts
+¦       auth.ts
+¦       common.ts
+¦       dashboard.ts
+¦       index.ts
+¦       menu.ts
+¦       report.ts
+¦       settings.ts
+¦       user.ts
+¦       workspace.ts
+¦       
++---utils
+        array.ts
+        date.ts
+        file.ts
+        formatCurrency.ts
+        formatDate.ts
+        formatNumber.ts
+        generateId.ts
+        index.ts
+        number.ts
+        object.ts
+        statusColor.ts
+        storage.ts
+        string.ts
+        validation.ts
+        

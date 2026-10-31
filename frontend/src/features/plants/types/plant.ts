@@ -1,0 +1,1 @@
+export type { Plant } from "../../../models/plant";

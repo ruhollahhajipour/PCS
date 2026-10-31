@@ -189,45 +189,17 @@ function expectSameDate(
 describe("CPM scheduling engine regression", () => {
     it("stops CPM calculation when a dependency cycle is detected", () => {
         const activities: ScheduleActivity[] = [
-            createActivity(
-                "A",
-                "Activity A",
-                1,
-                [
-                    createRelationship(
-                        "B",
-                        "A",
-                        "FS"
-                    )
-                ]
-            ),
-            createActivity(
-                "B",
-                "Activity B",
-                1,
-                [
-                    createRelationship(
-                        "A",
-                        "B",
-                        "FS"
-                    )
-                ]
-            )
+            createActivity("A", "Activity A", 1, [createRelationship("B", "A", "FS")]),
+            createActivity("B", "Activity B", 1, [createRelationship("A", "B", "FS")])
         ];
 
-        const result = scheduleProject(
-            activities,
-            CALENDARS,
-            {
-                projectStart: PROJECT_START,
-                defaultCalendarId: "standard"
-            }
-        );
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
 
         expect(result.isValid).toBe(false);
-        expect(result.warnings.join(" ")).toContain(
-            "Circular relationship detected"
-        );
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
         expect(result.projectStart).toBeNull();
         expect(result.projectFinish).toBeNull();
         expect(result.projectDuration).toBe(0);
@@ -244,33 +216,18 @@ describe("CPM scheduling engine regression", () => {
 
     it("treats a self-referencing dependency as an invalid cycle", () => {
         const activities: ScheduleActivity[] = [
-            createActivity(
-                "A",
-                "Self-dependent activity",
-                1,
-                [
-                    createRelationship(
-                        "A",
-                        "A",
-                        "FS"
-                    )
-                ]
-            )
+            createActivity("A", "Self-dependent activity", 1, [
+                createRelationship("A", "A", "FS")
+            ])
         ];
 
-        const result = scheduleProject(
-            activities,
-            CALENDARS,
-            {
-                projectStart: PROJECT_START,
-                defaultCalendarId: "standard"
-            }
-        );
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
 
         expect(result.isValid).toBe(false);
-        expect(result.warnings.join(" ")).toContain(
-            "Circular relationship detected"
-        );
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
         expect(result.criticalPath).toEqual([]);
         expect(result.activities.A.earlyStart).toBeNull();
     });
