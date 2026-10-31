@@ -382,9 +382,9 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     {
         var background = row.IsWbs
             ? row.Level <= 1
-                ? theme.Dark
+                ? Color.FromHex(theme.Dark)
                 : row.Level == 2
-                    ? theme.Secondary
+                    ? Color.FromHex(theme.Secondary)
                     : Color.FromHex("#EFF6FF")
             : row.IsMilestone
                 ? Colors.Yellow.Lighten4
