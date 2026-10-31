@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -107,6 +108,78 @@ public sealed class ProjectAuthorizationHttpTests
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Member_CannotMoveProjectToAnotherCompany()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        using var client = fixture.Server.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            fixture.Bearer(fixture.MemberUser.Id, Permissions.ProjectEdit);
+
+        var response = await client.PutAsJsonAsync(
+            $"/api/projects/{fixture.ProjectA.Id}",
+            fixture.ProjectRequest(fixture.CompanyB.Id));
+
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Member_CannotAssignPlantOwnedByAnotherCompany()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        using var client = fixture.Server.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            fixture.Bearer(fixture.MemberUser.Id, Permissions.ProjectEdit);
+
+        var response = await client.PutAsJsonAsync(
+            $"/api/projects/{fixture.ProjectA.Id}",
+            fixture.ProjectRequest(fixture.CompanyA.Id, fixture.PlantB.Id));
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Member_LosesAccessWhenCompanyIsDeactivated()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        using var client = fixture.Server.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            fixture.Bearer(fixture.MemberUser.Id, Permissions.ProjectView);
+
+        await using (var scope = fixture.Host.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PCSDbContext>();
+            var company = await db.Companies.SingleAsync(x => x.Id == fixture.CompanyA.Id);
+            company.IsActive = false;
+            await db.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync($"/api/projects/{fixture.ProjectA.Id}");
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SystemUser_CanReadProjectInInactiveCompanyForRecovery()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        using var client = fixture.Server.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            fixture.Bearer(fixture.SystemUser.Id, Permissions.ProjectView);
+
+        await using (var scope = fixture.Host.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PCSDbContext>();
+            var company = await db.Companies.SingleAsync(x => x.Id == fixture.CompanyB.Id);
+            company.IsActive = false;
+            await db.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync($"/api/projects/{fixture.ProjectB.Id}");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private const string Issuer = "PCS.IntegrationTests";
@@ -122,6 +195,12 @@ public sealed class ProjectAuthorizationHttpTests
             UserName = "http.tenant.member",
             IsActive = true
         };
+        public User SystemUser { get; } = new()
+        {
+            UserName = "http.tenant.system",
+            IsActive = true,
+            IsSystemUser = true
+        };
         public Company CompanyA { get; } = new()
         {
             Code = "HTTP-TENANT-A",
@@ -136,6 +215,16 @@ public sealed class ProjectAuthorizationHttpTests
         };
         public Project ProjectA { get; private set; } = null!;
         public Project ProjectB { get; private set; } = null!;
+        public Plant PlantA { get; } = new()
+        {
+            Code = "HTTP-PLANT-A",
+            Name = "HTTP Plant A"
+        };
+        public Plant PlantB { get; } = new()
+        {
+            Code = "HTTP-PLANT-B",
+            Name = "HTTP Plant B"
+        };
 
         private Fixture(SqliteConnection connection, IHost host)
         {
@@ -219,15 +308,24 @@ public sealed class ProjectAuthorizationHttpTests
                 Code = "HTTP-PROJECT-A",
                 Name = "HTTP Project A",
                 CompanyId = CompanyA.Id,
-                Company = CompanyA
+                Company = CompanyA,
+                PlantId = PlantA.Id,
+                Plant = PlantA
             };
             ProjectB = new Project
             {
                 Code = "HTTP-PROJECT-B",
                 Name = "HTTP Project B",
                 CompanyId = CompanyB.Id,
-                Company = CompanyB
+                Company = CompanyB,
+                PlantId = PlantB.Id,
+                Plant = PlantB
             };
+
+            PlantA.CompanyId = CompanyA.Id;
+            PlantA.Company = CompanyA;
+            PlantB.CompanyId = CompanyB.Id;
+            PlantB.Company = CompanyB;
 
             var membership = new CompanyUser
             {
@@ -240,13 +338,25 @@ public sealed class ProjectAuthorizationHttpTests
             CompanyA.Users.Add(membership);
             MemberUser.Companies.Add(membership);
 
-            db.AddRange(CompanyA, CompanyB, MemberUser, ProjectA, ProjectB);
+            db.AddRange(CompanyA, CompanyB, MemberUser, SystemUser, PlantA, PlantB, ProjectA, ProjectB);
             await db.SaveChangesAsync();
 
             var projectService = scope.ServiceProvider.GetRequiredService<FakeProjectService>();
             projectService.Add(ProjectA);
             projectService.Add(ProjectB);
         }
+
+        public CreateProjectDto ProjectRequest(Guid companyId, Guid? plantId = null) => new()
+        {
+            Code = "HTTP-PROJECT-UPDATE",
+            Name = "HTTP Project Update",
+            CompanyId = companyId,
+            PlantId = plantId,
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Currency = "USD",
+            Status = "Planning",
+            IsActive = true
+        };
 
         public System.Net.Http.Headers.AuthenticationHeaderValue Bearer(
             Guid userId,
