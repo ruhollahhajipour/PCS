@@ -232,6 +232,30 @@ describe("CPM scheduling engine regression", () => {
         expect(result.activities.A.earlyStart).toBeNull();
     });
 
+    it("rejects duplicate activity IDs before CPM calculation", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("DUPLICATE", "First activity", 1),
+            createActivity("DUPLICATE", "Second activity", 2)
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Duplicate activity IDs detected");
+        expect(result.projectStart).toBeNull();
+        expect(result.projectFinish).toBeNull();
+        expect(result.projectDuration).toBe(0);
+        expect(result.criticalPath).toEqual([]);
+        expect(result.activities.DUPLICATE.earlyStart).toBeNull();
+        expect(result.activities.DUPLICATE.earlyFinish).toBeNull();
+        expect(result.activities.DUPLICATE.lateStart).toBeNull();
+        expect(result.activities.DUPLICATE.lateFinish).toBeNull();
+        expect(result.activities.DUPLICATE.isCritical).toBe(false);
+    });
+
     it("calculates a basic FS network with working duration", () => {
         const activities: ScheduleActivity[] = [
             createActivity(
