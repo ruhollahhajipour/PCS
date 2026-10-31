@@ -100,7 +100,7 @@ jobs:
   
   sync_frontend_lockfile:
     name: Sync frontend lockfile on development work branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/work/pcs-ci-baseline-2026-10-31'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/work/pcs-ci-baseline-2026-10-31') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/pcs-ci-baseline-2026-10-31' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: windows-latest
     permissions:
       contents: write
@@ -125,7 +125,9 @@ jobs:
           script: |
             const fs = require('fs');
             const path = 'frontend/package-lock.json';
-            const branch = context.ref.replace('refs/heads/', '');
+            const branch = context.eventName === 'pull_request'
+              ? context.payload.pull_request.head.ref
+              : context.ref.replace('refs/heads/', '');
             const content = fs.readFileSync(path);
             const current = await github.rest.repos.getContent({
               owner: context.repo.owner,
