@@ -12,8 +12,8 @@ import {
     addWorkingDays,
     addWorkingHours,
     calculateWorkingDuration,
-    endOfDay,
     endOfWorkingTime,
+    getLastWorkingIntervalEnd,
     getDefaultCalendar,
     nextWorkingDay,
     previousWorkingDay,
@@ -721,12 +721,15 @@ function earliestStartForFinishAtLeast(
             );
 
         const previousEnd =
-            endOfWorkingTime(
+            getLastWorkingIntervalEnd(
                 calendar,
-                endOfDay(previousDay)
+                previousDay
             );
 
-        if (previousEnd.getTime() >= candidate.getTime()) {
+        if (
+            !previousEnd ||
+            previousEnd.getTime() >= candidate.getTime()
+        ) {
             break;
         }
 
@@ -745,7 +748,6 @@ function earliestStartForFinishAtLeast(
         }
 
         candidate = previousEnd;
-        candidateFinish = previousFinish;
     }
 
     return candidate;
