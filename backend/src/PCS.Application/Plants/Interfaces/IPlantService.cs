@@ -6,6 +6,9 @@ public interface IPlantService
 {
     Task<IEnumerable<PlantDto>> GetAllAsync();
 
+    Task<IEnumerable<PlantDto>> GetByCompanyIdsAsync(
+        IReadOnlyCollection<Guid> companyIds);
+
     Task<IEnumerable<PlantDto>> GetByCompanyIdAsync(Guid companyId);
 
     Task<PlantDto?> GetByIdAsync(Guid id);
