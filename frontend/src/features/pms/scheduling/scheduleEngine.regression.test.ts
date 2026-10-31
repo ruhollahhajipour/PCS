@@ -444,18 +444,19 @@ describe("CPM scheduling engine regression", () => {
         expect(b).toBeDefined();
 
         /*
-         * SF means:
+         * SF means the successor finish must be on or after
+         * the predecessor start.
          *
-         * B finish = A start
-         *
-         * A starts Monday 08:00.
-         * B has one working day duration, therefore its
-         * early finish must occur Monday 08:00 and its
-         * early start must be the previous working interval.
+         * The project starts Monday 08:00. A one-working-day
+         * successor therefore has its earliest feasible
+         * placement on Monday 08:00–16:00.
          */
-        expectSameDate(
-            b.earlyFinish,
-            a.earlyStart
+        expect(a.earlyStart).not.toBeNull();
+        expect(b.earlyFinish).not.toBeNull();
+        expect(
+            b.earlyFinish!.getTime()
+        ).toBeGreaterThanOrEqual(
+            a.earlyStart!.getTime()
         );
 
         expectLocalDateTime(
@@ -464,7 +465,7 @@ describe("CPM scheduling engine regression", () => {
                 year: 2026,
                 month: 9,
                 day: 7,
-                hour: 8
+                hour: 16
             }
         );
 
@@ -473,8 +474,8 @@ describe("CPM scheduling engine regression", () => {
             {
                 year: 2026,
                 month: 9,
-                day: 4,
-                hour: 16
+                day: 7,
+                hour: 8
             }
         );
     });
@@ -886,16 +887,18 @@ describe("CPM scheduling engine regression", () => {
          * Network finishes Thursday.
          * Project horizon is Monday.
          *
-         * B therefore has positive float.
-         * A is constrained by B, so its free float remains zero.
+         * Both activities share positive total float.
+         * A has zero free float because B follows immediately,
+         * but zero free float alone does not make it critical.
+         * CPM criticality is determined by total float.
          */
-        expect(a.totalFloat).toBeGreaterThanOrEqual(0);
+        expect(a.totalFloat).toBeGreaterThan(0);
         expect(b.totalFloat).toBeGreaterThan(0);
 
         expect(a.freeFloat).toBe(0);
         expect(b.freeFloat).toBeGreaterThan(0);
 
-        expect(a.isCritical).toBe(true);
+        expect(a.isCritical).toBe(false);
         expect(b.isCritical).toBe(false);
     });
 

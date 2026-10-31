@@ -13,6 +13,10 @@ import {
     addWorkingHours,
     calculateWorkingDuration,
     getDefaultCalendar,
+    isEndOfWorkingDay,
+    nextWorkingDay,
+    previousWorkingDay,
+    previousWorkingDayEndAtBoundary,
     startOfWorkingTime,
     subtractWorkingDays,
     subtractWorkingHours,
@@ -170,6 +174,87 @@ function subtractDuration(
     );
 }
 
+function shiftWorkingDays(
+    calendar: ScheduleCalendar,
+    date: Date,
+    days: number
+): Date {
+    if (
+        !Number.isFinite(days) ||
+        Math.abs(days) <= EPSILON
+    ) {
+        return new Date(
+            date.getTime()
+        );
+    }
+
+    const wholeDays =
+        Math.trunc(days);
+
+    const fraction =
+        days - wholeDays;
+
+    let cursor =
+        new Date(
+            date.getTime()
+        );
+
+    const direction =
+        Math.sign(wholeDays);
+
+    for (
+        let index = 0;
+        index < Math.abs(wholeDays);
+        index += 1
+    ) {
+        const targetDay =
+            direction > 0
+                ? nextWorkingDay(
+                      calendar,
+                      cursor,
+                      false
+                  )
+                : previousWorkingDay(
+                      calendar,
+                      cursor,
+                      false
+                  );
+
+        cursor.setFullYear(
+            targetDay.getFullYear(),
+            targetDay.getMonth(),
+            targetDay.getDate()
+        );
+    }
+
+    const fractionalHours =
+        Math.abs(fraction) *
+        Math.max(
+            0,
+            finite(
+                calendar.hoursPerDay,
+                0
+            )
+        );
+
+    if (fractionalHours > EPSILON) {
+        cursor =
+            fraction > 0
+                ? addWorkingHours(
+                      calendar,
+                      cursor,
+                      fractionalHours
+                  )
+                : subtractWorkingHours(
+                      calendar,
+                      cursor,
+                      fractionalHours
+                  );
+    }
+
+    return cursor;
+}
+
 function addLag(
     calendar: ScheduleCalendar,
     date: Date,
@@ -191,7 +276,7 @@ function addLag(
               date,
               lag
           )
-        : addWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
               lag
@@ -219,10 +304,10 @@ function subtractLag(
               date,
               lag
           )
-        : subtractWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
-              lag
+              -lag
           );
 }
 
@@ -310,10 +395,37 @@ function normalizeStart(
     calendar: ScheduleCalendar,
     date: Date
 ): Date {
+    if (
+        isEndOfWorkingDay(
+            calendar,
+            date
+        )
+    ) {
+        return new Date(
+            date.getTime()
+        );
+    }
+
     return startOfWorkingTime(
         calendar,
         date,
         true
+    );
+}
+
+function normalizeBackwardStart(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date {
+    return (
+        previousWorkingDayEndAtBoundary(
+            calendar,
+            date
+        ) ??
+        normalizeStart(
+            calendar,
+            date
+        )
     );
 }
 
@@ -616,7 +728,7 @@ function earliestStartForFinishAtLeast(
     }
 
     let candidate =
-        normalizeStart(
+        normalizeBackwardStart(
             calendar,
             subtractDuration(
                 calendar,

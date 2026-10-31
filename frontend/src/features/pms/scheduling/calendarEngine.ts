@@ -838,6 +838,99 @@ export function getWorkingIntervals(
     );
 }
 
+/**
+ * True when a date is exactly at the end of the final working
+ * interval for that calendar day. CPM uses this as a valid
+ * activity boundary even though no working hours remain today.
+ */
+export function isEndOfWorkingDay(
+    calendar: ScheduleCalendar,
+    date: Date
+): boolean {
+    const intervals =
+        getWorkingIntervals(
+            calendar,
+            date
+        );
+
+    if (!intervals.length) {
+        return false;
+    }
+
+    const finalInterval =
+        intervals[intervals.length - 1];
+
+    return date.getTime() ===
+        intervalStartEnd(
+            date,
+            finalInterval
+        ).end.getTime();
+}
+
+/**
+ * When a backward duration calculation lands exactly at the
+ * first working instant of a day, return the previous working
+ * day's final boundary. This keeps CPM start/finish boundaries
+ * consistent across non-working gaps.
+ */
+export function previousWorkingDayEndAtBoundary(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date | null {
+    const intervals =
+        getWorkingIntervals(
+            calendar,
+            date
+        );
+
+    if (!intervals.length) {
+        return null;
+    }
+
+    const firstInterval =
+        intervals[0];
+
+    const firstStart =
+        intervalStartEnd(
+            date,
+            firstInterval
+        ).start;
+
+    if (
+        date.getTime() !==
+        firstStart.getTime()
+    ) {
+        return null;
+    }
+
+    const previousDay =
+        previousWorkingDay(
+            calendar,
+            date,
+            false
+        );
+
+    const previousIntervals =
+        getWorkingIntervals(
+            calendar,
+            previousDay
+        );
+
+    if (!previousIntervals.length) {
+        return null;
+    }
+
+    const finalInterval =
+        previousIntervals[
+            previousIntervals.length - 1
+        ];
+
+    return intervalStartEnd(
+        previousDay,
+        finalInterval
+    ).end;
+}
+
 export function isWorkingDay(
     calendar: ScheduleCalendar,
     date: Date
