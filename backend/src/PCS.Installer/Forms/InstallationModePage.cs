@@ -16,7 +16,6 @@ public class InstallationModePage : InstallerPageBase
     private RadioButton repairRadio = null!;
     private RadioButton upgradeRadio = null!;
     private RadioButton uninstallRadio = null!;
-    private Label uninstallInfoLabel = null!;
 
 
 
@@ -111,19 +110,6 @@ public class InstallationModePage : InstallerPageBase
 
         card.Controls.Add(uninstallRadio);
 
-        uninstallInfoLabel = new Label
-        {
-            Text = "Your database, backups, imports and exports are preserved by default.",
-            Location = new Point(35, 300),
-            Size = new Size(575, 34),
-            Font = Fonts.Small,
-            ForeColor = Colors.TextSecondary,
-            BackColor = Color.Transparent,
-            Visible = context.Mode == InstallationMode.Uninstall
-        };
-
-        card.Controls.Add(uninstallInfoLabel);
-
 
 
         Controls.Add(card);
@@ -155,14 +141,9 @@ public class InstallationModePage : InstallerPageBase
         radio.CheckedChanged +=
             (s,e)=>
             {
-                if (radio.Checked)
+                if(radio.Checked)
                 {
                     context.Mode = mode;
-
-                    if (uninstallInfoLabel != null)
-                    {
-                        uninstallInfoLabel.Visible = mode == InstallationMode.Uninstall;
-                    }
                 }
             };
 
