@@ -1000,125 +1000,76 @@ await _unitOfWork
     // BUILD WBS TREE
     // =====================================================
 
-    private static List<WbsNodeDto> BuildWbsTree(
+    private List<WbsNodeDto> BuildWbsTree(
         List<WbsNode> nodes,
         List<Activity> activities,
         PmsFinancialSnapshot financials)
     {
-        if (nodes.Count == 0)
-            return new List<WbsNodeDto>();
-
         var lookup = nodes.ToDictionary(
-            x => x.Id,
-            x => new WbsNodeDto
+            entity => entity.Id,
+            entity => new WbsNodeDto
             {
-                Id = x.Id,
-                ParentId = x.ParentId,
-                Code = x.Code,
-                ParentCode = null,
-                Path = x.Path,
-                Name = x.Name,
-                Level = x.Level,
-                SortOrder = x.SortOrder
+                Id = entity.Id,
+                ParentId = entity.ParentId,
+                Code = entity.Code,
+                Name = entity.Name,
+                Path = entity.Path,
+                Level = entity.Level,
+                SortOrder = entity.SortOrder
             });
 
-        // Link the complete hierarchy before calculating any parent totals.
+        var activityDtos = activities
+            .Select(activity => new ActivityDto
+            {
+                Id = activity.Id,
+                WbsNodeId = activity.WbsNodeId,
+                Code = activity.Code,
+                Budget = financials.BudgetByActivity[activity.Id],
+                ActualCost = financials.ActualCostByActivity[activity.Id],
+                EarnedValue = financials.EarnedValueByActivity[activity.Id],
+                PlannedValue = financials.PlannedValueByActivity[activity.Id],
+                Progress = activity.Progress
+            })
+            .ToList();
+
+        // Use the same validated ParentId-based calculation path for both
+        // the WBS API and PMS exports. This rejects missing ownership,
+        // missing parents, and cycles instead of silently dropping nodes.
+        var calculatedNodes = _wbsCalculationService.Calculate(
+            lookup.Values.ToList(),
+            activityDtos);
+
         foreach (var entity in nodes)
         {
             var current = lookup[entity.Id];
 
-            if (entity.ParentId.HasValue &&
-                lookup.TryGetValue(entity.ParentId.Value, out var parent))
-            {
-                current.ParentCode = parent.Code;
-                parent.Children.Add(current);
-            }
-        }
-
-        foreach (var node in lookup.Values)
-        {
-            node.Children = node.Children
-                .OrderBy(x => x.SortOrder)
-                .ThenBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-
-        var activitiesByWbs = activities
-            .Where(x => lookup.ContainsKey(x.WbsNodeId))
-            .GroupBy(x => x.WbsNodeId)
-            .ToDictionary(x => x.Key, x => x.ToList());
-
-        var physicalProgressValueByWbs = nodes.ToDictionary(
-            x => x.Id,
-            _ => 0m);
-
-        // Aggregate activity-level values first, then roll them up bottom-up.
-        foreach (var entity in nodes)
-        {
-            if (!activitiesByWbs.TryGetValue(entity.Id, out var assigned))
+            if (!entity.ParentId.HasValue)
                 continue;
 
-            var dto = lookup[entity.Id];
-            dto.Budget = assigned.Sum(x => financials.BudgetByActivity[x.Id]);
-            dto.ActualCost = assigned.Sum(x => financials.ActualCostByActivity[x.Id]);
-            dto.EarnedValue = assigned.Sum(x => financials.EarnedValueByActivity[x.Id]);
-            dto.PlannedValue = assigned.Sum(x => financials.PlannedValueByActivity[x.Id]);
-            physicalProgressValueByWbs[entity.Id] = assigned.Sum(
-                x => financials.ProgressValueByActivity[x.Id]);
+            var parent = lookup[entity.ParentId.Value];
+            current.ParentCode = parent.Code;
+            parent.Children.Add(current);
         }
 
-        WbsNodeDto RollUp(WbsNodeDto node)
+        foreach (var node in calculatedNodes)
         {
-            foreach (var child in node.Children)
-            {
-                RollUp(child);
-                node.Budget += child.Budget;
-                node.ActualCost += child.ActualCost;
-                node.EarnedValue += child.EarnedValue;
-                node.PlannedValue += child.PlannedValue;
-                physicalProgressValueByWbs[node.Id] += physicalProgressValueByWbs[child.Id];
-            }
+            node.Children = node.Children
+                .OrderBy(child => child.SortOrder)
+                .ThenBy(child => child.Code, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            node.Progress = node.Budget == 0
-                ? 0
-                : Math.Clamp(
-                    physicalProgressValueByWbs[node.Id] / node.Budget * 100m,
-                    0m,
-                    100m);
-
-            node.WeightValue = financials.TotalBudget == 0
-                ? 0
+            // Keep the report's project-level W.V denominator aligned with
+            // the approved financial snapshot, including baseline scope.
+            node.WeightValue = financials.TotalBudget == 0m
+                ? 0m
                 : node.Budget / financials.TotalBudget * 100m;
-
-            return node;
         }
 
-        var roots = nodes
-            .Where(x => !x.ParentId.HasValue || !lookup.ContainsKey(x.ParentId.Value))
-            .OrderBy(x => x.SortOrder)
-            .ThenBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
-            .Select(x => lookup[x.Id])
+        return calculatedNodes
+            .Where(node => !node.ParentId.HasValue)
+            .OrderBy(node => node.SortOrder)
+            .ThenBy(node => node.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-        foreach (var root in roots)
-            RollUp(root);
-
-        void SetWeightFactors(IEnumerable<WbsNodeDto> siblings, decimal parentBudget, bool isRoot)
-        {
-            foreach (var node in siblings)
-            {
-                node.WeightFactor = isRoot
-                    ? 100m
-                    : parentBudget == 0
-                        ? 0
-                        : node.Budget / parentBudget * 100m;
-
-                SetWeightFactors(node.Children, node.Budget, false);
-            }
-        }
-
-        SetWeightFactors(roots, financials.TotalBudget, true);
-        return roots;
     }
 
     private sealed record PmsFinancialSnapshot(
