@@ -1896,7 +1896,7 @@ export function scheduleProject(
                 earlyStart
             );
 
-        let earlyFinish =
+        const earlyFinish =
             addDuration(
                 current.calendar,
                 earlyStart,
@@ -1948,8 +1948,7 @@ export function scheduleProject(
                 )
         );
 
-    let projectFinish =
-        networkFinish;
+    let projectFinish: Date | null;
 
     const requestedStart =
         toDate(
@@ -2080,7 +2079,7 @@ export function scheduleProject(
             continue;
         }
 
-        let lateStart =
+        const lateStart =
             subtractDuration(
                 current.calendar,
                 lateFinish,
