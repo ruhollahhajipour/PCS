@@ -1,7 +1,39 @@
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace PCS.API.Security;
 
 public static class CorsOriginValidator
 {
+    public static IServiceCollection AddPcsCors(
+        this IServiceCollection services,
+        IEnumerable<string> configuredOrigins)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var allowedOrigins = Normalize(configuredOrigins);
+
+        services.AddCors(
+            options =>
+            {
+                options.AddPolicy(
+                    "PCS",
+                    policy =>
+                    {
+                        if (allowedOrigins.Length > 0)
+                        {
+                            policy.WithOrigins(allowedOrigins);
+                        }
+
+                        policy
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
+
+        return services;
+    }
+
     public static string[] Normalize(
         IEnumerable<string> configuredOrigins)
     {
