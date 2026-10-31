@@ -89,10 +89,10 @@ jobs:
         working-directory: .
         shell: pwsh
         run: |
-          $previewBypassMatches = @(git grep -n -I "__PCS_PREVIEW_AUTH_BYPASS__" -- frontend)
+          git grep -n -I "__PCS_PREVIEW_AUTH_BYPASS__" -- frontend
           $grepExitCode = $LASTEXITCODE
+          Write-Output "Preview bypass scan exit code: $grepExitCode"
           if ($grepExitCode -eq 0) {
-            $previewBypassMatches | ForEach-Object { Write-Host $_ }
             Write-Error "Preview authentication bypass must never enter a release candidate."
             exit 1
           }
