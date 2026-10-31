@@ -103,7 +103,7 @@ jobs:
               throw "Published PCS API did not become healthy. STDOUT: $(Get-Content $stdout -Raw -ErrorAction SilentlyContinue) STDERR: $(Get-Content $stderr -Raw -ErrorAction SilentlyContinue)"
             }
 
-            $body = @{ username = "ci-user-that-does-not-exist"; password = "invalid-ci-password" } | ConvertTo-Json
+            $body = @{ username = "ci-admin"; password = "invalid-ci-password" } | ConvertTo-Json
             $login = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $body -SkipHttpErrorCheck -TimeoutSec 10
 
             if ($login.StatusCode -ne 401) {
