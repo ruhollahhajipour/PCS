@@ -487,9 +487,8 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 WeightFactor = node.WeightFactor,
                 WeightValue = node.WeightValue,
                 Progress = node.Progress,
-                WeightedProgress = dto.TotalBudget == 0
-                    ? 0
-                    : node.EarnedValue / dto.TotalBudget * 100m,
+                WeightedProgress = node.WeightValue *
+                    Math.Clamp(node.Progress, 0m, 100m) / 100m,
                 EarnedValue = node.EarnedValue,
                 PlannedValue = node.PlannedValue,
                 ActualCost = node.ActualCost,
@@ -553,9 +552,8 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 WeightFactor = activity.WeightFactor,
                 WeightValue = activity.WeightValue,
                 Progress = activity.Progress,
-                WeightedProgress = dto.TotalBudget == 0
-                    ? 0
-                    : activity.EarnedValue / dto.TotalBudget * 100m,
+                WeightedProgress = activity.WeightValue *
+                    Math.Clamp(activity.Progress, 0m, 100m) / 100m,
                 EarnedValue = activity.EarnedValue,
                 PlannedValue = activity.PlannedValue,
                 ActualCost = activity.ActualCost,
