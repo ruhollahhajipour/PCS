@@ -681,7 +681,7 @@ function earliestStartForFinishAtLeast(
             )
         );
 
-    let candidateFinish =
+    const candidateFinish =
         addDuration(
             calendar,
             candidate,
