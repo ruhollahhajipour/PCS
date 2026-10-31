@@ -67,7 +67,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .FontColor(Colors.Grey.Darken4));
 
                 page.Header()
-                    .Height(58)
+                    .Height(80)
                     .Element(container => ComposeHeader(
                         container,
                         dto,
@@ -394,7 +394,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
             ? Colors.White
             : row.IsCritical
                 ? Colors.Red.Darken2
-                : theme.Dark;
+                : Color.FromHex(theme.Dark);
 
         var cell = container
             .Background(background)
@@ -460,18 +460,18 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     {
         var result = new List<PmsPdfRow>();
         var activitiesByWbs = dto.Activities
-            .Where(activity => !string.IsNullOrWhiteSpace(activity.WbsCode))
-            .GroupBy(activity => activity.WbsCode, StringComparer.OrdinalIgnoreCase)
+            .Where(activity => activity.WbsNodeId.HasValue &&
+                               activity.WbsNodeId.Value != Guid.Empty)
+            .GroupBy(activity => activity.WbsNodeId!.Value)
             .ToDictionary(
                 group => group.Key,
-                group => group.OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase).ToList(),
-                StringComparer.OrdinalIgnoreCase);
+                group => group.OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase).ToList());
 
-        var knownWbsCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var knownWbsIds = new HashSet<Guid>();
 
         void AddNode(WbsNodeDto node)
         {
-            knownWbsCodes.Add(node.Code);
+            knownWbsIds.Add(node.Id);
 
             result.Add(new PmsPdfRow
             {
@@ -494,7 +494,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                 SPI = node.SPI
             });
 
-            if (activitiesByWbs.TryGetValue(node.Code, out var assignedActivities))
+            if (activitiesByWbs.TryGetValue(node.Id, out var assignedActivities))
             {
                 foreach (var activity in assignedActivities)
                     AddActivity(activity, node.Code, node.Level + 1);
@@ -516,8 +516,8 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
         }
 
         var unassigned = dto.Activities
-            .Where(activity => string.IsNullOrWhiteSpace(activity.WbsCode) ||
-                               !knownWbsCodes.Contains(activity.WbsCode))
+            .Where(activity => !activity.WbsNodeId.HasValue ||
+                               !knownWbsIds.Contains(activity.WbsNodeId.Value))
             .OrderBy(activity => activity.Code, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
