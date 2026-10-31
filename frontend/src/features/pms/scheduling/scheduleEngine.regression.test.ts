@@ -91,9 +91,28 @@ const HOLIDAY_CALENDAR: ScheduleCalendar = {
     ]
 };
 
+const SIX_DAY_CALENDAR: ScheduleCalendar = {
+    ...STANDARD_CALENDAR,
+    id: "six-day",
+    name: "Six-Day Saturday Working",
+    week: {
+        ...STANDARD_CALENDAR.week,
+        6: {
+            working: true,
+            intervals: [
+                {
+                    startHour: 8,
+                    endHour: 16
+                }
+            ]
+        }
+    }
+};
+
 const CALENDARS: Record<string, ScheduleCalendar> = {
     standard: STANDARD_CALENDAR,
-    "holiday-calendar": HOLIDAY_CALENDAR
+    "holiday-calendar": HOLIDAY_CALENDAR,
+    "six-day": SIX_DAY_CALENDAR
 };
 
 function localDate(
@@ -649,6 +668,73 @@ describe("CPM scheduling engine regression", () => {
                 hour: 16
             }
         );
+    });
+
+    it("supports positive FS lag in working hours", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", 4, "hours")]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 12
+        });
+    });
+
+    it("uses successor activity calendar when predecessor and successor calendars differ", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Five-day predecessor", 5),
+            createActivity(
+                "B",
+                "Six-day successor",
+                1,
+                [createRelationship("A", "B", "FS")],
+                { calendarId: "six-day" }
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 12,
+            hour: 16
+        });
     });
 
     it("respects the 5-day calendar weekend", () => {
