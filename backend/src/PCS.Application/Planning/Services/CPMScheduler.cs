@@ -20,44 +20,39 @@ public class CpmScheduler : ICpmScheduler
     private async Task<List<Activity>> LoadActivities(
         Guid projectId)
     {
-        return await _activityRepository
+        if (projectId == Guid.Empty)
+            throw new ArgumentException("ProjectId is required.", nameof(projectId));
+
+        var activities = await _activityRepository
             .GetProjectActivitiesAsync(projectId);
+
+        var invalidActivity = activities.FirstOrDefault(x =>
+            x.Duration < 0 || x.ProjectId != projectId);
+
+        if (invalidActivity is not null)
+        {
+            throw new InvalidOperationException(
+                invalidActivity.Duration < 0
+                    ? $"Activity '{invalidActivity.Code}' has a negative duration."
+                    : $"Activity '{invalidActivity.Code}' does not belong to project '{projectId}'.");
+        }
+
+        return activities;
     }
 
     private async Task<List<ActivityRelationship>> LoadRelationships(
-        Guid projectId)
+        Guid projectId,
+        IReadOnlyCollection<Activity> activities)
     {
         var relationships =
             await _relationshipRepository
                 .GetByProjectAsync(projectId);
 
-        return relationships
-            .Where(IsUsableRelationship)
+        return CpmNetworkValidator.Validate(
+                projectId,
+                activities,
+                relationships)
             .ToList();
-    }
-
-    private static bool IsUsableRelationship(
-        ActivityRelationship relationship)
-    {
-        if (!relationship.IsActive)
-        {
-            return false;
-        }
-
-        if (relationship.PredecessorId == Guid.Empty ||
-            relationship.SuccessorId == Guid.Empty)
-        {
-            return false;
-        }
-
-        return relationship.Type.Trim().ToUpperInvariant() switch
-        {
-            "FS" => true,
-            "SS" => true,
-            "FF" => true,
-            "SF" => true,
-            _ => false
-        };
     }
 
     private static string NormalizeRelationshipType(
@@ -135,7 +130,7 @@ public class CpmScheduler : ICpmScheduler
             await LoadActivities(projectId);
 
         var relationships =
-            await LoadRelationships(projectId);
+            await LoadRelationships(projectId, activities);
 
         var activityMap =
             activities.ToDictionary(x => x.Id);
@@ -215,7 +210,7 @@ public class CpmScheduler : ICpmScheduler
             await TopologicalSortAsync(projectId);
 
         var relationships =
-            await LoadRelationships(projectId);
+            await LoadRelationships(projectId, orderedActivities);
 
         var activityMap =
             orderedActivities.ToDictionary(x => x.Id);
@@ -312,11 +307,10 @@ public class CpmScheduler : ICpmScheduler
         var orderedActivities =
             await TopologicalSortAsync(projectId);
 
-        var activities =
-            await LoadActivities(projectId);
+        var activities = orderedActivities;
 
         var relationships =
-            await LoadRelationships(projectId);
+            await LoadRelationships(projectId, orderedActivities);
 
         var activityMap =
             activities.ToDictionary(x => x.Id);
@@ -433,7 +427,7 @@ public class CpmScheduler : ICpmScheduler
             await LoadActivities(projectId);
 
         var relationships =
-            await LoadRelationships(projectId);
+            await LoadRelationships(projectId, activities);
 
         var activityMap =
             activities.ToDictionary(x => x.Id);
