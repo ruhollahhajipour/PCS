@@ -57,6 +57,31 @@ public sealed class ProjectAccessGuardTests
     }
 
     [Fact]
+    public async Task InactiveUser_CannotAccessAnyCompanyResource()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.MemberUser.IsActive = false;
+        await fixture.Db.SaveChangesAsync();
+
+        var principal = fixture.Principal(fixture.MemberUser.Id);
+
+        Assert.False(await fixture.Guard.CanAccessProjectAsync(
+            principal, fixture.ProjectA.Id));
+        Assert.Empty(await fixture.Guard.GetAccessibleCompanyIdsAsync(principal));
+    }
+
+    [Fact]
+    public async Task CompanyMember_ReceivesOnlyCompaniesWithActiveMembership()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var principal = fixture.Principal(fixture.MemberUser.Id);
+
+        var companyIds = await fixture.Guard.GetAccessibleCompanyIdsAsync(principal);
+
+        Assert.Equal(new[] { fixture.CompanyA.Id }, companyIds);
+    }
+
+    [Fact]
     public async Task SystemUser_CanAccessResourcesAcrossActiveCompanies()
     {
         await using var fixture = await Fixture.CreateAsync();
