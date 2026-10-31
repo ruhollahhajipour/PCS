@@ -95,6 +95,22 @@ public sealed class ProjectAccessGuardTests
     }
 
     [Fact]
+    public async Task SystemUser_RetainsRecoveryAccessToInactiveCompany()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        fixture.CompanyB.IsActive = false;
+        await fixture.Db.SaveChangesAsync();
+
+        var principal = fixture.Principal(fixture.SystemUser.Id);
+
+        Assert.True(await fixture.Guard.CanAccessCompanyAsync(
+            principal, fixture.CompanyB.Id));
+        Assert.Contains(
+            fixture.CompanyB.Id,
+            await fixture.Guard.GetAccessibleCompanyIdsAsync(principal));
+    }
+
+    [Fact]
     public async Task PlantAccess_RequiresMembershipAndExpectedCompanyMatch()
     {
         await using var fixture = await Fixture.CreateAsync();
