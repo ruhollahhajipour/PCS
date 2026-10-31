@@ -260,9 +260,7 @@ public class PmsGanttService : IPmsGanttService
 
                         // Compatibility with current Gantt
                         Float =
-                            Math.Max(
-                                0,
-                                x.TotalFloat),
+                            x.TotalFloat,
 
                         IsCritical =
                             x.IsCritical,
