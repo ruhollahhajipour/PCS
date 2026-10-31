@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-
 using PCS.API.Security;
-
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
@@ -12,20 +10,28 @@ namespace PCS.API.Controllers;
 public class PmsEvmController : ControllerBase
 {
     private readonly IPmsEvmService _evmService;
+    private readonly IProjectAccessGuard _accessGuard;
 
-    public PmsEvmController(IPmsEvmService evmService)
+    public PmsEvmController(
+        IPmsEvmService evmService,
+        IProjectAccessGuard accessGuard)
     {
         _evmService = evmService;
+        _accessGuard = accessGuard;
     }
 
     [HttpGet("{projectId}")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
         Guid projectId,
-        [FromQuery] DateTime? reportDate = null)
+        [FromQuery] DateTime? reportDate = null,
+        CancellationToken cancellationToken = default)
     {
         if (projectId == Guid.Empty)
             return BadRequest("ProjectId is required.");
+
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
         try
         {

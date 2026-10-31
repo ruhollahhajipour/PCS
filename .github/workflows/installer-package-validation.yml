@@ -1,0 +1,165 @@
+name: PCS Windows Installer Package Validation
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "work/**"
+      - "fix/**"
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/installer-package-validation.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/installer-package-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pcs-installer-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-installer:
+    name: Publish and inspect Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Restore backend solution
+        run: dotnet restore backend/PCS.Backend.slnx
+
+      - name: Publish API for Windows x64
+        run: dotnet publish backend/src/PCS.API/PCS.API.csproj --configuration Release --runtime win-x64 --self-contained true --output backend/publish/PCS.API
+
+      - name: Smoke test published API with native SQLite on Windows
+        shell: pwsh
+        run: |
+          $env:ASPNETCORE_ENVIRONMENT = "Production"
+          $env:ASPNETCORE_URLS = "http://127.0.0.1:5079"
+          $dbPath = Join-Path $env:RUNNER_TEMP "pcs-windows-smoke.db"
+          $env:ConnectionStrings__DefaultConnection = "Data Source=$dbPath"
+          $env:Jwt__Secret = "PCS-CI-Only-Signing-Key-Not-For-Production-2026"
+          $env:Jwt__Issuer = "PCS.CI"
+          $env:Jwt__Audience = "PCS.CI"
+          $env:InitialAdmin__Username = "ci-admin"
+          $env:InitialAdmin__Password = "PCS-CI-Only-Initial-Admin-Password-2026!"
+          $env:InitialAdmin__FirstName = "CI"
+          $env:InitialAdmin__LastName = "Administrator"
+          $env:InitialAdmin__Email = "ci-admin@pcs.local"
+
+          $stdout = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stdout.log"
+          $stderr = Join-Path $env:RUNNER_TEMP "pcs-api-smoke.stderr.log"
+          $apiPath = "backend/publish/PCS.API/PCS.API.exe"
+          $api = Start-Process -FilePath $apiPath -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              if ($api.HasExited) {
+                throw "Published PCS API exited during startup with code $($api.ExitCode)."
+              }
+
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:5079/api/health" -TimeoutSec 2
+                if ($health.status -eq "ok") {
+                  $ready = $true
+                  break
+                }
+              }
+              catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+
+            if (-not $ready) {
+              throw "Published PCS API did not become healthy. STDOUT: $(Get-Content $stdout -Raw -ErrorAction SilentlyContinue) STDERR: $(Get-Content $stderr -Raw -ErrorAction SilentlyContinue)"
+            }
+
+            $body = @{ username = "ci-user-that-does-not-exist"; password = "invalid-ci-password" } | ConvertTo-Json
+            $login = Invoke-WebRequest -Uri "http://127.0.0.1:5079/api/auth/login" -Method Post -ContentType "application/json" -Body $body -SkipHttpErrorCheck -TimeoutSec 10
+
+            if ($login.StatusCode -ne 401) {
+              throw "Expected SQLite-backed invalid login to return HTTP 401, received HTTP $($login.StatusCode)."
+            }
+
+            Write-Host "Published Windows API started, migrated SQLite, and completed an authentication query."
+          }
+          finally {
+            if (-not $api.HasExited) {
+              Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+      - name: Publish launcher
+        run: dotnet publish backend/src/PCS.Launcher/PCS.Launcher.csproj --configuration Release --runtime win-x64 --self-contained true
+
+      - name: Publish installer
+        run: dotnet publish backend/src/PCS.Installer/PCS.Installer.csproj --configuration Release --runtime win-x64 --self-contained true
+
+      - name: Verify installer, SQLite native asset, and non-elevated manifest
+        shell: pwsh
+        run: |
+          $setup = "backend/src/PCS.Installer/Setup/PCSSetup.exe"
+          if (-not (Test-Path $setup)) {
+            throw "PCSSetup.exe was not produced at the expected path."
+          }
+
+          $setupInfo = Get-Item $setup
+          if ($setupInfo.Length -lt 1MB) {
+            throw "PCSSetup.exe is unexpectedly small ($($setupInfo.Length) bytes)."
+          }
+
+          $nativeSqlite = Get-ChildItem "backend/publish/PCS.API" -Filter "e_sqlite3.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $nativeSqlite) {
+            throw "The published API does not contain the e_sqlite3.dll native runtime."
+          }
+
+          $manifest = Get-Content "backend/src/PCS.Installer/app.manifest" -Raw
+          if ($manifest -notmatch 'level="asInvoker"') {
+            throw "Installer manifest is not configured for non-elevated execution."
+          }
+
+          $packagedSqlite = Get-ChildItem "backend/src/PCS.Installer/Setup/Resources/Publish/API" -Filter "e_sqlite3.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $packagedSqlite) {
+            throw "The installer staging area does not contain the e_sqlite3.dll native runtime."
+          }
+
+          Write-Host "Installer size: $($setupInfo.Length) bytes"
+          Write-Host "Packaged SQLite native runtime: $($packagedSqlite.FullName)"
+          Write-Host "SQLite native runtime: $($nativeSqlite.FullName)"
+          Write-Host "Installer execution level: asInvoker"
+
+      - name: Upload PCSSetup.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-windows-installer-validation
+          path: backend/src/PCS.Installer/Setup/PCSSetup.exe
+          if-no-files-found: error

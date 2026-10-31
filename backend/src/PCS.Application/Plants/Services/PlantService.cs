@@ -24,6 +24,20 @@ public class PlantService : IPlantService
             .Select(MapToDto);
     }
 
+    public async Task<IEnumerable<PlantDto>> GetByCompanyIdsAsync(
+        IReadOnlyCollection<Guid> companyIds)
+    {
+        ArgumentNullException.ThrowIfNull(companyIds);
+
+        if (companyIds.Count == 0)
+            return Array.Empty<PlantDto>();
+
+        var plants = await _repository.FindAsync(
+            x => companyIds.Contains(x.CompanyId) && x.IsActive && !x.IsDeleted);
+
+        return plants.Select(MapToDto);
+    }
+
     public async Task<IEnumerable<PlantDto>> GetByCompanyIdAsync(
         Guid companyId)
     {
@@ -32,7 +46,8 @@ public class PlantService : IPlantService
         return plants
             .Where(x =>
                 x.CompanyId == companyId &&
-                x.IsActive)
+                x.IsActive &&
+                !x.IsDeleted)
             .Select(MapToDto);
     }
 

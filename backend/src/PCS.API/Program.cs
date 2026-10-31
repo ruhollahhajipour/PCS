@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation.AspNetCore;
 
 using PCS.API.Middleware;
+using PCS.API.Security;
 using PCS.Application;
 using PCS.Application.Common.Security;
 using PCS.Application.Identity;
@@ -478,6 +479,11 @@ builder.Services.AddInfrastructure(
     builder.Configuration);
 
 
+// Resource authorization is separate from permission claims:
+// the caller must also be an active member of the resource's company.
+builder.Services.AddScoped<IProjectAccessGuard, ProjectAccessGuard>();
+
+
 builder.Services.AddControllers();
 
 
@@ -597,6 +603,16 @@ builder.Services.AddAuthorization(
 // CORS
 // ============================================================
 
+string[] configuredCorsOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+var allowedCorsOrigins =
+    CorsOriginValidator.Normalize(
+        configuredCorsOrigins);
+
 builder.Services.AddCors(
     options =>
     {
@@ -604,8 +620,12 @@ builder.Services.AddCors(
             "PCS",
             policy =>
             {
+                if (allowedCorsOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedCorsOrigins);
+                }
+
                 policy
-                    .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -613,6 +633,7 @@ builder.Services.AddCors(
 
 
 // ============================================================
+
 // Build
 // ============================================================
 
@@ -813,10 +834,11 @@ app.UseAuthorization();
 // Swagger
 // ============================================================
 
-app.UseSwagger();
-
-
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ============================================================

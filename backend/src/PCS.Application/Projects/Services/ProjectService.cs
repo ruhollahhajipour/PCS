@@ -27,6 +27,21 @@ public class ProjectService : IProjectService
 
 
 
+    public async Task<IEnumerable<ProjectDto>> GetByCompanyIdsAsync(
+        IReadOnlyCollection<Guid> companyIds)
+    {
+        ArgumentNullException.ThrowIfNull(companyIds);
+
+        if (companyIds.Count == 0)
+            return Array.Empty<ProjectDto>();
+
+        var projects = await _repository.FindAsync(
+            x => companyIds.Contains(x.CompanyId) && !x.IsDeleted);
+
+        return projects.Select(MapToDto);
+    }
+
+
     public async Task<ProjectDto?> GetByIdAsync(Guid id)
     {
         var project = await _repository.GetByIdAsync(id);
