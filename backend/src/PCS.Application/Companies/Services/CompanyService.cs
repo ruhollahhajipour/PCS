@@ -42,7 +42,7 @@ public class CompanyService : ICompanyService
             return Array.Empty<CompanyDto>();
 
         var companies = await _repository.FindAsync(
-            x => companyIds.Contains(x.Id) && x.IsActive && !x.IsDeleted);
+            x => companyIds.Contains(x.Id) && !x.IsDeleted);
 
         return companies.Select(x => new CompanyDto
         {
