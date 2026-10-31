@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-
 using PCS.API.Security;
-
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
@@ -12,25 +10,25 @@ namespace PCS.API.Controllers;
 public class PmsSchedulingController : ControllerBase
 {
     private readonly ICpmScheduler _scheduler;
-
+    private readonly IProjectAccessGuard _accessGuard;
 
     public PmsSchedulingController(
-        ICpmScheduler scheduler)
+        ICpmScheduler scheduler,
+        IProjectAccessGuard accessGuard)
     {
         _scheduler = scheduler;
+        _accessGuard = accessGuard;
     }
-
 
     [HttpPost("{projectId:guid}/run")]
     [Permission(Permissions.ProjectEdit)]
     public async Task<IActionResult> Run(
-        Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
-        var result =
-            await _scheduler
-                .ScheduleProjectAsync(projectId);
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
-
-        return Ok(result);
+        return Ok(await _scheduler.ScheduleProjectAsync(projectId));
     }
 }
