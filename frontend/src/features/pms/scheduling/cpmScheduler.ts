@@ -1071,9 +1071,17 @@ function backwardFinishCandidate(
             edge.relationship
         );
 
+    /*
+     * Forward scheduling applies relationship lag using the
+     * successor activity calendar. The backward pass must use
+     * that same calendar to invert the forward constraint;
+     * predecessor duration is still calculated on its own calendar.
+     */
+    const lagCalendar = successor.calendar;
+
     if (type === "FS") {
         return subtractLag(
-            predecessorCalendar,
+            lagCalendar,
             successor.lateStart,
             lag,
             unit
@@ -1083,7 +1091,7 @@ function backwardFinishCandidate(
     if (type === "SS") {
         const requiredStart =
             subtractLag(
-                predecessorCalendar,
+                lagCalendar,
                 successor.lateStart,
                 lag,
                 unit
@@ -1098,7 +1106,7 @@ function backwardFinishCandidate(
 
     if (type === "FF") {
         return subtractLag(
-            predecessorCalendar,
+            lagCalendar,
             successor.lateFinish,
             lag,
             unit
@@ -1107,7 +1115,7 @@ function backwardFinishCandidate(
 
     const requiredStart =
         subtractLag(
-            predecessorCalendar,
+            lagCalendar,
             successor.lateFinish,
             lag,
             unit
@@ -1348,7 +1356,7 @@ function calculateFreeFloat(
         if (type === "FS") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyStart,
                     lag,
                     unit
@@ -1368,7 +1376,7 @@ function calculateFreeFloat(
         if (type === "FF") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyFinish,
                     lag,
                     unit
@@ -1388,7 +1396,7 @@ function calculateFreeFloat(
         if (type === "SS") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyStart,
                     lag,
                     unit
