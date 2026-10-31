@@ -34,9 +34,11 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
 
         if (isSystemUser)
         {
+            // System administrators must be able to inspect and reactivate
+            // disabled companies; deleted companies remain inaccessible.
             return await _dbContext.Companies
                 .AsNoTracking()
-                .Where(x => x.IsActive && !x.IsDeleted)
+                .Where(x => !x.IsDeleted)
                 .Select(x => x.Id)
                 .ToListAsync(cancellationToken);
         }
@@ -84,15 +86,6 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
         if (!userId.HasValue)
             return false;
 
-        var companyIsActive = await _dbContext.Companies
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.Id == companyId && x.IsActive && !x.IsDeleted,
-                cancellationToken);
-
-        if (!companyIsActive)
-            return false;
-
         var isSystemUser = await _dbContext.Users
             .AsNoTracking()
             .AnyAsync(
@@ -103,7 +96,22 @@ public sealed class ProjectAccessGuard : IProjectAccessGuard
                 cancellationToken);
 
         if (isSystemUser)
-            return true;
+        {
+            return await _dbContext.Companies
+                .AsNoTracking()
+                .AnyAsync(
+                    x => x.Id == companyId && !x.IsDeleted,
+                    cancellationToken);
+        }
+
+        var companyIsActive = await _dbContext.Companies
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Id == companyId && x.IsActive && !x.IsDeleted,
+                cancellationToken);
+
+        if (!companyIsActive)
+            return false;
 
         return await _dbContext.CompanyUsers
             .AsNoTracking()
