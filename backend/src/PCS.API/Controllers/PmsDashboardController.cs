@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-
 using PCS.API.Security;
-
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
 
@@ -12,25 +10,25 @@ namespace PCS.API.Controllers;
 public class PmsDashboardController : ControllerBase
 {
     private readonly IPmsDashboardService _dashboardService;
-
+    private readonly IProjectAccessGuard _accessGuard;
 
     public PmsDashboardController(
-        IPmsDashboardService dashboardService)
+        IPmsDashboardService dashboardService,
+        IProjectAccessGuard accessGuard)
     {
         _dashboardService = dashboardService;
+        _accessGuard = accessGuard;
     }
-
 
     [HttpGet("{projectId}")]
     [Permission(Permissions.ProjectView)]
     public async Task<IActionResult> Get(
-        Guid projectId)
+        Guid projectId,
+        CancellationToken cancellationToken)
     {
-        var result =
-            await _dashboardService
-                .GetProjectDashboardAsync(projectId);
+        if (!await _accessGuard.CanAccessProjectAsync(User, projectId, cancellationToken))
+            return NotFound();
 
-
-        return Ok(result);
+        return Ok(await _dashboardService.GetProjectDashboardAsync(projectId));
     }
 }

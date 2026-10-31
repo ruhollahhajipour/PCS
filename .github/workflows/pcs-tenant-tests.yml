@@ -1,0 +1,24 @@
+name: PCS Tenant Authorization Tests
+
+on:
+  push:
+    branches: ["work/**", "feature/**"]
+    paths: ["backend/**", ".github/workflows/pcs-tenant-tests.yml"]
+  pull_request:
+    paths: ["backend/**", ".github/workflows/pcs-tenant-tests.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore backend/PCS.Backend.slnx
+      - run: dotnet build backend/PCS.Backend.slnx --configuration Release --no-restore
+      - run: dotnet test backend/tests/PCS.API.Tests/PCS.API.Tests.csproj --configuration Release --no-restore
+      - run: dotnet test backend/tests/PCS.Application.Tests/PCS.Application.Tests.csproj --configuration Release --no-restore

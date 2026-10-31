@@ -6,6 +6,9 @@ public interface IProjectService
 {
     Task<IEnumerable<ProjectDto>> GetAllAsync();
 
+    Task<IEnumerable<ProjectDto>> GetByCompanyIdsAsync(
+        IReadOnlyCollection<Guid> companyIds);
+
     Task<ProjectDto?> GetByIdAsync(Guid id);
 
     Task<Guid> CreateAsync(

@@ -6,6 +6,9 @@ public interface ICompanyService
 {
     Task<IEnumerable<CompanyDto>> GetAllAsync();
 
+    Task<IEnumerable<CompanyDto>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> companyIds);
+
     Task<CompanyDto?> GetByIdAsync(Guid id);
 
     Task<Guid> CreateAsync(CreateCompanyDto dto);

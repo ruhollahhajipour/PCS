@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation.AspNetCore;
 
 using PCS.API.Middleware;
+using PCS.API.Security;
 using PCS.Application;
 using PCS.Application.Common.Security;
 using PCS.Application.Identity;
@@ -476,6 +477,11 @@ builder.Services.AddApplication();
 
 builder.Services.AddInfrastructure(
     builder.Configuration);
+
+
+// Resource authorization is separate from permission claims:
+// the caller must also be an active member of the resource's company.
+builder.Services.AddScoped<IProjectAccessGuard, ProjectAccessGuard>();
 
 
 builder.Services.AddControllers();
