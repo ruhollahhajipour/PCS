@@ -87,7 +87,9 @@ jobs:
             $ready = $false
             for ($attempt = 0; $attempt -lt 60; $attempt++) {
               if ($api.HasExited) {
-                throw "Published PCS API exited during startup with code $($api.ExitCode)."
+                $apiStdout = Get-Content $stdout -Raw -ErrorAction SilentlyContinue
+                $apiStderr = Get-Content $stderr -Raw -ErrorAction SilentlyContinue
+                throw "Published PCS API exited during startup with code $($api.ExitCode). STDOUT: $apiStdout STDERR: $apiStderr"
               }
 
               try {
