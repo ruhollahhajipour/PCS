@@ -30,7 +30,8 @@ public class ActivityRelationshipRepository
             .Include(x => x.Successor)
 
             .Where(x =>
-                x.Predecessor.ProjectId == projectId)
+                x.Predecessor.ProjectId == projectId ||
+                x.Successor.ProjectId == projectId)
 
             .ToListAsync();
     }
