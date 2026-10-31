@@ -103,3 +103,5 @@ jobs:
           if ($grepExitCode -ne 1) {
             throw "git grep failed with exit code $grepExitCode."
           }
+
+          exit 0
