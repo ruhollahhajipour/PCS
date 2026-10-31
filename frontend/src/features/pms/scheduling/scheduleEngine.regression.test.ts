@@ -670,6 +670,82 @@ describe("CPM scheduling engine regression", () => {
         );
     });
 
+    it("supports fractional positive FS lag in working days", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", 0.5)]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 12
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
+    });
+
+    it("supports fractional negative FS lag in working days", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", -0.5)]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 12
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
+    });
+
     it("supports positive FS lag in working hours", () => {
         const activities: ScheduleActivity[] = [
             createActivity("A", "Predecessor", 1),
