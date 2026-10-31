@@ -193,17 +193,6 @@ export default function GanttToolbar({
         }
     };
 
-    const groupLabelSx = {
-        px: 0.55,
-        fontSize: 7,
-        lineHeight: 1,
-        fontWeight: 800,
-        color: colors.muted,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase" as const,
-        userSelect: "none" as const
-    };
-
     return (
         <Box
             sx={{
