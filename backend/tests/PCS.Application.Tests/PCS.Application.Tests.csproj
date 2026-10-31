@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PCS.Application\PCS.Application.csproj" />
+    <ProjectReference Include="..\..\src\PCS.API\PCS.API.csproj" />
   </ItemGroup>
 
 </Project>
