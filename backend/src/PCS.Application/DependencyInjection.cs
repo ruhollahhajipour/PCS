@@ -132,6 +132,10 @@ services.AddScoped<
             IPmsGanttService,
             PmsGanttService>();
 
+        services.AddScoped<
+            IActivityRelationshipService,
+            ActivityRelationshipService>();
+
 
 
 // ==========================
