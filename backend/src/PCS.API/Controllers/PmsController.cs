@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using PCS.API.Security;
 using PCS.Application.Common.Security;
 using PCS.Application.Planning.Interfaces;
@@ -25,6 +26,7 @@ public class PmsController : ControllerBase
     private readonly IPmsBaselineService _baselineService;
     private readonly IPmsTemplateService _templateService;
     private readonly IProjectAccessGuard _accessGuard;
+    private readonly ILogger<PmsController> _logger;
 
     public PmsController(
         IPmsExcelService excelService,
@@ -32,7 +34,8 @@ public class PmsController : ControllerBase
         IPmsService pmsService,
         IPmsBaselineService baselineService,
         IPmsTemplateService templateService,
-        IProjectAccessGuard accessGuard)
+        IProjectAccessGuard accessGuard,
+        ILogger<PmsController> logger)
     {
         _excelService = excelService;
         _pdfExporter = pdfExporter;
@@ -40,6 +43,7 @@ public class PmsController : ControllerBase
         _baselineService = baselineService;
         _templateService = templateService;
         _accessGuard = accessGuard;
+        _logger = logger;
     }
 
     [HttpPost("import")]
@@ -80,13 +84,22 @@ public class PmsController : ControllerBase
                 FileName = file.FileName
             });
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
+            var traceId = HttpContext.TraceIdentifier;
+
+            _logger.LogError(
+                exception,
+                "PMS import failed. TraceId: {TraceId}",
+                traceId);
+
+            Response.Headers["X-Correlation-ID"] = traceId;
+
             return BadRequest(new
             {
                 Success = false,
-                Message = ex.Message,
-                Inner = ex.InnerException?.Message
+                Message = "The PMS workbook could not be imported. Verify its format and required data.",
+                Reference = traceId
             });
         }
         finally
