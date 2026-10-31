@@ -282,6 +282,10 @@ public sealed class ProjectAuthorizationHttpTests
     {
         private readonly Dictionary<Guid, ProjectDto> _projects = new();
 
+        public FakeProjectService()
+        {
+        }
+
         public void Add(Project project) =>
             _projects[project.Id] = new ProjectDto
             {
