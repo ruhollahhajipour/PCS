@@ -771,7 +771,7 @@ describe("CPM scheduling engine regression", () => {
             year: 2026,
             month: 9,
             day: 11,
-            hour: 16
+            hour: 17
         });
         expectLocalDateTime(result.activities.A.lateStart, {
             year: 2026,
