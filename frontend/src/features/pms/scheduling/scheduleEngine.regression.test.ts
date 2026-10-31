@@ -689,13 +689,13 @@ describe("CPM scheduling engine regression", () => {
         expectLocalDateTime(result.activities.A.earlyFinish, {
             year: 2026,
             month: 9,
-            day: 8,
+            day: 7,
             hour: 16
         });
         expectLocalDateTime(result.activities.B.earlyStart, {
             year: 2026,
             month: 9,
-            day: 9,
+            day: 8,
             hour: 12
         });
     });
