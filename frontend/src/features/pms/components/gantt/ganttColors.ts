@@ -590,42 +590,14 @@ export function getWbsLevelColors(
     theme: Theme,
     preset: GanttColorPreset = "theme"
 ): string[] {
-    let baseColor =
-        theme.palette.primary.main;
-
-    switch (preset) {
-        case "corporate":
-            baseColor =
-                theme.palette.primary.main;
-            break;
-
-        case "slate":
-            baseColor =
-                theme.palette.secondary.main;
-            break;
-
-        case "engineering":
-            baseColor =
-                theme.palette.warning.main;
-            break;
-
-        case "p6":
-            baseColor =
-                theme.palette.secondary.main;
-            break;
-
-        case "highContrast":
-            baseColor =
-                theme.palette.secondary.main;
-            break;
-
-        case "theme":
-        case "custom":
-        default:
-            baseColor =
-                theme.palette.primary.main;
-            break;
-    }
+    const baseColor =
+        preset === "slate" ||
+        preset === "p6" ||
+        preset === "highContrast"
+            ? theme.palette.secondary.main
+            : preset === "engineering"
+              ? theme.palette.warning.main
+              : theme.palette.primary.main;
 
     return createWbsSpectrum(
         baseColor

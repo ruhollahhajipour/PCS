@@ -32,4 +32,12 @@ rules: {
 },
 
 },
+
+{
+files: ['src/context/SettingsContext.tsx', 'src/main.tsx'],
+rules: {
+  // These modules intentionally export a context/bootstrap entry rather than UI components.
+  'react-refresh/only-export-components': 'off',
+},
+},
 ])

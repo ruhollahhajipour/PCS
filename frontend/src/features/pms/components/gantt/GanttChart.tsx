@@ -606,6 +606,7 @@ export default function GanttChart(
                 JSON.stringify(colorSettings)
             );
         } catch {
+            // Browser storage can be unavailable; keep the in-memory settings.
         }
     }, [colorSettings]);
     const effectiveCustomColors =
@@ -791,20 +792,25 @@ export default function GanttChart(
                 effectiveColumnAlignments
             ]
         );
+    const {
+        visibleColumns: pmsVisibleColumns,
+        setAlignment: setPmsColumnAlignment,
+        setColumnStyle: setPmsColumnStyle
+    } = columns;
     const applyGlobalPmsAlignment =
         useCallback(
             (value: PmsHorizontalAlignment) => {
                 setGlobalPmsAlignment(value);
-                for (const column of columns.visibleColumns) {
-                    columns.setAlignment(
+                for (const column of pmsVisibleColumns) {
+                    setPmsColumnAlignment(
                         column.key,
                         value
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setAlignment
+                pmsVisibleColumns,
+                setPmsColumnAlignment
             ]
         );
     const [pmsFontFamily, setPmsFontFamily] =
@@ -822,16 +828,16 @@ export default function GanttChart(
     const applyPmsStyle =
         useCallback(
             (patch: Record<string, unknown>) => {
-                for (const column of columns.visibleColumns) {
-                    columns.setColumnStyle(
+                for (const column of pmsVisibleColumns) {
+                    setPmsColumnStyle(
                         column.key,
                         patch
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setColumnStyle
+                pmsVisibleColumns,
+                setPmsColumnStyle
             ]
         );
     const [
@@ -918,6 +924,7 @@ export default function GanttChart(
                 JSON.stringify(activityCalendarIds)
             );
         } catch {
+            // Browser storage can be unavailable; keep the in-memory calendar assignments.
         }
     }, [activityCalendarIds]);
     const [
@@ -999,6 +1006,7 @@ export default function GanttChart(
                     result
                 );
             },
+            // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRevision intentionally invalidates derived scheduling output after mutations.
             [
                 editableRows,
                 schedulingMode,

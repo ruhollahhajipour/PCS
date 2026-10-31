@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -411,108 +412,123 @@ export function WorkspaceProvider({
     authLoading,
   ]);
 
-  function persistWorkspace(
-    nextWorkspace: Workspace
-  ): void {
-    setWorkspaceState(
-      nextWorkspace
-    );
-
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          nextWorkspace
-        )
-      );
-    }
-    catch (error) {
-      console.warn(
-        "Failed to persist PCS workspace",
-        error
-      );
-    }
-  }
-
-  function setCompany(
-    company: WorkspaceCompany
-  ): void {
-    const companyPlants =
-      plants.filter(
-        plant =>
-          plant.companyId ===
-          company.id
+  const persistWorkspace = useCallback(
+    (nextWorkspace: Workspace): void => {
+      setWorkspaceState(
+        nextWorkspace
       );
 
-    const nextPlant =
-      companyPlants[0] ?? {
-        id: "",
-        companyId:
-          company.id,
-        code: "",
-        name: "",
-      };
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(
+            nextWorkspace
+          )
+        );
+      }
+      catch (error) {
+        console.warn(
+          "Failed to persist PCS workspace",
+          error
+        );
+      }
+    },
+    []
+  );
 
-    const plantProjects =
-      projects.filter(
-        project =>
-          project.plantId ===
-          nextPlant.id
-      );
+  const setCompany = useCallback(
+    (company: WorkspaceCompany): void => {
+      const companyPlants =
+        plants.filter(
+          plant =>
+            plant.companyId ===
+            company.id
+        );
 
-    const nextProject =
-      plantProjects[0] ?? {
-        id: "",
-        plantId:
-          nextPlant.id,
-        code: "",
-        name: "",
-      };
+      const nextPlant =
+        companyPlants[0] ?? {
+          id: "",
+          companyId:
+            company.id,
+          code: "",
+          name: "",
+        };
 
-    persistWorkspace({
-      company,
-      plant:
-        nextPlant,
-      project:
-        nextProject,
-    });
-  }
+      const plantProjects =
+        projects.filter(
+          project =>
+            project.plantId ===
+            nextPlant.id
+        );
 
-  function setPlant(
-    plant: WorkspacePlant
-  ): void {
-    const plantProjects =
-      projects.filter(
-        project =>
-          project.plantId ===
-          plant.id
-      );
+      const nextProject =
+        plantProjects[0] ?? {
+          id: "",
+          plantId:
+            nextPlant.id,
+          code: "",
+          name: "",
+        };
 
-    const nextProject =
-      plantProjects[0] ?? {
-        id: "",
-        plantId:
-          plant.id,
-        code: "",
-        name: "",
-      };
+      persistWorkspace({
+        company,
+        plant:
+          nextPlant,
+        project:
+          nextProject,
+      });
+    },
+    [
+      plants,
+      projects,
+      persistWorkspace
+    ]
+  );
 
-    persistWorkspace({
-      ...workspace,
-      plant,
-      project:
-        nextProject,
-    });
-  }
+  const setPlant = useCallback(
+    (plant: WorkspacePlant): void => {
+      const plantProjects =
+        projects.filter(
+          project =>
+            project.plantId ===
+            plant.id
+        );
 
-  function setProject(
-    project: WorkspaceProject
-  ): void {
-    persistWorkspace({
-      ...workspace,
-      project,
-    });
-  }
+      const nextProject =
+        plantProjects[0] ?? {
+          id: "",
+          plantId:
+            plant.id,
+          code: "",
+          name: "",
+        };
+
+      persistWorkspace({
+        ...workspace,
+        plant,
+        project:
+          nextProject,
+      });
+    },
+    [
+      projects,
+      workspace,
+      persistWorkspace
+    ]
+  );
+
+  const setProject = useCallback(
+    (project: WorkspaceProject): void => {
+      persistWorkspace({
+        ...workspace,
+        project,
+      });
+    },
+    [
+      workspace,
+      persistWorkspace
+    ]
+  );
 
   const value =
     useMemo(
@@ -530,6 +546,9 @@ export function WorkspaceProvider({
         companies,
         plants,
         projects,
+        setCompany,
+        setPlant,
+        setProject,
       ]
     );
 

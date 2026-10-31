@@ -838,6 +838,25 @@ export function getWorkingIntervals(
     );
 }
 
+export function getLastWorkingIntervalEnd(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date | null {
+    const intervals = getWorkingIntervals(
+        calendar,
+        date
+    );
+
+    if (!intervals.length) {
+        return null;
+    }
+
+    return intervalStartEnd(
+        date,
+        intervals[intervals.length - 1]
+    ).end;
+}
+
 export function isWorkingDay(
     calendar: ScheduleCalendar,
     date: Date
@@ -1574,7 +1593,7 @@ export function workingHoursBetween(
 
     let total = 0;
 
-    let cursor =
+    const cursor =
         startOfDay(start);
 
     const finishDay =
