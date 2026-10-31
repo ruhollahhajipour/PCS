@@ -74,7 +74,7 @@ public sealed class PmsExcelServiceTests
             var exception = await Assert.ThrowsAsync<Exception>(
                 () => service.ReadPmsExcelAsync(path));
 
-            Assert.Contains("cycle", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("cycle", exception.Message);
         }
         finally
         {
