@@ -66,6 +66,14 @@ public class CompaniesController : ControllerBase
         if (!await _accessGuard.CanAccessCompanyAsync(User, id, cancellationToken))
             return NotFound();
 
+        var current = await _companyService.GetByIdAsync(id);
+        if (current is null)
+            return NotFound();
+
+        var isSystemUser = await _accessGuard.IsSystemUserAsync(User, cancellationToken);
+        if (dto.IsActive != current.IsActive && !isSystemUser)
+            return Forbid();
+
         await _companyService.UpdateAsync(id, dto);
         return NoContent();
     }
