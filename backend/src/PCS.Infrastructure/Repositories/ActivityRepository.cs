@@ -32,7 +32,8 @@ public class ActivityRepository
             .Include(x => x.WbsNode)
 
             .Where(x =>
-                x.ProjectId == projectId)
+                x.ProjectId == projectId &&
+                !x.IsDeleted)
 
             .ToListAsync();
     }
