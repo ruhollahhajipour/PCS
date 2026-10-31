@@ -23,14 +23,14 @@ public static class CorsOriginValidator
                 (origin.Scheme != Uri.UriSchemeHttp &&
                  origin.Scheme != Uri.UriSchemeHttps) ||
                 string.IsNullOrWhiteSpace(origin.Host) ||
-                origin.Host == "*" ||
+                origin.Host.Contains('*') ||
                 origin.UserInfo.Length > 0 ||
                 origin.AbsolutePath != "/" ||
                 origin.Query.Length > 0 ||
                 origin.Fragment.Length > 0)
             {
                 throw new InvalidOperationException(
-                    "PCS CORS origins must be exact HTTP or HTTPS origins without paths, credentials, query strings, or fragments.");
+                    "PCS CORS origins must be exact HTTP or HTTPS origins without wildcards, paths, credentials, query strings, or fragments.");
             }
 
             var normalizedOrigin =
