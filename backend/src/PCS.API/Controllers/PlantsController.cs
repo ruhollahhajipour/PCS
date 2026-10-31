@@ -86,9 +86,8 @@ public class PlantsController : ControllerBase
         if (current is null)
             return NotFound();
 
-        var isSystemUser = await _accessGuard.IsSystemUserAsync(User, cancellationToken);
-        if (dto.CompanyId != current.CompanyId && !isSystemUser)
-            return Forbid();
+        if (dto.CompanyId != current.CompanyId)
+            return Conflict("A plant's company ownership is immutable. Create a new plant under the target company.");
 
         if (!await _accessGuard.CanAccessCompanyAsync(
                 User, dto.CompanyId, cancellationToken))
