@@ -382,10 +382,10 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
     {
         var background = row.IsWbs
             ? row.Level <= 1
-                ? theme.Dark
+                ? Color.FromHex(theme.Dark)
                 : row.Level == 2
-                    ? theme.Secondary
-                    : "#EFF6FF"
+                    ? Color.FromHex(theme.Secondary)
+                    : Color.FromHex("#EFF6FF")
             : row.IsMilestone
                 ? Colors.Yellow.Lighten4
                 : Colors.White;
@@ -446,9 +446,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                         text.CurrentPageNumber();
                         text.Span(" از ");
                         text.TotalPages();
-                    })
-                    .FontSize(7)
-                    .FontColor(Colors.Grey.Darken1);
+                    });
 
                 row.RelativeItem()
                     .AlignLeft()
