@@ -67,7 +67,7 @@ public sealed class PmsPdfExporter : IPmsPdfExporter
                     .FontColor(Colors.Grey.Darken4));
 
                 page.Header()
-                    .Height(58)
+                    .Height(80)
                     .Element(container => ComposeHeader(
                         container,
                         dto,
