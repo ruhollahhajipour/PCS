@@ -19,8 +19,10 @@ import GanttChart from "../components/gantt/GanttChart";
 
 import {
     getProjectGantt,
+    replaceActivityPredecessors,
     type GanttActivity,
     type GanttProject,
+    type GanttRelationship,
     type GanttRow,
     type HierarchicalGanttProject
 } from "../api/ganttApi";
@@ -976,6 +978,35 @@ export default function ProjectSchedule() {
        BUILD HIERARCHICAL DATA
        ======================================================== */
 
+    const handleSaveRelationships = async (
+        activityId: string,
+        predecessors: GanttRelationship[]
+    ) => {
+        if (!id) {
+            throw new Error("Project ID not found.");
+        }
+
+        await replaceActivityPredecessors(
+            id,
+            activityId,
+            predecessors.map(item => ({
+                predecessorId: item.activityId,
+                type: item.type as "FS" | "SS" | "FF" | "SF",
+                lag: item.lag
+            }))
+        );
+
+        try {
+            const refreshed = await getProjectGantt(id);
+            setData(refreshed);
+        } catch (refreshError) {
+            console.error(
+                "RELATIONSHIP SAVED BUT GANTT REFRESH FAILED:",
+                refreshError
+            );
+        }
+    };
+
     const hierarchicalData =
         useMemo<
             HierarchicalGanttProject | null
@@ -1176,6 +1207,7 @@ export default function ProjectSchedule() {
                     milestoneCount={
                         hierarchicalData.milestoneCount
                     }
+                    onSaveRelationships={handleSaveRelationships}
                 />
 
             </Box>
