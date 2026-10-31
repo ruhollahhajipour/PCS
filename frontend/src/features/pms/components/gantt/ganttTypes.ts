@@ -1,6 +1,6 @@
 import type { Theme } from "@mui/material/styles";
 import type { ReactNode } from "react";
-import type { GanttRow } from "../../api/ganttApi";
+import type { GanttRelationship, GanttRow } from "../../api/ganttApi";
 
 export interface GanttChartProps {
     rows: GanttRow[];
@@ -10,6 +10,10 @@ export interface GanttChartProps {
     criticalCount?: number;
     milestoneCount?: number;
     statusDate?: string | null;
+    onSaveRelationships?: (
+        activityId: string,
+        predecessors: GanttRelationship[]
+    ) => Promise<void>;
 }
 
 export type GanttColorPreset =
