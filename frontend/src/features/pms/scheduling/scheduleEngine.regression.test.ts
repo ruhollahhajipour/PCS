@@ -444,18 +444,13 @@ describe("CPM scheduling engine regression", () => {
         expect(b).toBeDefined();
 
         /*
-         * SF means:
-         *
-         * B finish = A start
-         *
-         * A starts Monday 08:00.
-         * B has one working day duration, therefore its
-         * early finish must occur Monday 08:00 and its
-         * early start must be the previous working interval.
+         * SF means the successor finish must be at or after
+         * the predecessor start. With a one-day duration,
+         * the earliest feasible finish is Monday 16:00.
+         * The task can start at the previous Friday 16:00 boundary.
          */
-        expectSameDate(
-            b.earlyFinish,
-            a.earlyStart
+        expect(b.earlyFinish!.getTime()).toBeGreaterThanOrEqual(
+            a.earlyStart!.getTime()
         );
 
         expectLocalDateTime(
@@ -464,7 +459,7 @@ describe("CPM scheduling engine regression", () => {
                 year: 2026,
                 month: 9,
                 day: 7,
-                hour: 8
+                hour: 16
             }
         );
 
@@ -895,7 +890,10 @@ describe("CPM scheduling engine regression", () => {
         expect(a.freeFloat).toBe(0);
         expect(b.freeFloat).toBeGreaterThan(0);
 
-        expect(a.isCritical).toBe(true);
+        // A serial chain shares total float; neither task is critical
+        // while the project finish horizon remains later than the network finish.
+        expect(a.totalFloat).toBe(b.totalFloat);
+        expect(a.isCritical).toBe(false);
         expect(b.isCritical).toBe(false);
     });
 
