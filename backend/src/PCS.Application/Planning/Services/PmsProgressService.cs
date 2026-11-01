@@ -21,10 +21,8 @@ public class PmsProgressService : IPmsProgressService
 
     public async Task<decimal> CalculateWbsProgressAsync(Guid wbsNodeId)
     {
-        var activities = await _activityRepository.GetAllAsync();
-
-        var items = activities
-            .Where(x => x.WbsNodeId == wbsNodeId)
+        var items = (await _activityRepository.FindAsync(
+            x => x.WbsNodeId == wbsNodeId && !x.IsDeleted))
             .ToList();
 
         if (!items.Any())
@@ -43,10 +41,8 @@ public class PmsProgressService : IPmsProgressService
 
     public async Task<decimal> CalculateProjectProgressAsync(Guid projectId)
     {
-        var activities = await _activityRepository.GetAllAsync();
-
-        var items = activities
-            .Where(x => x.ProjectId == projectId)
+        var items = (await _activityRepository.FindAsync(
+            x => x.ProjectId == projectId && !x.IsDeleted))
             .ToList();
 
         if (!items.Any())
