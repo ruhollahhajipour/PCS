@@ -548,7 +548,8 @@ function topologicalOrder(
 function getInitialStart(
     activity: ScheduleActivity,
     calendar: ScheduleCalendar,
-    options: ScheduleOptions
+    options: ScheduleOptions,
+    includeProjectStart = true
 ): Date | null {
     const projectStart =
         toDate(
@@ -572,7 +573,7 @@ function getInitialStart(
 
     const candidate =
         explicitStart ??
-        projectStart ??
+        (includeProjectStart ? projectStart : null) ??
         dataDate ??
         plannedStart;
 
@@ -1774,7 +1775,10 @@ export function scheduleProject(
             getInitialStart(
                 activity,
                 current.calendar,
-                options
+                options,
+                !edges.some(
+                    edge => edge.successorId === id
+                )
             );
 
         if (initial) {
