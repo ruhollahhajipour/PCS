@@ -1,4 +1,11 @@
 ﻿import {
+  lazy,
+  Suspense,
+  type ComponentType,
+  type LazyExoticComponent,
+} from "react";
+
+import {
   BrowserRouter,
   Navigate,
   Route,
@@ -10,100 +17,74 @@ import ProtectedRoute from "./ProtectedRoute";
 
 import { useWorkspace } from "../context/WorkspaceContext";
 
-import Login from "../pages/Login";
-import ChangePassword from "../pages/ChangePassword";
+// Keep the application shell eager; load feature pages only when their route is visited.
+const Login = lazy(() => import("../pages/Login"));
+const ChangePassword = lazy(() => import("../pages/ChangePassword"));
+const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
+const Companies = lazy(() => import("../features/companies/pages/Companies"));
+const CompanyDetails = lazy(() => import("../features/companies/pages/CompanyDetails"));
+const Plants = lazy(() => import("../features/plants/pages/Plants"));
+const Projects = lazy(() => import("../features/projects/pages/Projects"));
+const ProjectDetails = lazy(() => import("../features/projects/pages/ProjectDetails"));
+const ProjectWbs = lazy(() => import("../features/projects/pages/ProjectWbs"));
+const ProjectSchedule = lazy(() => import("../features/pms/pages/ProjectSchedule"));
+const ProjectSetup = lazy(() => import("../features/setup/pages/ProjectSetup"));
+const CostControl = lazy(() => import("../features/cost-control/pages/CostControl"));
+const WarehousePage = lazy(() =>
+  import("../features/warehouse").then(module => ({ default: module.WarehousePage }))
+);
+const WarehouseDashboard = lazy(() =>
+  import("../features/warehouse").then(module => ({ default: module.WarehouseDashboard }))
+);
+const StockPage = lazy(() =>
+  import("../features/warehouse").then(module => ({ default: module.StockPage }))
+);
+const ReorderPage = lazy(() =>
+  import("../features/warehouse").then(module => ({ default: module.ReorderPage }))
+);
+const Procurement = lazy(() =>
+  import("../features/procurement").then(module => ({ default: module.Procurement }))
+);
+const ProcurementDashboard = lazy(() =>
+  import("../features/procurement/pages/ProcurementDashboard")
+);
+const Materials = lazy(() => import("../features/materials/pages/Materials"));
+const Vendors = lazy(() => import("../features/vendors/pages/Vendors"));
+const Documents = lazy(() => import("../features/documents/pages/Documents"));
+const Reports = lazy(() => import("../features/reports/pages/Reports"));
+const Settings = lazy(() => import("../features/settings/pages/Settings"));
+const Administration = lazy(() =>
+  import("../features/administration/pages/Administration")
+);
+const Users = lazy(() => import("../features/administration/pages/Users"));
+const RolesPermissions = lazy(() =>
+  import("../features/administration/pages/RolesPermissions")
+);
 
-// =====================
-// Dashboard
-// =====================
-import Dashboard from "../features/dashboard/pages/Dashboard";
+type LazyRouteComponent = LazyExoticComponent<ComponentType>;
 
-// =====================
-// Companies
-// =====================
-import Companies from "../features/companies/pages/Companies";
-import CompanyDetails from "../features/companies/pages/CompanyDetails";
-
-// =====================
-// Plants
-// =====================
-import Plants from "../features/plants/pages/Plants";
-
-// =====================
-// Projects
-// =====================
-import Projects from "../features/projects/pages/Projects";
-import ProjectDetails from "../features/projects/pages/ProjectDetails";
-import ProjectWbs from "../features/projects/pages/ProjectWbs";
-
-// =====================
-// PMS
-// =====================
-import ProjectSchedule from "../features/pms/pages/ProjectSchedule";
-
-// =====================
-// Project Setup
-// =====================
-import ProjectSetup from "../features/setup/pages/ProjectSetup";
-
-// =====================
-// Cost Control
-// =====================
-import CostControl from "../features/cost-control/pages/CostControl";
-
-// =====================
-// Warehouse
-// =====================
-import {
-  WarehousePage,
-  WarehouseDashboard,
-  StockPage,
-  ReorderPage,
-} from "../features/warehouse";
-
-// =====================
-// Procurement
-// =====================
-import { Procurement } from "../features/procurement";
-import ProcurementDashboard from
-  "../features/procurement/pages/ProcurementDashboard";
-
-// =====================
-// Materials
-// =====================
-import Materials from "../features/materials/pages/Materials";
-
-// =====================
-// Vendors
-// =====================
-import Vendors from "../features/vendors/pages/Vendors";
-
-// =====================
-// Documents
-// =====================
-import Documents from "../features/documents/pages/Documents";
-
-// =====================
-// Reports
-// =====================
-import Reports from "../features/reports/pages/Reports";
-
-// =====================
-// Settings
-// =====================
-import Settings from "../features/settings/pages/Settings";
-
-// =====================
-// Administration
-// =====================
-import Administration from
-  "../features/administration/pages/Administration";
-
-import Users from
-  "../features/administration/pages/Users";
-
-import RolesPermissions from
-  "../features/administration/pages/RolesPermissions";
+function LazyPage({ component: Page }: { component: LazyRouteComponent }) {
+  return (
+    <Suspense
+      fallback={
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            minHeight: "35vh",
+            display: "grid",
+            placeItems: "center",
+            color: "#64748B",
+          }}
+        >
+          در حال بارگذاری صفحه…
+        </div>
+      }
+    >
+      <Page />
+    </Suspense>
+  );
+}
 
 
 /* =========================================================
@@ -162,14 +143,14 @@ export default function AppRoutes() {
 
         <Route
           path="/login"
-          element={<Login />}
+          element={<LazyPage component={Login} />}
         />
 
         <Route
           path="/change-password"
           element={
             <ProtectedRoute>
-              <ChangePassword />
+              <LazyPage component={ChangePassword} />
             </ProtectedRoute>
           }
         />
@@ -193,7 +174,7 @@ export default function AppRoutes() {
 
           <Route
             path="/dashboard"
-            element={<Dashboard />}
+            element={<LazyPage component={Dashboard} />}
           />
 
 
@@ -203,12 +184,12 @@ export default function AppRoutes() {
 
           <Route
             path="/companies"
-            element={<Companies />}
+            element={<LazyPage component={Companies} />}
           />
 
           <Route
             path="/companies/:id"
-            element={<CompanyDetails />}
+            element={<LazyPage component={CompanyDetails} />}
           />
 
 
@@ -218,7 +199,7 @@ export default function AppRoutes() {
 
           <Route
             path="/plants"
-            element={<Plants />}
+            element={<LazyPage component={Plants} />}
           />
 
 
@@ -238,7 +219,7 @@ export default function AppRoutes() {
 
           <Route
             path="/projects"
-            element={<Projects />}
+            element={<LazyPage component={Projects} />}
           />
 
           {/* IMPORTANT:
@@ -247,17 +228,17 @@ export default function AppRoutes() {
 
           <Route
             path="/projects/wbs"
-            element={<ProjectWbs />}
+            element={<LazyPage component={ProjectWbs} />}
           />
 
           <Route
             path="/projects/:id"
-            element={<ProjectDetails />}
+            element={<LazyPage component={ProjectDetails} />}
           />
 
           <Route
             path="/projects/:id/schedule"
-            element={<ProjectSchedule />}
+            element={<LazyPage component={ProjectSchedule} />}
           />
 
 
@@ -267,7 +248,7 @@ export default function AppRoutes() {
 
           <Route
             path="/setup"
-            element={<ProjectSetup />}
+            element={<LazyPage component={ProjectSetup} />}
           />
 
 
@@ -277,7 +258,7 @@ export default function AppRoutes() {
 
           <Route
             path="/cost-control"
-            element={<CostControl />}
+            element={<LazyPage component={CostControl} />}
           />
 
 
@@ -287,22 +268,22 @@ export default function AppRoutes() {
 
           <Route
             path="/warehouse"
-            element={<WarehousePage />}
+            element={<LazyPage component={WarehousePage} />}
           />
 
           <Route
             path="/warehouse/dashboard"
-            element={<WarehouseDashboard />}
+            element={<LazyPage component={WarehouseDashboard} />}
           />
 
           <Route
             path="/warehouse/stock"
-            element={<StockPage />}
+            element={<LazyPage component={StockPage} />}
           />
 
           <Route
             path="/warehouse/reorder"
-            element={<ReorderPage />}
+            element={<LazyPage component={ReorderPage} />}
           />
 
 
@@ -312,12 +293,12 @@ export default function AppRoutes() {
 
           <Route
             path="/procurement"
-            element={<Procurement />}
+            element={<LazyPage component={Procurement} />}
           />
 
           <Route
             path="/procurement/dashboard"
-            element={<ProcurementDashboard />}
+            element={<LazyPage component={ProcurementDashboard} />}
           />
 
 
@@ -327,7 +308,7 @@ export default function AppRoutes() {
 
           <Route
             path="/materials"
-            element={<Materials />}
+            element={<LazyPage component={Materials} />}
           />
 
 
@@ -337,7 +318,7 @@ export default function AppRoutes() {
 
           <Route
             path="/vendors"
-            element={<Vendors />}
+            element={<LazyPage component={Vendors} />}
           />
 
 
@@ -347,7 +328,7 @@ export default function AppRoutes() {
 
           <Route
             path="/settings"
-            element={<Settings />}
+            element={<LazyPage component={Settings} />}
           />
 
 
@@ -357,17 +338,17 @@ export default function AppRoutes() {
 
           <Route
             path="/administration"
-            element={<Administration />}
+            element={<LazyPage component={Administration} />}
           />
 
           <Route
             path="/administration/users"
-            element={<Users />}
+            element={<LazyPage component={Users} />}
           />
 
           <Route
             path="/administration/roles"
-            element={<RolesPermissions />}
+            element={<LazyPage component={RolesPermissions} />}
           />
 
 
@@ -377,7 +358,7 @@ export default function AppRoutes() {
 
           <Route
             path="/documents"
-            element={<Documents />}
+            element={<LazyPage component={Documents} />}
           />
 
 
@@ -387,7 +368,7 @@ export default function AppRoutes() {
 
           <Route
             path="/reports"
-            element={<Reports />}
+            element={<LazyPage component={Reports} />}
           />
 
         </Route>
