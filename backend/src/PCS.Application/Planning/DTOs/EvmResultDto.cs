@@ -16,6 +16,9 @@ public class EvmResultDto
 
     public decimal BaselineBudget { get; set; }
 
+    /// <summary>Budget at Completion from the approved baseline.</summary>
+    public decimal BudgetAtCompletion { get; set; }
+
     public string? DataQualityNote { get; set; }
 
     public decimal PlannedValue { get; set; }
@@ -31,4 +34,11 @@ public class EvmResultDto
     public decimal SPI { get; set; }
 
     public decimal CPI { get; set; }
+
+    /// <summary>Forecast using BAC / CPI; null when CPI is zero.</summary>
+    public decimal? EstimateAtCompletion { get; set; }
+
+    public decimal? EstimateToComplete { get; set; }
+
+    public decimal? VarianceAtCompletion { get; set; }
 }

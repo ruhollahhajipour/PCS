@@ -74,7 +74,62 @@ public sealed class PmsEvmServiceTests
         Assert.Equal(0m, result.CostVariance);
         Assert.Equal(0.8m, result.SPI);
         Assert.Equal(1m, result.CPI);
+        Assert.Equal(1000m, result.BudgetAtCompletion);
+        Assert.Equal(1000m, result.EstimateAtCompletion);
+        Assert.Equal(600m, result.EstimateToComplete);
+        Assert.Equal(0m, result.VarianceAtCompletion);
         Assert.Contains("Opening costs", result.DataQualityNote);
+    }
+
+    [Fact]
+    public async Task CalculateAsync_ReturnsCpiBasedForecastMetricsForCurrentDataDate()
+    {
+        var projectId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        var baseline = new ProjectBaselineSnapshotDto
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            Name = "Approved Baseline",
+            Version = 2,
+            TotalBudget = 1000m,
+            ActivityCount = 1,
+            Activities =
+            [
+                new ProjectBaselineActivityDto
+                {
+                    ActivityId = activityId,
+                    Budget = 1000m,
+                    PlannedStart = DateTime.UtcNow.Date.AddDays(-5),
+                    PlannedFinish = DateTime.UtcNow.Date.AddDays(5),
+                    WorkingDaysMask = WeekdaysMask()
+                }
+            ]
+        };
+        var activity = new Activity
+        {
+            Id = activityId,
+            ProjectId = projectId,
+            WbsNodeId = Guid.NewGuid(),
+            Code = "A-001",
+            Progress = 50m,
+            ActualCost = 400m
+        };
+
+        var service = new PmsEvmService(
+            new FakeRepository<ProgressEntry>(),
+            new FakeRepository<Activity>([activity]),
+            new StubBaselineService(baseline));
+
+        var result = await service.CalculateAsync(projectId, DateTime.UtcNow.Date);
+
+        Assert.Equal(500m, result.EarnedValue);
+        Assert.Equal(400m, result.ActualCost);
+        Assert.Equal(1.25m, result.CPI);
+        Assert.Equal(1000m, result.BudgetAtCompletion);
+        Assert.Equal(800m, result.EstimateAtCompletion);
+        Assert.Equal(400m, result.EstimateToComplete);
+        Assert.Equal(200m, result.VarianceAtCompletion);
     }
 
     [Fact]

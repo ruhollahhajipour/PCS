@@ -131,6 +131,10 @@ export interface PmsEvm {
   baselineVersion: number;
   baselineActivityCount: number;
   baselineBudget: number;
+  budgetAtCompletion: number;
+  estimateAtCompletion: number | null;
+  estimateToComplete: number | null;
+  varianceAtCompletion: number | null;
   dataQualityNote?: string | null;
 
   plannedValue: number;

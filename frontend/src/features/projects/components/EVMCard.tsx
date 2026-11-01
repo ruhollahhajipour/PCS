@@ -14,7 +14,9 @@ type Props = {
   data: PmsEvm;
 };
 
-function formatValue(value: number): string {
+function formatValue(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "N/A";
+
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(value);
@@ -22,9 +24,13 @@ function formatValue(value: number): string {
 
 export default function EVMCard({ data }: Props) {
   const items = [
+    { title: "Budget at Completion (BAC)", value: data.budgetAtCompletion },
     { title: "Planned Value (PV)", value: data.plannedValue },
     { title: "Earned Value (EV)", value: data.earnedValue },
     { title: "Actual Cost (AC)", value: data.actualCost },
+    { title: "Estimate at Completion (EAC)", value: data.estimateAtCompletion },
+    { title: "Estimate to Complete (ETC)", value: data.estimateToComplete },
+    { title: "Variance at Completion (VAC)", value: data.varianceAtCompletion },
     { title: "Cost Variance (CV)", value: data.costVariance },
     { title: "Schedule Variance (SV)", value: data.scheduleVariance },
   ];
@@ -45,6 +51,9 @@ export default function EVMCard({ data }: Props) {
           </Typography>
           <Typography variant="caption" display="block" color="text.secondary">
             PV is linearly time-phased across captured working days; holiday and shift exceptions are not modelled.
+          </Typography>
+          <Typography variant="caption" display="block" color="text.secondary">
+            EAC uses the CPI-based forecast method (BAC / CPI); forecast values are unavailable when CPI is zero.
           </Typography>
         </Box>
 

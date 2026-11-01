@@ -133,6 +133,18 @@ public sealed class PmsEvmService : IPmsEvmService
         var cpi = actualCost <= 0m ? 0m : earnedValue / actualCost;
         var spi = plannedValue <= 0m ? 0m : earnedValue / plannedValue;
 
+        // CPI-based forecast assumes current cost efficiency continues.
+        // A zero CPI cannot produce a defensible estimate.
+        decimal? estimateAtCompletion = cpi > 0m
+            ? Math.Round(baseline.TotalBudget / cpi, 2, MidpointRounding.AwayFromZero)
+            : null;
+        decimal? estimateToComplete = estimateAtCompletion.HasValue
+            ? Math.Round(estimateAtCompletion.Value - actualCost, 2, MidpointRounding.AwayFromZero)
+            : null;
+        decimal? varianceAtCompletion = estimateAtCompletion.HasValue
+            ? Math.Round(baseline.TotalBudget - estimateAtCompletion.Value, 2, MidpointRounding.AwayFromZero)
+            : null;
+
         return new EvmResultDto
         {
             ProjectId = projectId,
@@ -142,6 +154,10 @@ public sealed class PmsEvmService : IPmsEvmService
             BaselineVersion = baseline.Version,
             BaselineActivityCount = baseline.ActivityCount,
             BaselineBudget = baseline.TotalBudget,
+            BudgetAtCompletion = baseline.TotalBudget,
+            EstimateAtCompletion = estimateAtCompletion,
+            EstimateToComplete = estimateToComplete,
+            VarianceAtCompletion = varianceAtCompletion,
             DataQualityNote = isCurrentDataDate
                 ? null
                 : "Historical Actual Cost is accumulated from dated progress-entry period costs. Opening costs not represented in the progress-entry ledger are not included.",
