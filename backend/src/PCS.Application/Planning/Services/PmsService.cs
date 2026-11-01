@@ -46,6 +46,23 @@ public class PmsService : IPmsService
     public async Task ImportPmsAsync(
         ImportPmsDto dto)
     {
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            await ImportPmsCoreAsync(dto);
+            await _unitOfWork.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+    }
+
+    private async Task ImportPmsCoreAsync(
+        ImportPmsDto dto)
+    {
         if(dto.ProjectId == Guid.Empty)
             throw new Exception(
                 "ProjectId is required.");
