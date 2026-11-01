@@ -451,7 +451,6 @@ if (
                     provider;
             }
         }
-        }
 
 
         Log.Information(
