@@ -77,3 +77,60 @@ jobs:
 
       - name: Run application regression tests
         run: dotnet test backend/tests/PCS.Application.Tests/PCS.Application.Tests.csproj --configuration Release --no-restore
+
+  sqlserver-integration:
+    name: SQL Server migration integration test
+    needs: scaffold-and-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: "PcsCiOnly!Password2026#"
+        ports:
+          - 1433:1433
+    env:
+      Database__Provider: SqlServer
+      ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=PCS_MigrationTest;User Id=sa;Password=PcsCiOnly!Password2026#;TrustServerCertificate=True;Encrypt=False"
+      Jwt__Secret: "PCS-CI-ONLY-DESIGN-TIME-SECRET-DO-NOT-USE-IN-PRODUCTION-0000000000000000"
+    steps:
+      - name: Checkout latest branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore API
+        run: dotnet restore backend/src/PCS.API/PCS.API.csproj
+
+      - name: Install EF Core CLI
+        shell: bash
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.10
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Build API and SQL Server migrations
+        run: dotnet build backend/src/PCS.API/PCS.API.csproj --configuration Release
+
+      - name: Apply migrations to SQL Server
+        shell: bash
+        run: |
+          for attempt in $(seq 1 18); do
+            if dotnet ef database update --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --no-build; then
+              exit 0
+            fi
+            echo "SQL Server is not ready yet (attempt $attempt/18); retrying in 10 seconds."
+            sleep 10
+          done
+          echo "SQL Server migration did not complete."
+          exit 1
+
+      - name: Verify applied migration history
+        run: dotnet ef migrations list --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --no-build
