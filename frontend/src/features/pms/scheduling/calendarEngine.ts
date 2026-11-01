@@ -1563,11 +1563,118 @@ export function subtractWorkingDays(
         );
     }
 
-    return subtractWorkingHours(
-        calendar,
-        date,
-        days * hoursPerDay
+    /*
+     * Whole working-day offsets preserve the position within the
+     * working interval. In particular, subtracting one day from
+     * Tuesday 16:00 must produce Monday 16:00, not Tuesday 08:00.
+     *
+     * Working-hour lag remains handled by subtractWorkingHours().
+     */
+    const wholeDays = Math.floor(days + 1e-9);
+    const fractionalDays = Math.max(
+        0,
+        days - wholeDays
     );
+
+    let cursor = new Date(date.getTime());
+
+    for (let day = 0; day < wholeDays; day += 1) {
+        let intervals = getWorkingIntervals(
+            calendar,
+            cursor
+        );
+
+        let intervalIndex = -1;
+        let offsetHours = 0;
+
+        for (let index = 0; index < intervals.length; index += 1) {
+            const { start, end } = intervalStartEnd(
+                cursor,
+                intervals[index]
+            );
+
+            if (
+                cursor.getTime() >= start.getTime() &&
+                cursor.getTime() <= end.getTime()
+            ) {
+                intervalIndex = index;
+                offsetHours = (
+                    cursor.getTime() - start.getTime()
+                ) / MS_PER_HOUR;
+                break;
+            }
+        }
+
+        if (intervalIndex < 0) {
+            cursor = endOfWorkingTime(
+                calendar,
+                cursor
+            );
+
+            intervals = getWorkingIntervals(
+                calendar,
+                cursor
+            );
+
+            if (!intervals.length) {
+                continue;
+            }
+
+            intervalIndex = intervals.length - 1;
+            const { start, end } = intervalStartEnd(
+                cursor,
+                intervals[intervalIndex]
+            );
+            offsetHours = (
+                end.getTime() - start.getTime()
+            ) / MS_PER_HOUR;
+        }
+
+        const previousDay = previousWorkingDay(
+            calendar,
+            cursor,
+            false
+        );
+
+        const previousIntervals = getWorkingIntervals(
+            calendar,
+            previousDay
+        );
+
+        if (!previousIntervals.length) {
+            cursor = previousDay;
+            continue;
+        }
+
+        const targetIndex = Math.min(
+            intervalIndex,
+            previousIntervals.length - 1
+        );
+        const target = intervalStartEnd(
+            previousDay,
+            previousIntervals[targetIndex]
+        );
+
+        const targetDuration = (
+            target.end.getTime() - target.start.getTime()
+        ) / MS_PER_HOUR;
+
+        cursor = new Date(
+            target.start.getTime() +
+                Math.min(offsetHours, targetDuration) *
+                    MS_PER_HOUR
+        );
+    }
+
+    if (fractionalDays > 1e-9) {
+        cursor = subtractWorkingHours(
+            calendar,
+            cursor,
+            fractionalDays * hoursPerDay
+        );
+    }
+
+    return cursor;
 }
 
 /* -------------------------------------------------------------------------- */
