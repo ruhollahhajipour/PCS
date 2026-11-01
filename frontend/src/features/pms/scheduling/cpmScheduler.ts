@@ -13,6 +13,7 @@ import {
     addWorkingHours,
     calculateWorkingDuration,
     getDefaultCalendar,
+    nextWorkingIntervalEnd,
     startOfWorkingTime,
     subtractWorkingDays,
     subtractWorkingHours,
@@ -616,13 +617,10 @@ function earliestStartForFinishAtLeast(
     }
 
     let candidate =
-        normalizeStart(
+        subtractDuration(
             calendar,
-            subtractDuration(
-                calendar,
-                requiredFinish,
-                duration
-            )
+            requiredFinish,
+            duration
         );
 
     let candidateFinish =
@@ -640,28 +638,11 @@ function earliestStartForFinishAtLeast(
     }
 
     /*
-     * The backward-derived candidate fell before the required
-     * boundary because the calendar contains a non-working
-     * interval/day.
-     *
-     * Move to the first working boundary at/after the required
-     * finish and calculate the task forward from there.
-     */
-    candidate =
-        normalizeStart(
-            calendar,
-            requiredFinish
-        );
-
-    candidateFinish =
-        addDuration(
-            calendar,
-            candidate,
-            duration
-        );
-
-    /*
-     * Defensive guard for unusual calendars.
+     * The backward-derived start finishes before the required boundary.
+     * Move to successive working-interval ends. At an interval end the
+     * forward duration calculation advances to the next working interval,
+     * allowing us to find the first feasible start without jumping an
+     * entire calendar day.
      */
     let guard = 0;
 
@@ -670,34 +651,18 @@ function earliestStartForFinishAtLeast(
             requiredFinish.getTime() &&
         guard < 10000
     ) {
-        const next =
-            normalizeStart(
-                calendar,
-                new Date(
-                    candidate.getTime() +
-                        24 *
-                            60 *
-                            60 *
-                            1000
-                )
-            );
+        const next = nextWorkingIntervalEnd(calendar, candidate);
 
-        if (
-            next.getTime() ===
-            candidate.getTime()
-        ) {
+        if (next.getTime() <= candidate.getTime()) {
             break;
         }
 
         candidate = next;
-
-        candidateFinish =
-            addDuration(
-                calendar,
-                candidate,
-                duration
-            );
-
+        candidateFinish = addDuration(
+            calendar,
+            candidate,
+            duration
+        );
         guard++;
     }
 
@@ -1370,29 +1335,6 @@ function datesEqual(
     ) <= EPSILON * 1000;
 }
 
-function normalizeRelationshipCandidate(
-    edge: GraphEdge,
-    candidate: Date,
-    successorCalendar: ScheduleCalendar
-): Date {
-    const type =
-        normalizeRelationshipType(
-            edge.relationship.type
-        );
-
-    if (
-        type === "FS" ||
-        type === "SS"
-    ) {
-        return normalizeStart(
-            successorCalendar,
-            candidate
-        );
-    }
-
-    return candidate;
-}
-
 function isDrivingRelationship(
     edge: GraphEdge,
     schedules: Map<
@@ -1431,16 +1373,9 @@ function isDrivingRelationship(
         return false;
     }
 
-    const normalized =
-        normalizeRelationshipCandidate(
-            edge,
-            candidate,
-            successor.calendar
-        );
-
     if (
         datesEqual(
-            normalized,
+            candidate,
             successor.earlyStart
         )
     ) {
@@ -1889,12 +1824,6 @@ export function scheduleProject(
 
             continue;
         }
-
-        earlyStart =
-            normalizeStart(
-                current.calendar,
-                earlyStart
-            );
 
         const earlyFinish =
             addDuration(

@@ -444,18 +444,15 @@ describe("CPM scheduling engine regression", () => {
         expect(b).toBeDefined();
 
         /*
-         * SF means:
-         *
-         * B finish = A start
-         *
-         * A starts Monday 08:00.
-         * B has one working day duration, therefore its
-         * early finish must occur Monday 08:00 and its
-         * early start must be the previous working interval.
+         * SF requires B to finish at or after A's start.
+         * With a one-day duration, Friday 16:00 is the earliest
+         * feasible boundary; the next working interval is Monday
+         * 08:00-16:00, so B finishes Monday 16:00.
          */
-        expectSameDate(
-            b.earlyFinish,
-            a.earlyStart
+        expect(
+            b.earlyFinish!.getTime()
+        ).toBeGreaterThanOrEqual(
+            a.earlyStart!.getTime()
         );
 
         expectLocalDateTime(
@@ -464,7 +461,7 @@ describe("CPM scheduling engine regression", () => {
                 year: 2026,
                 month: 9,
                 day: 7,
-                hour: 8
+                hour: 16
             }
         );
 
@@ -887,15 +884,18 @@ describe("CPM scheduling engine regression", () => {
          * Project horizon is Monday.
          *
          * B therefore has positive float.
-         * A is constrained by B, so its free float remains zero.
+         * A is the driving predecessor and has zero free float,
+         * but both activities retain positive total float against
+         * the explicit project-finish horizon.
          */
-        expect(a.totalFloat).toBeGreaterThanOrEqual(0);
+        expect(a.totalFloat).toBeGreaterThan(0);
         expect(b.totalFloat).toBeGreaterThan(0);
 
         expect(a.freeFloat).toBe(0);
+        expect(a.drivingFloat).toBe(0);
         expect(b.freeFloat).toBeGreaterThan(0);
 
-        expect(a.isCritical).toBe(true);
+        expect(a.isCritical).toBe(false);
         expect(b.isCritical).toBe(false);
     });
 

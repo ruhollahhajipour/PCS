@@ -1130,6 +1130,34 @@ export function endOfWorkingTime(
     );
 }
 
+/**
+ * Returns the next working-interval end strictly after the supplied instant.
+ * Relationship scheduling uses this boundary when a finish constraint cannot
+ * be met by a backward-derived start within the current working interval.
+ */
+export function nextWorkingIntervalEnd(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date {
+    let cursor = new Date(date.getTime());
+
+    for (let i = 0; i < MAX_CALENDAR_SCAN_DAYS; i += 1) {
+        const intervals = getWorkingIntervals(calendar, cursor);
+
+        for (const interval of intervals) {
+            const { end } = intervalStartEnd(cursor, interval);
+
+            if (cursor.getTime() < end.getTime()) {
+                return end;
+            }
+        }
+
+        cursor = nextWorkingDay(calendar, cursor, false);
+    }
+
+    return new Date(date.getTime());
+}
+
 /* -------------------------------------------------------------------------- */
 /* Forward working-hours calculation                                          */
 /* -------------------------------------------------------------------------- */
@@ -1387,8 +1415,8 @@ export function subtractWorkingHours(
                 MS_PER_HOUR;
 
             if (
-                remaining <=
-                    available +
+                remaining <
+                    available -
                         Number.EPSILON
             ) {
                 return new Date(
