@@ -528,7 +528,7 @@ function topologicalOrder(
         activities.length
     ) {
         warnings.push(
-            "Circular relationship detected. The unresolved activities were kept in input order; CPM results for that cycle are not reliable."
+            "Circular relationship detected. CPM scheduling was aborted because the dependency network is cyclic."
         );
 
         // A partial topological order is not safe for CPM calculations.
