@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
@@ -44,37 +44,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install --package-lock=false --legacy-peer-deps --no-audit --no-fund
-
-      - name: Generate synchronized npm lockfile (UTC job only)
-        if: matrix.timezone == 'UTC'
-        working-directory: frontend
-        run: npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund
-
-      - name: Upload synchronized npm lockfile
-        if: matrix.timezone == 'UTC'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-package-lock
-          path: frontend/package-lock.json
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Commit synchronized npm lockfile (one-time bootstrap)
-        if: matrix.timezone == 'UTC'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/package-lock.json
-          if git diff --cached --quiet; then
-            echo "package-lock.json is already synchronized"
-          else
-            git commit -m "build(frontend): synchronize npm package lock"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
 
       - name: Print npm diagnostics on install failure
         if: failure()
