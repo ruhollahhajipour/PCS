@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm install --package-lock=false --no-audit --no-fund
 
       - name: Run tests
         working-directory: frontend
