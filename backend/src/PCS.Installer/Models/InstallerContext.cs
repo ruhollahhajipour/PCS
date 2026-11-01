@@ -74,6 +74,12 @@ public class InstallerContext
     public InstallationMode Mode { get; set; }
         = InstallationMode.NewInstall;
 
+    /// <summary>
+    /// User data is preserved by default during uninstall.
+    /// Set to true only after an explicit user choice.
+    /// </summary>
+    public bool RemoveUserDataOnUninstall { get; set; } = false;
+
 
     // ========================================
     // Installation Information

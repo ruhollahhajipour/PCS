@@ -7,7 +7,7 @@ public class UninstallerService
 {
     public void Uninstall(
         InstallerContext context,
-        bool removeDatabase)
+        bool removeUserData)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -19,6 +19,9 @@ public class UninstallerService
          * These calls are intentionally kept harmless
          * for compatibility with future editions.
          */
+        // Remove the current-user startup entry before deleting the launcher.
+        new StartupService().Remove(context);
+
         StopWindowsService();
 
         RemoveWindowsService();
@@ -53,23 +56,14 @@ public class UninstallerService
             context.LogsPath);
 
 
-        DeleteFolder(
-            context.BackupPath);
-
-
-        DeleteFolder(
-            context.ImportPath);
-
-
-        DeleteFolder(
-            context.ExportPath);
-
-
-
-        if (removeDatabase)
+        // Database, backups and user exchange files are retained by default.
+        // They are removed only when the caller passes an explicit opt-in.
+        if (removeUserData)
         {
-            DeleteFolder(
-                context.DatabasePath);
+            DeleteFolder(context.DatabasePath);
+            DeleteFolder(context.BackupPath);
+            DeleteFolder(context.ImportPath);
+            DeleteFolder(context.ExportPath);
         }
 
 
