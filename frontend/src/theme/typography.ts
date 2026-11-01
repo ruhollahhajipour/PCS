@@ -1,4 +1,4 @@
-import type { TypographyOptions } from "@mui/material/styles/createTypography";
+import type { TypographyOptions } from "@mui/material/styles";
 
 export const fontFamily = '"Inter", "Vazirmatn", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 

@@ -1,7 +1,6 @@
 import {
     createContext,
     useCallback,
-    useContext,
     useEffect,
     useMemo,
     useState,
@@ -23,7 +22,7 @@ type PmsSettingsUpdateChanges = Parameters<
     typeof SettingsService.updatePms
 >[0];
 
-interface SettingsContextValue {
+export interface SettingsContextValue {
     settings: Settings;
     isLoading: boolean;
 
@@ -216,19 +215,6 @@ export function SettingsProvider({
             {children}
         </SettingsContext.Provider>
     );
-}
-
-export function useSettings(): SettingsContextValue {
-    const context =
-        useContext(SettingsContext);
-
-    if (!context) {
-        throw new Error(
-            "useSettings must be used inside SettingsProvider.",
-        );
-    }
-
-    return context;
 }
 
 export default SettingsContext;
