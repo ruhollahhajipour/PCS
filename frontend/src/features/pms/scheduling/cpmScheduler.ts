@@ -164,10 +164,19 @@ function subtractDuration(
         );
     }
 
-    return subtractWorkingDays(
+    /*
+     * Activity duration is measured as working hours. Keep this inverse
+     * calculation separate from subtractLag(): whole working-day lags
+     * preserve the clock position, while a duration must subtract the
+     * actual working time consumed by the activity.
+     */
+    return subtractWorkingHours(
         calendar,
         finish,
-        days
+        durationHoursOf(
+            calendar,
+            days
+        )
     );
 }
 
