@@ -327,6 +327,42 @@ function normalizeStart(
     );
 }
 
+/**
+ * Preserve an exact working-interval end as a valid relationship boundary.
+ * FS successors may start at the predecessor's finish instant; if that instant
+ * is a working interval end, normalizing it as an ordinary start would move it
+ * to the next working day. Non-working dates and other out-of-interval times
+ * still normalize to the next valid working start.
+ */
+function normalizeRelationshipStart(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date {
+    const previousInstant = new Date(
+        date.getTime() - 1
+    );
+
+    const intervalEnd =
+        nextWorkingIntervalEnd(
+            calendar,
+            previousInstant
+        );
+
+    if (
+        intervalEnd.getTime() ===
+        date.getTime()
+    ) {
+        return new Date(
+            date.getTime()
+        );
+    }
+
+    return normalizeStart(
+        calendar,
+        date
+    );
+}
+
 function minDate(
     values: Array<
         Date | null | undefined
@@ -700,7 +736,7 @@ function forwardStartCandidate(
 
     switch (type) {
         case "FS":
-            return normalizeStart(
+            return normalizeRelationshipStart(
                 successorCalendar,
                 addLag(
                     successorCalendar,
