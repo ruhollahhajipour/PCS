@@ -196,6 +196,38 @@ public sealed class CPMSchedulerTests
             IsActive = true
         };
 
+    [Fact]
+    public async Task ScheduleProjectAsync_HandlesTenThousandActivityDeepNetwork()
+    {
+        const int activityCount = 10_000;
+        var projectId = Guid.NewGuid();
+        var activities = Enumerable.Range(0, activityCount)
+            .Select(index =>
+            {
+                var activity = CreateActivity(projectId, $"A-{index:D5}");
+                activity.Duration = 1;
+                return activity;
+            })
+            .ToList();
+
+        var relationships = Enumerable.Range(1, activityCount - 1)
+            .Select(index => CreateRelationship(
+                activities[index - 1],
+                activities[index],
+                "FS"))
+            .ToList();
+
+        var scheduler = CreateScheduler(activities, relationships);
+
+        var result = await scheduler.ScheduleProjectAsync(projectId);
+
+        Assert.Equal(activityCount, result.TotalActivities);
+        Assert.Equal(activityCount, result.ProjectDuration);
+        Assert.Equal(activityCount, result.CriticalActivitiesCount);
+        Assert.Equal(0, activities[0].EarlyStart);
+        Assert.Equal(activityCount, activities[^1].EarlyFinish);
+    }
+
     private static Activity CreateActivity(Guid projectId, string code) =>
         new()
         {
