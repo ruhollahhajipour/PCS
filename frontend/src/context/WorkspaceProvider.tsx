@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -411,32 +412,28 @@ export function WorkspaceProvider({
     authLoading,
   ]);
 
-  function persistWorkspace(
-    nextWorkspace: Workspace
-  ): void {
-    setWorkspaceState(
-      nextWorkspace
-    );
+  const persistWorkspace = useCallback(
+    (nextWorkspace: Workspace): void => {
+      setWorkspaceState(nextWorkspace);
 
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          nextWorkspace
-        )
-      );
-    }
-    catch (error) {
-      console.warn(
-        "Failed to persist PCS workspace",
-        error
-      );
-    }
-  }
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(nextWorkspace)
+        );
+      }
+      catch (error) {
+        console.warn(
+          "Failed to persist PCS workspace",
+          error
+        );
+      }
+    },
+    []
+  );
 
-  function setCompany(
-    company: WorkspaceCompany
-  ): void {
+  const setCompany = useCallback(
+    (company: WorkspaceCompany): void => {
     const companyPlants =
       plants.filter(
         plant =>
@@ -476,11 +473,12 @@ export function WorkspaceProvider({
       project:
         nextProject,
     });
-  }
+    },
+    [plants, projects, persistWorkspace]
+  );
 
-  function setPlant(
-    plant: WorkspacePlant
-  ): void {
+  const setPlant = useCallback(
+    (plant: WorkspacePlant): void => {
     const plantProjects =
       projects.filter(
         project =>
@@ -503,16 +501,19 @@ export function WorkspaceProvider({
       project:
         nextProject,
     });
-  }
+    },
+    [workspace, projects, persistWorkspace]
+  );
 
-  function setProject(
-    project: WorkspaceProject
-  ): void {
+  const setProject = useCallback(
+    (project: WorkspaceProject): void => {
     persistWorkspace({
       ...workspace,
       project,
     });
-  }
+    },
+    [workspace, persistWorkspace]
+  );
 
   const value =
     useMemo(
@@ -530,6 +531,9 @@ export function WorkspaceProvider({
         companies,
         plants,
         projects,
+        setCompany,
+        setPlant,
+        setProject,
       ]
     );
 
