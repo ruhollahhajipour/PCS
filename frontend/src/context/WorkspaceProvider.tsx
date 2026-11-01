@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -411,9 +412,9 @@ export function WorkspaceProvider({
     authLoading,
   ]);
 
-  function persistWorkspace(
+  const persistWorkspace = useCallback((
     nextWorkspace: Workspace
-  ): void {
+  ): void => {
     setWorkspaceState(
       nextWorkspace
     );
@@ -432,11 +433,11 @@ export function WorkspaceProvider({
         error
       );
     }
-  }
+  }, []);
 
-  function setCompany(
+  const setCompany = useCallback((
     company: WorkspaceCompany
-  ): void {
+  ): void => {
     const companyPlants =
       plants.filter(
         plant =>
@@ -476,11 +477,11 @@ export function WorkspaceProvider({
       project:
         nextProject,
     });
-  }
+  }, [plants, projects, persistWorkspace]);
 
-  function setPlant(
+  const setPlant = useCallback((
     plant: WorkspacePlant
-  ): void {
+  ): void => {
     const plantProjects =
       projects.filter(
         project =>
@@ -503,16 +504,16 @@ export function WorkspaceProvider({
       project:
         nextProject,
     });
-  }
+  }, [projects, workspace, persistWorkspace]);
 
-  function setProject(
+  const setProject = useCallback((
     project: WorkspaceProject
-  ): void {
+  ): void => {
     persistWorkspace({
       ...workspace,
       project,
     });
-  }
+  }, [workspace, persistWorkspace]);
 
   const value =
     useMemo(

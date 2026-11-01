@@ -708,11 +708,14 @@ function forwardStartCandidate(
             );
 
         case "SS":
-            return addLag(
+            return normalizeStart(
                 successorCalendar,
-                predecessor.earlyStart,
-                lag,
-                unit
+                addLag(
+                    successorCalendar,
+                    predecessor.earlyStart,
+                    lag,
+                    unit
+                )
             );
 
         case "FF": {
@@ -1812,7 +1815,7 @@ export function scheduleProject(
             }
         }
 
-        let earlyStart =
+        const earlyStart =
             maxDate(
                 startCandidates
             );
@@ -2060,7 +2063,7 @@ export function scheduleProject(
             continue;
         }
 
-        const totalFloat =
+        const rawTotalFloat =
             current.earlyStart &&
             current.lateStart
                 ? workingDaysBetween(
@@ -2069,6 +2072,10 @@ export function scheduleProject(
                       current.lateStart
                   )
                 : 0;
+        const totalFloat =
+            Math.abs(rawTotalFloat) <= EPSILON
+                ? 0
+                : rawTotalFloat;
 
         current.totalFloat =
             totalFloat;

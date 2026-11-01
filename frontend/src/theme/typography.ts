@@ -1,8 +1,8 @@
-import type { TypographyOptions } from "@mui/material/styles";
+import type { ThemeOptions } from "@mui/material/styles";
 
 export const fontFamily = '"Inter", "Vazirmatn", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-const typography: TypographyOptions = {
+const typography = {
   fontFamily,
   h1: {
     fontSize: "2rem",
@@ -65,6 +65,6 @@ const typography: TypographyOptions = {
     letterSpacing: "0.09em",
     textTransform: "uppercase",
   },
-};
+} satisfies NonNullable<ThemeOptions["typography"]>;
 
 export default typography;

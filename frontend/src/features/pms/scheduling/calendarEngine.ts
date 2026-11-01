@@ -1415,8 +1415,8 @@ export function subtractWorkingHours(
                 MS_PER_HOUR;
 
             if (
-                remaining <
-                    available -
+                remaining <=
+                    available +
                         Number.EPSILON
             ) {
                 return new Date(

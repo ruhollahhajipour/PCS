@@ -803,11 +803,7 @@ export default function GanttChart(
                     );
                 }
             },
-            [
-                columns,
-                columns.visibleColumns,
-                columns.setAlignment
-            ]
+            [columns]
         );
     const [pmsFontFamily, setPmsFontFamily] =
         useState<PmsFontFamily>("Vazirmatn");
@@ -831,11 +827,7 @@ export default function GanttChart(
                     );
                 }
             },
-            [
-                columns,
-                columns.visibleColumns,
-                columns.setColumnStyle
-            ]
+            [columns]
         );
     const [
         rowHeight,
@@ -967,6 +959,8 @@ export default function GanttChart(
     const scheduledRows =
         useMemo(
             () => {
+                // F9/manual scheduling explicitly invalidates this calculation.
+                void scheduleRevision;
                 if (schedulingMode !== "CPM") {
                     return editableRows;
                 }
@@ -1009,7 +1003,8 @@ export default function GanttChart(
                 statusDate,
                 calendars,
                 projectCalendarId,
-                activityCalendarIds
+                activityCalendarIds,
+                scheduleRevision
             ]
         );
     const displayRows = useMemo(
