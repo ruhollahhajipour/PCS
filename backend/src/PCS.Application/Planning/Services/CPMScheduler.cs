@@ -136,7 +136,9 @@ public class CpmScheduler : ICpmScheduler
                 continue;
             }
 
-            var latestFinish = int.MaxValue;
+            // Every activity must finish by the project completion date, even when
+            // SS/SF relationships alone would otherwise allow it to drift later.
+            var latestFinish = projectFinish;
             foreach (var relationship in successors)
             {
                 var successor = activityMap[relationship.SuccessorId];
@@ -154,9 +156,7 @@ public class CpmScheduler : ICpmScheduler
                 latestFinish = Math.Min(latestFinish, candidateFinish);
             }
 
-            activity.LateFinish = latestFinish == int.MaxValue
-                ? projectFinish
-                : latestFinish;
+            activity.LateFinish = latestFinish;
             activity.LateStart = activity.LateFinish - duration;
         }
 

@@ -179,6 +179,32 @@ public sealed class CPMSchedulerTests
             activity => Assert.Equal(0, activity.TotalFloat));
     }
 
+    [Theory]
+    [InlineData("SS")]
+    [InlineData("SF")]
+    public async Task ScheduleProjectAsync_BoundsLateFinishByProjectCompletionForOverlappingRelationships(
+        string relationshipType)
+    {
+        var projectId = Guid.NewGuid();
+        var predecessor = CreateActivity(projectId, "A-LONG");
+        var successor = CreateActivity(projectId, "B-SHORT");
+        predecessor.Duration = 10;
+        successor.Duration = 2;
+
+        var scheduler = CreateScheduler(
+            new[] { predecessor, successor },
+            new[] { CreateRelationship(predecessor, successor, relationshipType) });
+
+        var result = await scheduler.ScheduleProjectAsync(projectId);
+
+        Assert.Equal(10, result.ProjectDuration);
+        Assert.Equal(10, predecessor.LateFinish);
+        Assert.Equal(0, predecessor.TotalFloat);
+        Assert.Equal(8, successor.TotalFloat);
+        Assert.True(predecessor.IsCritical);
+        Assert.False(successor.IsCritical);
+    }
+
     private static ActivityRelationship CreateRelationship(
         Activity predecessor,
         Activity successor,
