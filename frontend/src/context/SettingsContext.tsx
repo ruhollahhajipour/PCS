@@ -16,6 +16,14 @@ type Settings = ReturnType<
     typeof SettingsService.getDefaults
 >;
 
+type SettingsUpdateChanges = Parameters<
+    typeof SettingsService.update
+>[0];
+
+type PmsSettingsUpdateChanges = Parameters<
+    typeof SettingsService.updatePms
+>[0];
+
 
 interface SettingsProviderProps {
     children: ReactNode;
