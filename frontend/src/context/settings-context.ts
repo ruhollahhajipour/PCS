@@ -1,10 +1,9 @@
 import { createContext } from "react";
 
-import SettingsService from "../features/settings/services/settings.service";
+import type { Settings, PmsViewSettings } from "../types/settings";
 
-type Settings = ReturnType<typeof SettingsService.getDefaults>;
-type SettingsUpdateChanges = Parameters<typeof SettingsService.update>[0];
-type PmsSettingsUpdateChanges = Parameters<typeof SettingsService.updatePms>[0];
+type SettingsUpdateChanges = Partial<Settings>;
+type PmsSettingsUpdateChanges = Partial<PmsViewSettings>;
 
 export interface SettingsContextValue {
     settings: Settings;
