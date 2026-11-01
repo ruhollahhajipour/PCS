@@ -4,6 +4,13 @@ import type {
 } from "../../../types/settings";
 
 const STORAGE_KEY = "pcs-settings";
+const SETTINGS_UPDATED_EVENT = "pcs-settings-updated";
+
+function notifySettingsChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SETTINGS_UPDATED_EVENT));
+  }
+}
 
 const DEFAULT_SETTINGS: Settings = {
   companyName: "Kousha Gaman Namavar",
@@ -116,6 +123,8 @@ class SettingsService {
       STORAGE_KEY,
       JSON.stringify(normalized),
     );
+
+    notifySettingsChanged();
   }
 
   async update(
@@ -157,6 +166,7 @@ class SettingsService {
 
   async reset(): Promise<void> {
     localStorage.removeItem(STORAGE_KEY);
+    notifySettingsChanged();
   }
 
   getDefaults(): Settings {
