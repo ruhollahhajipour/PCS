@@ -1658,4 +1658,39 @@ describe("CPM scheduling engine regression", () => {
         expect(elapsedMs).toBeLessThan(10000);
     });
 
+    it("schedules a 5000-activity fan-out network using indexed relationships", () => {
+        const activityCount = 5000;
+        const activities: ScheduleActivity[] = [
+            createActivity("FAN-ROOT", "EPC Root Activity", 1),
+            ...Array.from(
+                { length: activityCount - 1 },
+                (_, index) => createActivity(
+                    `FAN-${index + 1}`,
+                    `EPC Successor ${index + 1}`,
+                    1,
+                    [
+                        createRelationship(
+                            "FAN-ROOT",
+                            `FAN-${index + 1}`,
+                            "FS"
+                        )
+                    ]
+                )
+            )
+        ];
+
+        const startedAt = Date.now();
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+        const elapsedMs = Date.now() - startedAt;
+
+        expect(Object.keys(result.activities)).toHaveLength(activityCount);
+        expect(result.activities["FAN-ROOT"].earlyFinish).not.toBeNull();
+        expect(result.activities["FAN-4999"].earlyStart).not.toBeNull();
+        expect(result.criticalPath).toHaveLength(2);
+        expect(elapsedMs).toBeLessThan(10000);
+    });
+
 });

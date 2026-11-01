@@ -463,9 +463,39 @@ function buildEdges(
     return edges;
 }
 
+interface GraphIndex {
+    edges: GraphEdge[];
+    incomingBySuccessor: Map<string, GraphEdge[]>;
+    outgoingByPredecessor: Map<string, GraphEdge[]>;
+}
+
+function buildGraphIndex(
+    activities: ScheduleActivity[]
+): GraphIndex {
+    const edges = buildEdges(activities);
+    const incomingBySuccessor = new Map<string, GraphEdge[]>();
+    const outgoingByPredecessor = new Map<string, GraphEdge[]>();
+
+    for (const activity of activities) {
+        incomingBySuccessor.set(activity.id, []);
+        outgoingByPredecessor.set(activity.id, []);
+    }
+
+    for (const edge of edges) {
+        incomingBySuccessor.get(edge.successorId)?.push(edge);
+        outgoingByPredecessor.get(edge.predecessorId)?.push(edge);
+    }
+
+    return {
+        edges,
+        incomingBySuccessor,
+        outgoingByPredecessor
+    };
+}
+
 function topologicalOrder(
     activities: ScheduleActivity[],
-    edges: GraphEdge[],
+    graph: GraphIndex,
     warnings: string[]
 ): string[] {
     const indegree =
@@ -474,25 +504,14 @@ function topologicalOrder(
             number
         >();
 
-    const outgoing =
-        new Map<
-            string,
-            string[]
-        >();
-
     for (const activity of activities) {
         indegree.set(
             activity.id,
             0
         );
-
-        outgoing.set(
-            activity.id,
-            []
-        );
     }
 
-    for (const edge of edges) {
+    for (const edge of graph.edges) {
         indegree.set(
             edge.successorId,
             (
@@ -501,14 +520,6 @@ function topologicalOrder(
                 ) ?? 0
             ) + 1
         );
-
-        outgoing
-            .get(
-                edge.predecessorId
-            )
-            ?.push(
-                edge.successorId
-            );
     }
 
     const queue =
@@ -541,8 +552,9 @@ function topologicalOrder(
 
         result.push(id);
 
-        for (const successorId of
-            outgoing.get(id) ?? []) {
+        for (const edge of
+            graph.outgoingByPredecessor.get(id) ?? []) {
+            const successorId = edge.successorId;
             const next =
                 (
                     indegree.get(
@@ -1203,7 +1215,7 @@ function applyBackwardConstraints(
 
 function calculateFreeFloat(
     activityId: string,
-    edges: GraphEdge[],
+    graph: GraphIndex,
     schedules: Map<
         string,
         InternalSchedule
@@ -1222,11 +1234,7 @@ function calculateFreeFloat(
     }
 
     const outgoing =
-        edges.filter(
-            edge =>
-                edge.predecessorId ===
-                activityId
-        );
+        graph.outgoingByPredecessor.get(activityId) ?? [];
 
     if (!outgoing.length) {
         return current.totalFloat;
@@ -1461,7 +1469,7 @@ function isDrivingRelationship(
 
 function selectCriticalPath(
     activities: ScheduleActivity[],
-    edges: GraphEdge[],
+    graph: GraphIndex,
     order: string[],
     schedules: Map<
         string,
@@ -1497,26 +1505,6 @@ function selectCriticalPath(
             )
         );
 
-    const incoming =
-        new Map<
-            string,
-            GraphEdge[]
-        >();
-
-    for (const edge of edges) {
-        const list =
-            incoming.get(
-                edge.successorId
-            ) ?? [];
-
-        list.push(edge);
-
-        incoming.set(
-            edge.successorId,
-            list
-        );
-    }
-
     const memo =
         new Map<
             string,
@@ -1544,7 +1532,7 @@ function selectCriticalPath(
 
         const candidates =
             (
-                incoming.get(id) ??
+                graph.incomingBySuccessor.get(id) ??
                 []
             )
                 .filter(
@@ -1615,17 +1603,10 @@ function selectCriticalPath(
                     criticalIds.has(
                         activity.id
                     ) &&
-                    !edges.some(
+                    !(graph.outgoingByPredecessor.get(activity.id) ?? []).some(
                         edge =>
-                            edge.predecessorId ===
-                                activity.id &&
-                            criticalIds.has(
-                                edge.successorId
-                            ) &&
-                            isDrivingRelationship(
-                                edge,
-                                schedules
-                            )
+                            criticalIds.has(edge.successorId) &&
+                            isDrivingRelationship(edge, schedules)
                     )
             )
             .map(
@@ -1721,15 +1702,17 @@ export function scheduleProject(
             )
         );
 
-    const edges =
-        buildEdges(
+    const graph =
+        buildGraphIndex(
             activities
         );
+
+    const edges = graph.edges;
 
     const order =
         topologicalOrder(
             activities,
-            edges,
+            graph,
             warnings
         );
 
@@ -1859,9 +1842,7 @@ export function scheduleProject(
                 activity,
                 current.calendar,
                 options,
-                !edges.some(
-                    edge => edge.successorId === id
-                )
+                !(graph.incomingBySuccessor.get(id)?.length)
             );
 
         if (initial) {
@@ -1870,14 +1851,8 @@ export function scheduleProject(
             );
         }
 
-        for (const edge of edges) {
-            if (
-                edge.successorId !==
-                id
-            ) {
-                continue;
-            }
-
+        for (const edge of
+            graph.incomingBySuccessor.get(id) ?? []) {
             const predecessor =
                 schedules.get(
                     edge.predecessorId
@@ -2044,11 +2019,7 @@ export function scheduleProject(
         const finishCandidates: Date[] = [];
 
         const outgoing =
-            edges.filter(
-                edge =>
-                    edge.predecessorId ===
-                    id
-            );
+            graph.outgoingByPredecessor.get(id) ?? [];
 
         if (
             !outgoing.length &&
@@ -2170,7 +2141,7 @@ export function scheduleProject(
         const freeFloat =
             calculateFreeFloat(
                 activity.id,
-                edges,
+                graph,
                 schedules
             );
 
@@ -2231,7 +2202,7 @@ export function scheduleProject(
     const criticalPath =
         selectCriticalPath(
             activities,
-            edges,
+            graph,
             order,
             schedules
         );
