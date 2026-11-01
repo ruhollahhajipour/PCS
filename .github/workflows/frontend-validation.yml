@@ -25,9 +25,17 @@ concurrency:
 
 jobs:
   frontend:
-    name: Frontend tests, lint and production build
+    name: Frontend validation (${{ matrix.timezone }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        timezone:
+          - UTC
+          - Asia/Tehran
+    env:
+      TZ: ${{ matrix.timezone }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +47,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install --package-lock=false --legacy-peer-deps --no-audit --no-fund --verbose
+        run: npm install --package-lock=false --legacy-peer-deps --no-audit --no-fund
 
       - name: Print npm diagnostics on install failure
         if: failure()
