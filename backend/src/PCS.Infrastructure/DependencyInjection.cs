@@ -37,18 +37,15 @@ public static class DependencyInjection
                 "PCS database connection string was not configured.");
         }
 
+        string provider =
+            DatabaseProviderResolver.GetProvider(configuration);
+
         services.AddDbContext<PCSDbContext>(
             options =>
-            {
-                if (IsSqlServerConnectionString(connectionString))
-                {
-                    options.UseSqlServer(connectionString);
-                }
-                else
-                {
-                    options.UseSqlite(connectionString);
-                }
-            });
+                DatabaseProviderResolver.Configure(
+                    options,
+                    provider,
+                    connectionString));
 
 
         // ==========================

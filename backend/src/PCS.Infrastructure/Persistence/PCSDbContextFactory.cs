@@ -7,147 +7,38 @@ namespace PCS.Infrastructure.Persistence;
 public sealed class PCSDbContextFactory
     : IDesignTimeDbContextFactory<PCSDbContext>
 {
-    public PCSDbContext CreateDbContext(
-        string[] args)
+    public PCSDbContext CreateDbContext(string[] args)
     {
         var configuration =
             new ConfigurationBuilder()
-                .SetBasePath(
-                    Directory.GetCurrentDirectory())
-                .AddJsonFile(
-                    "appsettings.json",
-                    optional: true)
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true)
                 .Build();
 
+        string provider =
+            Environment.GetEnvironmentVariable("Database__Provider")
+            ?? configuration[DatabaseProviderResolver.ConfigurationKey]
+            ?? DatabaseProviderResolver.Sqlite;
+
+        string? configuredConnectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? configuration.GetConnectionString("DefaultConnection");
 
         string connectionString =
-            configuration.GetConnectionString(
-                "DefaultConnection")
-            ??
-            "Data Source=pcs.db";
-
+            configuredConnectionString
+            ?? (string.Equals(provider, DatabaseProviderResolver.Sqlite, StringComparison.OrdinalIgnoreCase)
+                ? "Data Source=pcs.db"
+                : throw new InvalidOperationException(
+                    "PCS SQL Server connection string was not configured."));
 
         var optionsBuilder =
             new DbContextOptionsBuilder<PCSDbContext>();
 
-
-        ConfigureDatabase(
+        DatabaseProviderResolver.Configure(
             optionsBuilder,
+            provider,
             connectionString);
 
-
-        return new PCSDbContext(
-            optionsBuilder.Options);
-    }
-
-
-    // ========================================
-    // Database Provider
-    // ========================================
-
-    private static void ConfigureDatabase(
-        DbContextOptionsBuilder options,
-        string connectionString)
-    {
-        if (IsSqlServerConnectionString(
-                connectionString))
-        {
-            options.UseSqlServer(
-                connectionString);
-
-            return;
-        }
-
-
-        if (IsSqliteConnectionString(
-                connectionString))
-        {
-            options.UseSqlite(
-                connectionString);
-
-            return;
-        }
-
-
-        throw new InvalidOperationException(
-            "Unsupported PCS database connection string. " +
-            "The connection string must represent either " +
-            "SQL Server or SQLite.");
-    }
-
-
-    // ========================================
-    // SQL Server Detection
-    // ========================================
-
-    private static bool IsSqlServerConnectionString(
-        string connectionString)
-    {
-        return
-            connectionString.Contains(
-                "Server=",
-                StringComparison.OrdinalIgnoreCase)
-            ||
-            (
-                connectionString.Contains(
-                    "Data Source=",
-                    StringComparison.OrdinalIgnoreCase)
-                &&
-                (
-                    connectionString.Contains(
-                        "Initial Catalog=",
-                        StringComparison.OrdinalIgnoreCase)
-                    ||
-                    connectionString.Contains(
-                        "Database=",
-                        StringComparison.OrdinalIgnoreCase)
-                    ||
-                    connectionString.Contains(
-                        "Trusted_Connection=",
-                        StringComparison.OrdinalIgnoreCase)
-                    ||
-                    connectionString.Contains(
-                        "TrustServerCertificate=",
-                        StringComparison.OrdinalIgnoreCase)
-                    ||
-                    connectionString.Contains(
-                        "User Id=",
-                        StringComparison.OrdinalIgnoreCase)
-                )
-            );
-    }
-
-
-    // ========================================
-    // SQLite Detection
-    // ========================================
-
-    private static bool IsSqliteConnectionString(
-        string connectionString)
-    {
-        return
-            connectionString.Contains(
-                "Data Source=",
-                StringComparison.OrdinalIgnoreCase)
-            &&
-            !connectionString.Contains(
-                "Server=",
-                StringComparison.OrdinalIgnoreCase)
-            &&
-            !connectionString.Contains(
-                "Initial Catalog=",
-                StringComparison.OrdinalIgnoreCase)
-            &&
-            !connectionString.Contains(
-                "Trusted_Connection=",
-                StringComparison.OrdinalIgnoreCase)
-            &&
-            !connectionString.Contains(
-                "TrustServerCertificate=",
-                StringComparison.OrdinalIgnoreCase)
-            &&
-            !connectionString.Contains(
-                "User Id=",
-                StringComparison.OrdinalIgnoreCase);
+        return new PCSDbContext(optionsBuilder.Options);
     }
 }

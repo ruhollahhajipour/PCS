@@ -83,6 +83,11 @@ public class ConfigurationService
                 ConnectionString =
                     connectionString,
 
+                Provider =
+                    context.DatabaseType == DatabaseType.SqlServer
+                        ? "SqlServer"
+                        : "Sqlite",
+
                 Installation =
                     new
                     {
@@ -119,6 +124,21 @@ public class ConfigurationService
                 // --------------------------------------------------
                 // Database
                 // --------------------------------------------------
+
+                Hosting =
+                    new
+                    {
+                        Mode = "OnPremise"
+                    },
+
+                Database =
+                    new
+                    {
+                        Provider =
+                            context.DatabaseType == DatabaseType.SqlServer
+                                ? "SqlServer"
+                                : "Sqlite"
+                    },
 
                 ConnectionStrings =
                     new

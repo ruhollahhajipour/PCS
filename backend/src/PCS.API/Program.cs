@@ -26,15 +26,29 @@ using Serilog;
 // Logging
 // ============================================================
 
-Log.Logger =
+var loggerConfiguration =
     new LoggerConfiguration()
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()
-        .WriteTo.Console()
-        .WriteTo.File(
-            "Logs/log-.txt",
-            rollingInterval: RollingInterval.Day)
-        .CreateLogger();
+        .WriteTo.Console();
+
+if (OperatingSystem.IsWindows())
+{
+    string logDirectory =
+        Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.LocalApplicationData),
+            "PCS",
+            "Logs");
+
+    Directory.CreateDirectory(logDirectory);
+
+    loggerConfiguration.WriteTo.File(
+        Path.Combine(logDirectory, "log-.txt"),
+        rollingInterval: RollingInterval.Day);
+}
+
+Log.Logger = loggerConfiguration.CreateLogger();
 
 
 // ============================================================
@@ -156,7 +170,12 @@ else
 }
 
 
-builder.Host.UseWindowsService();
+if (
+    OperatingSystem.IsWindows() &&
+    !string.IsNullOrWhiteSpace(installedRoot))
+{
+    builder.Host.UseWindowsService();
+}
 
 builder.Host.UseSerilog();
 
@@ -419,6 +438,21 @@ if (
                 "PCS installer configuration does not contain ConnectionString.");
         }
 
+        if (
+            config.TryGetProperty(
+                "Provider",
+                out JsonElement providerElement))
+        {
+            string? provider = providerElement.GetString();
+
+            if (!string.IsNullOrWhiteSpace(provider))
+            {
+                builder.Configuration["Database:Provider"] =
+                    provider;
+            }
+        }
+        }
+
 
         Log.Information(
             "PCS installer configuration loaded from {ConfigPath}.",
@@ -624,6 +658,22 @@ var app =
 // Determine Frontend Path
 // ============================================================
 
+string hostingMode =
+    builder.Configuration["Hosting:Mode"] ??
+    (!string.IsNullOrWhiteSpace(installedRoot)
+        ? "OnPremise"
+        : "Development");
+
+bool isCloudHosting =
+    string.Equals(
+        hostingMode,
+        "Cloud",
+        StringComparison.OrdinalIgnoreCase);
+
+Log.Information(
+    "PCS hosting mode: {HostingMode}.",
+    hostingMode);
+
 string? frontendPath = null;
 
 
@@ -631,7 +681,9 @@ string? frontendPath = null;
 // 1. Installed application
 // ------------------------------------------------------------
 
-if (!string.IsNullOrWhiteSpace(installedRoot))
+if (
+    !isCloudHosting &&
+    !string.IsNullOrWhiteSpace(installedRoot))
 {
     string installedFrontend =
         Path.Combine(
@@ -672,6 +724,7 @@ if (!string.IsNullOrWhiteSpace(installedRoot))
 // ------------------------------------------------------------
 
 if (
+    !isCloudHosting &&
     string.IsNullOrWhiteSpace(
         frontendPath) &&
     !string.IsNullOrWhiteSpace(
@@ -747,7 +800,9 @@ using (
             .GetRequiredService<PCSDbContext>();
 
 
-    await dbContext.Database.MigrateAsync();
+    // Schema migrations are applied by the Windows installer
+    // or a controlled deployment operation, never by API startup.
+    // Security seeding runs only after the schema is available.
 
 
     var passwordHasher =
