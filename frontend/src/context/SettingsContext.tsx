@@ -1,10 +1,12 @@
 import {
-    createContext,
     useCallback,
     useEffect,
     useMemo,
     useState,
 } from "react";
+
+import { SettingsContext } from "./settings-context";
+import type { SettingsContextValue } from "./settings-context";
 
 import type { ReactNode } from "react";
 
@@ -22,31 +24,10 @@ type PmsSettingsUpdateChanges = Parameters<
     typeof SettingsService.updatePms
 >[0];
 
-export interface SettingsContextValue {
-    settings: Settings;
-    isLoading: boolean;
-
-    updateSettings: (
-        changes: SettingsUpdateChanges,
-    ) => Promise<void>;
-
-    updatePmsSettings: (
-        changes: PmsSettingsUpdateChanges,
-    ) => Promise<void>;
-
-    resetSettings: () => Promise<void>;
-
-    reloadSettings: () => Promise<void>;
-}
 
 interface SettingsProviderProps {
     children: ReactNode;
 }
-
-const SettingsContext =
-    createContext<SettingsContextValue | undefined>(
-        undefined,
-    );
 
 export function SettingsProvider({
     children,
@@ -217,4 +198,3 @@ export function SettingsProvider({
     );
 }
 
-export default SettingsContext;
