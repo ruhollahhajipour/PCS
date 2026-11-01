@@ -80,6 +80,41 @@ export function SettingsProvider({
         void loadSettings();
     }, [loadSettings]);
 
+    useEffect(() => {
+        const handleSettingsChanged = () => {
+            void loadSettings();
+        };
+
+        const handleStorageChanged = (event: StorageEvent) => {
+            if (
+                event.key === null ||
+                event.key === "pcs-settings"
+            ) {
+                void loadSettings();
+            }
+        };
+
+        window.addEventListener(
+            "pcs-settings-updated",
+            handleSettingsChanged,
+        );
+        window.addEventListener(
+            "storage",
+            handleStorageChanged,
+        );
+
+        return () => {
+            window.removeEventListener(
+                "pcs-settings-updated",
+                handleSettingsChanged,
+            );
+            window.removeEventListener(
+                "storage",
+                handleStorageChanged,
+            );
+        };
+    }, [loadSettings]);
+
     /**
      * Apply global language and text direction.
      *
