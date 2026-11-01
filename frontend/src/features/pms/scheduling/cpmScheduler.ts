@@ -416,13 +416,6 @@ function buildEdges(
                 continue;
             }
 
-            if (
-                predecessorId ===
-                successorId
-            ) {
-                continue;
-            }
-
             edges.push({
                 relationship: relation,
                 predecessorId,
@@ -538,17 +531,8 @@ function topologicalOrder(
             "Circular relationship detected. The unresolved activities were kept in input order; CPM results for that cycle are not reliable."
         );
 
-        for (const activity of activities) {
-            if (
-                !result.includes(
-                    activity.id
-                )
-            ) {
-                result.push(
-                    activity.id
-                );
-            }
-        }
+        // A partial topological order is not safe for CPM calculations.
+        return [];
     }
 
     return result;
@@ -1764,6 +1748,47 @@ export function scheduleProject(
                 calendar
             }
         );
+    }
+
+    // ------------------------------------------------------------
+    // Reject cyclic dependency networks before calculating dates.
+    // Keep duration metadata, but never expose partial CPM dates.
+    // ------------------------------------------------------------
+
+    if (order.length !== activities.length) {
+        const invalidActivities: Record<string, ScheduledActivity> = {};
+
+        for (const activity of activities) {
+            const current = schedules.get(activity.id);
+
+            if (!current) {
+                continue;
+            }
+
+            invalidActivities[activity.id] = {
+                id: activity.id,
+                earlyStart: null,
+                earlyFinish: null,
+                lateStart: null,
+                lateFinish: null,
+                duration: current.durationDays,
+                durationHours: current.durationHours,
+                totalFloat: 0,
+                freeFloat: 0,
+                drivingFloat: 0,
+                isCritical: false
+            };
+        }
+
+        return {
+            activities: invalidActivities,
+            projectStart: null,
+            projectFinish: null,
+            projectDuration: 0,
+            projectDurationHours: 0,
+            criticalPath: [],
+            warnings
+        };
     }
 
     // ------------------------------------------------------------
