@@ -51,6 +51,7 @@ jobs:
         env:
           Database__Provider: SqlServer
           ConnectionStrings__DefaultConnection: 'Server=(localdb)\MSSQLLocalDB;Database=PCS_MigrationDesign;Trusted_Connection=True;TrustServerCertificate=True'
+          Jwt__Secret: 'PCS-CI-ONLY-DESIGN-TIME-SECRET-DO-NOT-USE-IN-PRODUCTION-0000000000000000'
         run: |
           $migrationDirectory = "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations"
           $existingMigration = Get-ChildItem -Path $migrationDirectory -Filter "*_InitialSqlServer.cs" -ErrorAction SilentlyContinue
