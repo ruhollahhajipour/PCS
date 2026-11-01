@@ -141,13 +141,16 @@ public sealed class EvmSheetBuilder
             new[]
             {
                 ("Planned Value (PV)",
-                 "=SUM(WBS!J:J)"),
+                 "=SUM(WBS!K:K)"),
 
                 ("Earned Value (EV)",
-                 "=SUM(WBS!I:I)"),
+                 "=SUM(WBS!J:J)"),
 
                 ("Actual Cost (AC)",
-                 "=SUM(WBS!K:K)"),
+                 "=SUM(WBS!L:L)"),
+
+                ("Budget at Completion (BAC)",
+                 "=SUM(WBS!E:E)"),
 
                 ("Cost Variance (CV)",
                  "=B10-B11"),
@@ -159,7 +162,16 @@ public sealed class EvmSheetBuilder
                  "=IF(B11=0,0,B10/B11)"),
 
                 ("Schedule Performance Index (SPI)",
-                 "=IF(B9=0,0,B10/B9)")
+                 "=IF(B9=0,0,B10/B9)"),
+
+                ("Estimate at Completion (EAC)",
+                 "=IF(B15=0,\"\",B12/B15)"),
+
+                ("Estimate to Complete (ETC)",
+                 "=IF(B17=\"\",\"\",B17-B11)"),
+
+                ("Variance at Completion (VAC)",
+                 "=IF(B17=\"\",\"\",B12-B17)")
             };
 
 
@@ -202,7 +214,7 @@ public sealed class EvmSheetBuilder
 
 
         FormatBlock(
-            sheet.Range("A8:C15"));
+            sheet.Range("A8:C19"));
 
 
 
@@ -237,13 +249,13 @@ public sealed class EvmSheetBuilder
         // ==========================
 
 
-        sheet.Range("B9:B13")
+        sheet.Range("B9:B14")
             .Style.NumberFormat.Format =
             "#,##0.00";
 
 
 
-        sheet.Range("B14:B15")
+        sheet.Range("B15:B16")
             .Style.NumberFormat.Format =
             "0.00";
 
@@ -257,46 +269,23 @@ public sealed class EvmSheetBuilder
         // Indicators
         // ==========================
 
+        foreach (var cell in new[] { "B15", "B16" })
+        {
+            sheet.Cell(cell)
+                .AddConditionalFormat()
+                .WhenLessThan(1)
+                .Fill
+                .SetBackgroundColor(XLColor.LightPink);
 
-        sheet.Cell("B14")
-            .AddConditionalFormat()
-            .WhenLessThan(1)
-            .Fill
-            .SetBackgroundColor(
-                XLColor.LightPink);
+            sheet.Cell(cell)
+                .AddConditionalFormat()
+                .WhenGreaterThan(1)
+                .Fill
+                .SetBackgroundColor(XLColor.LightGreen);
+        }
 
-
-
-        sheet.Cell("B14")
-            .AddConditionalFormat()
-            .WhenGreaterThan(1)
-            .Fill
-            .SetBackgroundColor(
-                XLColor.LightGreen);
-
-
-
-
-        sheet.Cell("B15")
-            .AddConditionalFormat()
-            .WhenLessThan(1)
-            .Fill
-            .SetBackgroundColor(
-                XLColor.LightPink);
-
-
-
-        sheet.Cell("B15")
-            .AddConditionalFormat()
-            .WhenGreaterThan(1)
-            .Fill
-            .SetBackgroundColor(
-                XLColor.LightGreen);
-
-
-
-
-
+        sheet.Range("B17:B19")
+            .Style.NumberFormat.Format = "#,##0.00";
 
 
         // ==========================
