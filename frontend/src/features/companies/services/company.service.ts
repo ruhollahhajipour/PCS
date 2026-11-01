@@ -1,3 +1,5 @@
+import { isAxiosError } from "axios";
+
 import http from "../../../api/http";
 
 import type { Company } from "../../../models/company";
@@ -87,9 +89,10 @@ class CompanyService {
 
       return mapFromApi(response.data);
     }
-    catch (error: any) {
+    catch (error: unknown) {
       if (
-        error?.response?.status === 404
+        isAxiosError(error) &&
+        error.response?.status === 404
       ) {
         return undefined;
       }

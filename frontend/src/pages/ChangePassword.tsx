@@ -1,3 +1,5 @@
+import { isAxiosError } from "axios";
+
 import {
   Alert,
   Box,
@@ -208,7 +210,7 @@ export default function ChangePassword() {
       }, 500);
 
     }
-    catch (err: any) {
+    catch (err: unknown) {
 
       console.error(
         "CHANGE PASSWORD ERROR",
@@ -217,8 +219,10 @@ export default function ChangePassword() {
 
 
       const message =
-        err?.response?.data?.message ??
-        "Unable to change the password. Please verify your current password.";
+        isAxiosError<{ message?: unknown }>(err) &&
+        typeof err.response?.data?.message === "string"
+          ? err.response.data.message
+          : "Unable to change the password. Please verify your current password.";
 
 
       setError(
