@@ -141,16 +141,16 @@ public sealed class EvmSheetBuilder
             new[]
             {
                 ("Planned Value (PV)",
-                 "=SUM(WBS!K:K)"),
+                 "=SUMIF(WBS!D:D,0,WBS!K:K)"),
 
                 ("Earned Value (EV)",
-                 "=SUM(WBS!J:J)"),
+                 "=SUMIF(WBS!D:D,0,WBS!J:J)"),
 
                 ("Actual Cost (AC)",
-                 "=SUM(WBS!L:L)"),
+                 "=SUMIF(WBS!D:D,0,WBS!L:L)"),
 
                 ("Budget at Completion (BAC)",
-                 "=SUM(WBS!E:E)"),
+                 "=SUMIF(WBS!D:D,0,WBS!E:E)"),
 
                 ("Cost Variance (CV)",
                  "=B10-B11"),
