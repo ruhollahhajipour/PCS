@@ -1693,4 +1693,39 @@ describe("CPM scheduling engine regression", () => {
         expect(elapsedMs).toBeLessThan(10000);
     });
 
+    it("selects a 10000-activity critical path without recursive stack growth", () => {
+        const activityCount = 10000;
+        const activities: ScheduleActivity[] = Array.from(
+            { length: activityCount },
+            (_, index) => createActivity(
+                `DEEP-${index + 1}`,
+                `Deep EPC Activity ${index + 1}`,
+                0.125,
+                index === 0
+                    ? []
+                    : [
+                        createRelationship(
+                            `DEEP-${index}`,
+                            `DEEP-${index + 1}`,
+                            "FS"
+                        )
+                    ]
+            )
+        );
+
+        const startedAt = Date.now();
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+        const elapsedMs = Date.now() - startedAt;
+
+        expect(Object.keys(result.activities)).toHaveLength(activityCount);
+        expect(result.criticalPath).toHaveLength(activityCount);
+        expect(result.criticalPath[0]).toBe("DEEP-1");
+        expect(result.criticalPath[activityCount - 1]).toBe("DEEP-10000");
+        expect(result.activities["DEEP-10000"].earlyFinish).not.toBeNull();
+        expect(elapsedMs).toBeLessThan(15000);
+    });
+
 });

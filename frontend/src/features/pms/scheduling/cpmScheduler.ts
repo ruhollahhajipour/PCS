@@ -1505,160 +1505,97 @@ function selectCriticalPath(
             )
         );
 
-    const memo =
-        new Map<
-            string,
-            string[]
-        >();
+    // Dynamic programming over topological order avoids recursive stack
+    // growth and repeated path-array copying on deep dependency networks.
+    const bestPredecessorById = new Map<string, string>();
+    const bestPathLengthById = new Map<string, number>();
 
-    const visiting =
-        new Set<string>();
-
-    const buildChain = (
-        id: string
-    ): string[] => {
-        const cached =
-            memo.get(id);
-
-        if (cached) {
-            return cached;
+    for (const id of order) {
+        if (!criticalIds.has(id)) {
+            continue;
         }
-
-        if (visiting.has(id)) {
-            return [id];
-        }
-
-        visiting.add(id);
 
         const candidates =
-            (
-                graph.incomingBySuccessor.get(id) ??
-                []
-            )
+            (graph.incomingBySuccessor.get(id) ?? [])
                 .filter(
                     edge =>
-                        criticalIds.has(
-                            edge.predecessorId
-                        ) &&
-                        isDrivingRelationship(
-                            edge,
-                            schedules
-                        )
+                        criticalIds.has(edge.predecessorId) &&
+                        isDrivingRelationship(edge, schedules)
                 )
-                .map(
-                    edge =>
-                        edge.predecessorId
-                )
+                .map(edge => edge.predecessorId)
                 .sort(
                     (a, b) =>
-                        (
-                            orderIndex.get(
-                                a
-                            ) ??
-                            Number.MAX_SAFE_INTEGER
-                        ) -
-                        (
-                            orderIndex.get(
-                                b
-                            ) ??
-                            Number.MAX_SAFE_INTEGER
-                        )
+                        (orderIndex.get(a) ?? Number.MAX_SAFE_INTEGER) -
+                        (orderIndex.get(b) ?? Number.MAX_SAFE_INTEGER)
                 );
 
-        let best: string[] = [];
+        let bestPredecessor: string | undefined;
+        let bestLength = 0;
 
         for (const predecessorId of candidates) {
-            const chain =
-                buildChain(
-                    predecessorId
-                );
+            const candidateLength =
+                bestPathLengthById.get(predecessorId) ?? 0;
 
-            if (
-                chain.length >
-                best.length
-            ) {
-                best = chain;
+            if (candidateLength > bestLength) {
+                bestLength = candidateLength;
+                bestPredecessor = predecessorId;
             }
         }
 
-        visiting.delete(id);
+        if (bestPredecessor) {
+            bestPredecessorById.set(id, bestPredecessor);
+        }
 
-        const result = [
-            ...best,
-            id
-        ];
-
-        memo.set(
-            id,
-            result
-        );
-
-        return result;
-    };
+        bestPathLengthById.set(id, bestLength + 1);
+    }
 
     const terminalCriticalIds =
         activities
             .filter(
                 activity =>
-                    criticalIds.has(
-                        activity.id
-                    ) &&
+                    criticalIds.has(activity.id) &&
                     !(graph.outgoingByPredecessor.get(activity.id) ?? []).some(
                         edge =>
                             criticalIds.has(edge.successorId) &&
                             isDrivingRelationship(edge, schedules)
                     )
             )
-            .map(
-                activity =>
-                    activity.id
-            )
+            .map(activity => activity.id)
             .sort(
                 (a, b) =>
-                    (
-                        orderIndex.get(
-                            a
-                        ) ??
-                        Number.MAX_SAFE_INTEGER
-                    ) -
-                    (
-                        orderIndex.get(
-                            b
-                        ) ??
-                        Number.MAX_SAFE_INTEGER
-                    )
+                    (orderIndex.get(a) ?? Number.MAX_SAFE_INTEGER) -
+                    (orderIndex.get(b) ?? Number.MAX_SAFE_INTEGER)
             );
 
-    let bestPath: string[] = [];
+    let bestTerminalId: string | undefined;
+    let bestPathLength = 0;
 
     for (const terminalId of terminalCriticalIds) {
-        const path =
-            buildChain(
-                terminalId
-            );
+        const candidateLength =
+            bestPathLengthById.get(terminalId) ?? 0;
 
-        if (
-            path.length >
-            bestPath.length
-        ) {
-            bestPath = path;
+        if (candidateLength > bestPathLength) {
+            bestPathLength = candidateLength;
+            bestTerminalId = terminalId;
         }
     }
 
-    if (!bestPath.length) {
+    if (!bestTerminalId) {
         const firstCritical =
-            order.find(
-                id =>
-                    criticalIds.has(
-                        id
-                    )
-            );
+            order.find(id => criticalIds.has(id));
 
-        return firstCritical
-            ? [firstCritical]
-            : [];
+        return firstCritical ? [firstCritical] : [];
     }
 
+    const bestPath: string[] = [];
+    let currentId: string | undefined = bestTerminalId;
+
+    while (currentId) {
+        bestPath.push(currentId);
+        currentId = bestPredecessorById.get(currentId);
+    }
+
+    bestPath.reverse();
     return bestPath;
 }
 
