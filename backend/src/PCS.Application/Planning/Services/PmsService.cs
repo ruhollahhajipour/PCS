@@ -114,11 +114,11 @@ public class PmsService : IPmsService
             {
                 currentWbs.Name = item.Name.Trim();
                 currentWbs.Level = item.Level;
+                // Recalculated roll-up fields are rebuilt below. Preserve
+                // source values that this import cannot authoritatively derive.
                 currentWbs.Budget = 0;
                 currentWbs.ActualCost = 0;
                 currentWbs.EarnedValue = 0;
-                currentWbs.PlannedValue = 0;
-                currentWbs.Weight = 0;
                 currentWbs.WeightFactor = 0;
                 currentWbs.WeightValue = 0;
                 currentWbs.Progress = 0;
@@ -203,6 +203,9 @@ public class PmsService : IPmsService
         // =====================================================
         // IMPORT ACTIVITIES
         // =====================================================
+
+        var importedActivitiesByCode = new Dictionary<string, Activity>(
+            StringComparer.OrdinalIgnoreCase);
 
         foreach(var item in dto.Activities)
         {
@@ -302,6 +305,8 @@ public class PmsService : IPmsService
 
                 _activityRepository.Update(
                     existingActivity);
+
+                importedActivitiesByCode[item.Code.Trim()] = existingActivity;
             }
             else
             {
@@ -404,6 +409,8 @@ public class PmsService : IPmsService
 
                 await _activityRepository
                     .AddAsync(activity);
+
+                importedActivitiesByCode[item.Code.Trim()] = activity;
             }
         }
 
@@ -455,38 +462,26 @@ var wbsDtos =
 var activityDtos =
     dto.Activities
         .Select(x =>
-            new ActivityDto
+        {
+            var activity = importedActivitiesByCode[x.Code.Trim()];
+
+            return new ActivityDto
             {
-                Id =
-                Guid.Empty,
-
-                WbsNodeId =
-                    wbsMap[x.WbsCode.Trim()].Id,
-
-                Code =
-                    x.Code,
-
-                Name =
-                    x.Name,
-
-                WbsCode =
-                    x.WbsCode,
-
-                Budget =
-                    x.Budget,
-
-                ActualCost =
-                    0,
-
-                Progress =
-                    x.Progress,
-
-                EarnedValue =
-                    0m,
-
-                PlannedValue =
-                    0m
-            })
+                Id = activity.Id,
+                WbsNodeId = activity.WbsNodeId,
+                Code = activity.Code,
+                Name = activity.Name,
+                WbsCode = x.WbsCode,
+                Budget = activity.Budget,
+                ActualCost = activity.ActualCost,
+                Progress = activity.Progress,
+                EarnedValue = activity.EarnedValue,
+                // Activity currently has no PlannedValue field. The existing
+                // WBS PlannedValue is therefore preserved until baseline-based
+                // PV calculation is implemented.
+                PlannedValue = 0m
+            };
+        })
         .ToList();
 
 
@@ -528,8 +523,7 @@ foreach(var item in calculatedWbs)
 
 
 
-    entity.PlannedValue =
-        item.PlannedValue;
+    // PlannedValue is baseline-derived and is not recalculated by this import.
 
 
 

@@ -11,6 +11,93 @@ namespace PCS.Application.Tests.Planning;
 public sealed class PmsServiceTests
 {
     [Fact]
+    public async Task ImportPmsAsync_PreservesExistingActualCostAndWbsPlannedValue()
+    {
+        var projectId = Guid.NewGuid();
+        var wbsId = Guid.NewGuid();
+        var wbs = new WbsNode
+        {
+            Id = wbsId,
+            ProjectId = projectId,
+            Code = "WBS-001",
+            Name = "Work package",
+            Level = 1,
+            Path = "WBS-001",
+            Budget = 100m,
+            ActualCost = 80m,
+            EarnedValue = 50m,
+            PlannedValue = 120m,
+            Weight = 25m,
+            IsActive = true
+        };
+        var activity = new Activity
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            WbsNodeId = wbsId,
+            Code = "ACT-001",
+            Name = "Existing activity",
+            Duration = 5,
+            RemainingDuration = 3,
+            Budget = 100m,
+            Weight = 25m,
+            Progress = 50m,
+            ActualCost = 80m,
+            EarnedValue = 50m,
+            Status = "InProgress"
+        };
+        var unitOfWork = new RecordingUnitOfWork();
+
+        var service = new PmsService(
+            new FakeRepository<Project>([new Project { Id = projectId }]),
+            new FakeRepository<Company>(),
+            new FakeRepository<WbsNode>([wbs]),
+            new FakeRepository<Activity>([activity]),
+            unitOfWork,
+            new WbsCalculationService(),
+            new StubPmsBaselineService());
+
+        await service.ImportPmsAsync(new ImportPmsDto
+        {
+            ProjectId = projectId,
+            WbsNodes =
+            [
+                new ImportWbsDto
+                {
+                    Code = "WBS-001",
+                    Name = "Work package updated",
+                    Level = 1
+                }
+            ],
+            Activities =
+            [
+                new ImportActivityDto
+                {
+                    Code = "ACT-001",
+                    WbsCode = "WBS-001",
+                    Name = "Existing activity updated",
+                    Duration = 6,
+                    RemainingDuration = 4,
+                    Budget = 200m,
+                    Weight = 25m,
+                    Progress = 60m,
+                    Status = "InProgress"
+                }
+            ]
+        });
+
+        Assert.True(unitOfWork.Committed);
+        Assert.Equal(80m, activity.ActualCost);
+        Assert.Equal(120m, activity.EarnedValue);
+        Assert.Equal(200m, wbs.Budget);
+        Assert.Equal(80m, wbs.ActualCost);
+        Assert.Equal(120m, wbs.EarnedValue);
+        Assert.Equal(120m, wbs.PlannedValue);
+        Assert.Equal(25m, wbs.Weight);
+        Assert.Equal(60m, wbs.Progress);
+    }
+
+    [Fact]
     public async Task ImportPmsAsync_RollsBackWhenWbsParentReferenceIsInvalid()
     {
         var projectId = Guid.NewGuid();
