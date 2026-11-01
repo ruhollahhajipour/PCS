@@ -173,4 +173,7 @@ export interface ScheduleResult {
     criticalPath: string[];
 
     warnings: string[];
+
+    /** False when the dependency graph is invalid and CPM values are unavailable. */
+    isValid?: boolean;
 }

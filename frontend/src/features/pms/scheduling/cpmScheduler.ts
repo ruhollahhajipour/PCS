@@ -12,7 +12,12 @@ import {
     addWorkingDays,
     addWorkingHours,
     calculateWorkingDuration,
+    endOfWorkingTime,
     getDefaultCalendar,
+    isEndOfWorkingDay,
+    nextWorkingDay,
+    previousWorkingDay,
+    previousWorkingDayEndAtBoundary,
     startOfWorkingTime,
     subtractWorkingDays,
     subtractWorkingHours,
@@ -170,6 +175,87 @@ function subtractDuration(
     );
 }
 
+function shiftWorkingDays(
+    calendar: ScheduleCalendar,
+    date: Date,
+    days: number
+): Date {
+    if (
+        !Number.isFinite(days) ||
+        Math.abs(days) <= EPSILON
+    ) {
+        return new Date(
+            date.getTime()
+        );
+    }
+
+    const wholeDays =
+        Math.trunc(days);
+
+    const fraction =
+        days - wholeDays;
+
+    let cursor =
+        new Date(
+            date.getTime()
+        );
+
+    const direction =
+        Math.sign(wholeDays);
+
+    for (
+        let index = 0;
+        index < Math.abs(wholeDays);
+        index += 1
+    ) {
+        const targetDay =
+            direction > 0
+                ? nextWorkingDay(
+                      calendar,
+                      cursor,
+                      false
+                  )
+                : previousWorkingDay(
+                      calendar,
+                      cursor,
+                      false
+                  );
+
+        cursor.setFullYear(
+            targetDay.getFullYear(),
+            targetDay.getMonth(),
+            targetDay.getDate()
+        );
+    }
+
+    const fractionalHours =
+        Math.abs(fraction) *
+        Math.max(
+            0,
+            finite(
+                calendar.hoursPerDay,
+                0
+            )
+        );
+
+    if (fractionalHours > EPSILON) {
+        cursor =
+            fraction > 0
+                ? addWorkingHours(
+                      calendar,
+                      cursor,
+                      fractionalHours
+                  )
+                : subtractWorkingHours(
+                      calendar,
+                      cursor,
+                      fractionalHours
+                  );
+    }
+
+    return cursor;
+}
+
 function addLag(
     calendar: ScheduleCalendar,
     date: Date,
@@ -191,7 +277,7 @@ function addLag(
               date,
               lag
           )
-        : addWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
               lag
@@ -219,10 +305,10 @@ function subtractLag(
               date,
               lag
           )
-        : subtractWorkingDays(
+        : shiftWorkingDays(
               calendar,
               date,
-              lag
+              -lag
           );
 }
 
@@ -310,10 +396,37 @@ function normalizeStart(
     calendar: ScheduleCalendar,
     date: Date
 ): Date {
+    if (
+        isEndOfWorkingDay(
+            calendar,
+            date
+        )
+    ) {
+        return new Date(
+            date.getTime()
+        );
+    }
+
     return startOfWorkingTime(
         calendar,
         date,
         true
+    );
+}
+
+function normalizeBackwardStart(
+    calendar: ScheduleCalendar,
+    date: Date
+): Date {
+    return (
+        previousWorkingDayEndAtBoundary(
+            calendar,
+            date
+        ) ??
+        normalizeStart(
+            calendar,
+            date
+        )
     );
 }
 
@@ -402,13 +515,6 @@ function buildEdges(
             if (
                 !ids.has(predecessorId) ||
                 !ids.has(successorId)
-            ) {
-                continue;
-            }
-
-            if (
-                predecessorId ===
-                successorId
             ) {
                 continue;
             }
@@ -522,23 +628,11 @@ function topologicalOrder(
 
     if (
         result.length !==
-        activities.length
+        new Set(activities.map(activity => activity.id)).size
     ) {
         warnings.push(
-            "Circular relationship detected. The unresolved activities were kept in input order; CPM results for that cycle are not reliable."
+            "Circular relationship detected. CPM calculation was stopped; schedule dates, float values, and critical path are invalid until the cycle is resolved."
         );
-
-        for (const activity of activities) {
-            if (
-                !result.includes(
-                    activity.id
-                )
-            ) {
-                result.push(
-                    activity.id
-                );
-            }
-        }
     }
 
     return result;
@@ -616,7 +710,7 @@ function earliestStartForFinishAtLeast(
     }
 
     let candidate =
-        normalizeStart(
+        normalizeBackwardStart(
             calendar,
             subtractDuration(
                 calendar,
@@ -978,19 +1072,32 @@ function backwardFinishCandidate(
             edge.relationship
         );
 
+    /*
+     * Forward scheduling applies relationship lag using the
+     * successor activity calendar. The backward pass must use
+     * that same calendar to invert the forward constraint;
+     * predecessor duration is still calculated on its own calendar.
+     */
+    const lagCalendar = successor.calendar;
+
     if (type === "FS") {
-        return subtractLag(
-            predecessorCalendar,
+        const allowedFinish = subtractLag(
+            lagCalendar,
             successor.lateStart,
             lag,
             unit
+        );
+
+        return endOfWorkingTime(
+            predecessorCalendar,
+            allowedFinish
         );
     }
 
     if (type === "SS") {
         const requiredStart =
             subtractLag(
-                predecessorCalendar,
+                lagCalendar,
                 successor.lateStart,
                 lag,
                 unit
@@ -1004,17 +1111,22 @@ function backwardFinishCandidate(
     }
 
     if (type === "FF") {
-        return subtractLag(
-            predecessorCalendar,
+        const allowedFinish = subtractLag(
+            lagCalendar,
             successor.lateFinish,
             lag,
             unit
+        );
+
+        return endOfWorkingTime(
+            predecessorCalendar,
+            allowedFinish
         );
     }
 
     const requiredStart =
         subtractLag(
-            predecessorCalendar,
+            lagCalendar,
             successor.lateFinish,
             lag,
             unit
@@ -1255,7 +1367,7 @@ function calculateFreeFloat(
         if (type === "FS") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyStart,
                     lag,
                     unit
@@ -1275,7 +1387,7 @@ function calculateFreeFloat(
         if (type === "FF") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyFinish,
                     lag,
                     unit
@@ -1295,7 +1407,7 @@ function calculateFreeFloat(
         if (type === "SS") {
             const allowed =
                 subtractLag(
-                    current.calendar,
+                    successor.calendar,
                     successor.earlyStart,
                     lag,
                     unit
@@ -1314,7 +1426,7 @@ function calculateFreeFloat(
 
         const allowed =
             subtractLag(
-                current.calendar,
+                successor.calendar,
                 successor.earlyFinish,
                 lag,
                 unit
@@ -1718,7 +1830,8 @@ export function scheduleProject(
             projectDuration: 0,
             projectDurationHours: 0,
             criticalPath: [],
-            warnings
+            warnings,
+            isValid: true
         };
     }
 
@@ -1751,6 +1864,61 @@ export function scheduleProject(
             edges,
             warnings
         );
+
+    const hasDuplicateActivityIds =
+        new Set(activities.map(activity => activity.id)).size !==
+        activities.length;
+
+    if (hasDuplicateActivityIds) {
+        warnings.push(
+            "Duplicate activity IDs detected. CPM calculation was stopped because activity identity must be unique."
+        );
+    }
+
+    if (
+        hasDuplicateActivityIds ||
+        order.length !== activities.length
+    ) {
+        const invalidActivities: Record<string, ScheduledActivity> = {};
+
+        for (const activity of activities) {
+            const calendar = getCalendar(
+                activity,
+                calendarMap,
+                options.defaultCalendarId
+            );
+            const durationDays = durationOf(
+                activity,
+                calendar,
+                options
+            );
+
+            invalidActivities[activity.id] = {
+                id: activity.id,
+                earlyStart: null,
+                earlyFinish: null,
+                lateStart: null,
+                lateFinish: null,
+                duration: durationDays,
+                durationHours: durationHoursOf(calendar, durationDays),
+                totalFloat: 0,
+                freeFloat: 0,
+                drivingFloat: 0,
+                isCritical: false
+            };
+        }
+
+        return {
+            activities: invalidActivities,
+            projectStart: null,
+            projectFinish: null,
+            projectDuration: 0,
+            projectDurationHours: 0,
+            criticalPath: [],
+            warnings,
+            isValid: false
+        };
+    }
 
     const schedules =
         new Map<
@@ -1896,7 +2064,7 @@ export function scheduleProject(
                 earlyStart
             );
 
-        let earlyFinish =
+        const earlyFinish =
             addDuration(
                 current.calendar,
                 earlyStart,
@@ -1948,9 +2116,6 @@ export function scheduleProject(
                 )
         );
 
-    let projectFinish =
-        networkFinish;
-
     const requestedStart =
         toDate(
             options.projectStart
@@ -1993,14 +2158,10 @@ export function scheduleProject(
             )
         );
 
-    if (!requestedFinish) {
-        projectFinish =
-            terminalFinish ??
-            networkFinish;
-    } else {
-        projectFinish =
-            requestedFinish;
-    }
+    const projectFinish =
+        requestedFinish ??
+        terminalFinish ??
+        networkFinish;
 
     // ------------------------------------------------------------
     // Backward Pass
@@ -2080,7 +2241,7 @@ export function scheduleProject(
             continue;
         }
 
-        let lateStart =
+        const lateStart =
             subtractDuration(
                 current.calendar,
                 lateFinish,
@@ -2255,7 +2416,8 @@ export function scheduleProject(
         projectDurationHours,
 
         criticalPath,
-        warnings
+        warnings,
+        isValid: true
     };
 }
 

@@ -606,6 +606,7 @@ export default function GanttChart(
                 JSON.stringify(colorSettings)
             );
         } catch {
+            // Ignore storage failures in restricted browser contexts.
         }
     }, [colorSettings]);
     const effectiveCustomColors =
@@ -744,6 +745,11 @@ export default function GanttChart(
     );
     const columns =
         useGanttColumns();
+    const {
+        visibleColumns,
+        setAlignment,
+        setColumnStyle
+    } = columns;
     type PmsHorizontalAlignment =
         "left" | "center" | "right";
     const [
@@ -795,16 +801,16 @@ export default function GanttChart(
         useCallback(
             (value: PmsHorizontalAlignment) => {
                 setGlobalPmsAlignment(value);
-                for (const column of columns.visibleColumns) {
-                    columns.setAlignment(
+                for (const column of visibleColumns) {
+                    setAlignment(
                         column.key,
                         value
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setAlignment
+                visibleColumns,
+                setAlignment
             ]
         );
     const [pmsFontFamily, setPmsFontFamily] =
@@ -822,16 +828,16 @@ export default function GanttChart(
     const applyPmsStyle =
         useCallback(
             (patch: Record<string, unknown>) => {
-                for (const column of columns.visibleColumns) {
-                    columns.setColumnStyle(
+                for (const column of visibleColumns) {
+                    setColumnStyle(
                         column.key,
                         patch
                     );
                 }
             },
             [
-                columns.visibleColumns,
-                columns.setColumnStyle
+                visibleColumns,
+                setColumnStyle
             ]
         );
     const [
@@ -918,6 +924,7 @@ export default function GanttChart(
                 JSON.stringify(activityCalendarIds)
             );
         } catch {
+            // Ignore storage failures in restricted browser contexts.
         }
     }, [activityCalendarIds]);
     const [
@@ -940,7 +947,6 @@ export default function GanttChart(
     ] = useState<
         "CPM" | "Manual"
     >("CPM");
-    const [scheduleRevision, setScheduleRevision] = useState(0);
     const [lastScheduledAt, setLastScheduledAt] = useState<Date | null>(null);
     const [
         responsible,
@@ -1005,8 +1011,7 @@ export default function GanttChart(
                 statusDate,
                 calendars,
                 projectCalendarId,
-                activityCalendarIds,
-                scheduleRevision
+                activityCalendarIds
             ]
         );
     const displayRows = useMemo(

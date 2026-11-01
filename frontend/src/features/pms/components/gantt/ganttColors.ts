@@ -595,8 +595,6 @@ export function getWbsLevelColors(
 
     switch (preset) {
         case "corporate":
-            baseColor =
-                theme.palette.primary.main;
             break;
 
         case "slate":

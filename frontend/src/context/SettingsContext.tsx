@@ -183,6 +183,8 @@ export function SettingsProvider({
     );
 }
 
+// Context providers intentionally export their matching hook; this is a standard Fast Refresh pattern.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings(): SettingsContextValue {
     const context =
         useContext(SettingsContext);

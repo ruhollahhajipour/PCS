@@ -91,9 +91,28 @@ const HOLIDAY_CALENDAR: ScheduleCalendar = {
     ]
 };
 
+const SIX_DAY_CALENDAR: ScheduleCalendar = {
+    ...STANDARD_CALENDAR,
+    id: "six-day",
+    name: "Six-Day Saturday Working",
+    week: {
+        ...STANDARD_CALENDAR.week,
+        6: {
+            working: true,
+            intervals: [
+                {
+                    startHour: 8,
+                    endHour: 16
+                }
+            ]
+        }
+    }
+};
+
 const CALENDARS: Record<string, ScheduleCalendar> = {
     standard: STANDARD_CALENDAR,
-    "holiday-calendar": HOLIDAY_CALENDAR
+    "holiday-calendar": HOLIDAY_CALENDAR,
+    "six-day": SIX_DAY_CALENDAR
 };
 
 function localDate(
@@ -187,6 +206,75 @@ function expectSameDate(
 }
 
 describe("CPM scheduling engine regression", () => {
+    it("stops CPM calculation when a dependency cycle is detected", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Activity A", 1, [createRelationship("B", "A", "FS")]),
+            createActivity("B", "Activity B", 1, [createRelationship("A", "B", "FS")])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
+        expect(result.projectStart).toBeNull();
+        expect(result.projectFinish).toBeNull();
+        expect(result.projectDuration).toBe(0);
+        expect(result.criticalPath).toEqual([]);
+
+        for (const activity of Object.values(result.activities)) {
+            expect(activity.earlyStart).toBeNull();
+            expect(activity.earlyFinish).toBeNull();
+            expect(activity.lateStart).toBeNull();
+            expect(activity.lateFinish).toBeNull();
+            expect(activity.isCritical).toBe(false);
+        }
+    });
+
+    it("treats a self-referencing dependency as an invalid cycle", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Self-dependent activity", 1, [
+                createRelationship("A", "A", "FS")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Circular relationship detected");
+        expect(result.criticalPath).toEqual([]);
+        expect(result.activities.A.earlyStart).toBeNull();
+    });
+
+    it("rejects duplicate activity IDs before CPM calculation", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("DUPLICATE", "First activity", 1),
+            createActivity("DUPLICATE", "Second activity", 2)
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.warnings.join(" ")).toContain("Duplicate activity IDs detected");
+        expect(result.projectStart).toBeNull();
+        expect(result.projectFinish).toBeNull();
+        expect(result.projectDuration).toBe(0);
+        expect(result.criticalPath).toEqual([]);
+        expect(result.activities.DUPLICATE.earlyStart).toBeNull();
+        expect(result.activities.DUPLICATE.earlyFinish).toBeNull();
+        expect(result.activities.DUPLICATE.lateStart).toBeNull();
+        expect(result.activities.DUPLICATE.lateFinish).toBeNull();
+        expect(result.activities.DUPLICATE.isCritical).toBe(false);
+    });
+
     it("calculates a basic FS network with working duration", () => {
         const activities: ScheduleActivity[] = [
             createActivity(
@@ -444,18 +532,19 @@ describe("CPM scheduling engine regression", () => {
         expect(b).toBeDefined();
 
         /*
-         * SF means:
+         * SF means the successor finish must be on or after
+         * the predecessor start.
          *
-         * B finish = A start
-         *
-         * A starts Monday 08:00.
-         * B has one working day duration, therefore its
-         * early finish must occur Monday 08:00 and its
-         * early start must be the previous working interval.
+         * The project starts Monday 08:00. A one-working-day
+         * successor therefore has its earliest feasible
+         * placement on Monday 08:00–16:00.
          */
-        expectSameDate(
-            b.earlyFinish,
-            a.earlyStart
+        expect(a.earlyStart).not.toBeNull();
+        expect(b.earlyFinish).not.toBeNull();
+        expect(
+            b.earlyFinish!.getTime()
+        ).toBeGreaterThanOrEqual(
+            a.earlyStart!.getTime()
         );
 
         expectLocalDateTime(
@@ -464,7 +553,7 @@ describe("CPM scheduling engine regression", () => {
                 year: 2026,
                 month: 9,
                 day: 7,
-                hour: 8
+                hour: 16
             }
         );
 
@@ -473,8 +562,8 @@ describe("CPM scheduling engine regression", () => {
             {
                 year: 2026,
                 month: 9,
-                day: 4,
-                hour: 16
+                day: 7,
+                hour: 8
             }
         );
     });
@@ -579,6 +668,195 @@ describe("CPM scheduling engine regression", () => {
                 hour: 16
             }
         );
+    });
+
+    it("supports fractional positive FS lag in working days", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", 0.5)]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 12
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
+    });
+
+    it("supports fractional negative FS lag in working days", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", -0.5)]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 12
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
+    });
+
+    it("supports positive FS lag in working hours", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Predecessor", 1),
+            createActivity(
+                "B",
+                "Successor",
+                1,
+                [createRelationship("A", "B", "FS", 4, "hours")]
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 12
+        });
+    });
+
+    it("uses successor activity calendar when predecessor and successor calendars differ", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Five-day predecessor", 5),
+            createActivity(
+                "B",
+                "Six-day successor",
+                1,
+                [createRelationship("A", "B", "FS")],
+                { calendarId: "six-day" }
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 12,
+            hour: 16
+        });
+    });
+
+    it("uses successor calendar for backward lag and free float calculations", () => {
+        const fridayStart = localDate(2026, 9, 11, 8);
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Five-day predecessor", 1),
+            createActivity(
+                "B",
+                "Six-day successor",
+                1,
+                [createRelationship("A", "B", "FS", 4, "hours")],
+                { calendarId: "six-day" }
+            )
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: fridayStart,
+            defaultCalendarId: "standard"
+        });
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 12,
+            hour: 12
+        });
+        expectLocalDateTime(result.activities.A.lateFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.A.lateStart, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 8
+        });
+        expect(result.activities.A.totalFloat).toBe(0);
+        expect(result.activities.A.freeFloat).toBe(0);
     });
 
     it("respects the 5-day calendar weekend", () => {
@@ -886,16 +1164,18 @@ describe("CPM scheduling engine regression", () => {
          * Network finishes Thursday.
          * Project horizon is Monday.
          *
-         * B therefore has positive float.
-         * A is constrained by B, so its free float remains zero.
+         * Both activities share positive total float.
+         * A has zero free float because B follows immediately,
+         * but zero free float alone does not make it critical.
+         * CPM criticality is determined by total float.
          */
-        expect(a.totalFloat).toBeGreaterThanOrEqual(0);
+        expect(a.totalFloat).toBeGreaterThan(0);
         expect(b.totalFloat).toBeGreaterThan(0);
 
         expect(a.freeFloat).toBe(0);
         expect(b.freeFloat).toBeGreaterThan(0);
 
-        expect(a.isCritical).toBe(true);
+        expect(a.isCritical).toBe(false);
         expect(b.isCritical).toBe(false);
     });
 
