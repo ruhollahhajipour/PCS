@@ -1189,6 +1189,7 @@ export default function ProjectSchedule() {
             >
 
                 <GanttChart
+                    projectId={id ?? "default"}
                     rows={
                         hierarchicalData.rows
                     }

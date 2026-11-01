@@ -20,7 +20,7 @@ import {
     Typography
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ScheduleCalendar } from "../../scheduling/scheduleTypes";
 import {
     addCalendarException,
@@ -96,6 +96,10 @@ export default function CalendarManager({
 }: CalendarManagerProps) {
     const [selectedId, setSelectedId] = useState(projectCalendarId);
     const [draftName, setDraftName] = useState("");
+
+    useEffect(() => {
+        if (open) setSelectedId(projectCalendarId);
+    }, [open, projectCalendarId]);
     const [newExceptionDate, setNewExceptionDate] = useState("");
 
     const selected = useMemo(

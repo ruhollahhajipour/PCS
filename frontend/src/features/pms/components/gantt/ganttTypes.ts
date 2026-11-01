@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { GanttRelationship, GanttRow } from "../../api/ganttApi";
 
 export interface GanttChartProps {
+    projectId?: string;
     rows: GanttRow[];
     projectDuration?: number;
     activityCount?: number;

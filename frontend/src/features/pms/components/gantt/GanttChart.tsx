@@ -78,9 +78,12 @@ import {
     adaptGanttRowsToSchedule,
     applyScheduleResultToRows,
     buildScheduleOptions,
+    assignProjectCalendar,
     createDefaultCalendarRegistry,
+    validateCalendar,
     scheduleProject
 } from "../../scheduling";
+import type { ScheduleCalendar } from "../../scheduling";
 const MIN_ROW_HEIGHT = 25;
 const MAX_ROW_HEIGHT = 44;
 const SETTINGS_PANEL_HEIGHT = 208;
@@ -88,7 +91,22 @@ const DEFAULT_DISPLAY_FONT_FAMILY =
     "Vazirmatn";
 const PMS_GANTT_GAP = 5;
 const PMS_GANTT_BORDER = "1px solid rgba(100, 116, 139, 0.30)";
-const ACTIVITY_CALENDAR_STORAGE_KEY = "pcs-pms-activity-calendars-v1";
+const CALENDAR_STORAGE_PREFIX = "pcs-pms-calendar-settings-v2:";
+
+interface StoredCalendarSettings {
+    calendars: ScheduleCalendar[];
+    projectCalendarId: string;
+    activityCalendarIds: Record<string, string | null>;
+}
+
+function isScheduleCalendar(value: unknown): value is ScheduleCalendar {
+    if (!value || typeof value !== "object") return false;
+    try {
+        return validateCalendar(value as ScheduleCalendar).length === 0;
+    } catch {
+        return false;
+    }
+}
 function cloneRows(
     rows: ApiGanttRow[]
 ): ApiGanttRow[] {
@@ -541,6 +559,7 @@ export default function GanttChart(
     }
 ) {
     const {
+        projectId = "default",
         rows,
         projectDuration,
         wbsCount,
@@ -879,43 +898,83 @@ export default function GanttChart(
     ] = useState(
         "Fixed Duration"
     );
-    const [
-        calendars,
-        setCalendars
-    ] = useState(() => createDefaultCalendarRegistry());
-    const [
-        projectCalendarId,
-        setProjectCalendarId
-    ] = useState("standard-5-day");
-    const [
-        activityCalendarIds,
-        setActivityCalendarIds
-    ] = useState<Record<string, string | null>>(() => {
-        try {
-            const raw = window.localStorage.getItem(
-                ACTIVITY_CALENDAR_STORAGE_KEY
-            );
-            if (!raw) return {};
-            const parsed = JSON.parse(raw) as Record<string, unknown>;
-            return Object.fromEntries(
-                Object.entries(parsed).filter(([, value]) =>
-                    typeof value === "string" && value.trim().length > 0
-                )
-            ) as Record<string, string>;
-        } catch {
-            return {};
-        }
-    });
+    const [calendars, setCalendars] = useState(() => createDefaultCalendarRegistry());
+    const [projectCalendarId, setProjectCalendarId] = useState("standard-5-day");
+    const [activityCalendarIds, setActivityCalendarIds] =
+        useState<Record<string, string | null>>({});
+    const [calendarStateLoadedForProject, setCalendarStateLoadedForProject] =
+        useState<string | null>(null);
+    const calendarStorageKey = `${CALENDAR_STORAGE_PREFIX}${projectId || "default"}`;
+
     useEffect(() => {
+        setCalendarStateLoadedForProject(null);
+        const defaults = createDefaultCalendarRegistry();
+
+        try {
+            const raw = window.localStorage.getItem(calendarStorageKey);
+            if (!raw) {
+                setCalendars(defaults);
+                setProjectCalendarId(defaults[0]?.id ?? "standard-5-day");
+                setActivityCalendarIds({});
+            } else {
+                const parsed = JSON.parse(raw) as Partial<StoredCalendarSettings>;
+                const restoredCalendars = Array.isArray(parsed.calendars)
+                    ? parsed.calendars.filter(isScheduleCalendar)
+                    : [];
+                const nextCalendars = restoredCalendars.length > 0
+                    ? restoredCalendars
+                    : defaults;
+                const calendarIds = new Set(nextCalendars.map(calendar => calendar.id));
+
+                setCalendars(nextCalendars);
+                setProjectCalendarId(
+                    typeof parsed.projectCalendarId === "string"
+                        ? assignProjectCalendar(parsed.projectCalendarId, nextCalendars)
+                        : nextCalendars[0]?.id ?? "standard-5-day"
+                );
+                setActivityCalendarIds(
+                    Object.fromEntries(
+                        Object.entries(parsed.activityCalendarIds ?? {}).filter(
+                            ([, value]) =>
+                                typeof value === "string" && calendarIds.has(value)
+                        )
+                    ) as Record<string, string>
+                );
+            }
+        } catch {
+            setCalendars(defaults);
+            setProjectCalendarId(defaults[0]?.id ?? "standard-5-day");
+            setActivityCalendarIds({});
+        }
+
+        setCalendarStateLoadedForProject(projectId || "default");
+    }, [projectId, calendarStorageKey]);
+
+    useEffect(() => {
+        if (calendarStateLoadedForProject !== (projectId || "default")) return;
+
+        const settings: StoredCalendarSettings = {
+            calendars,
+            projectCalendarId,
+            activityCalendarIds
+        };
+
         try {
             window.localStorage.setItem(
-                ACTIVITY_CALENDAR_STORAGE_KEY,
-                JSON.stringify(activityCalendarIds)
+                calendarStorageKey,
+                JSON.stringify(settings)
             );
         } catch {
-            // Local storage may be unavailable in restricted browser contexts.
+            // Browser-local settings are optional; backend persistence is a separate integration.
         }
-    }, [activityCalendarIds]);
+    }, [
+        calendarStateLoadedForProject,
+        calendarStorageKey,
+        projectId,
+        calendars,
+        projectCalendarId,
+        activityCalendarIds
+    ]);
     const [
         calendarManagerOpen,
         setCalendarManagerOpen
