@@ -16,18 +16,7 @@ html {
 body {
   min-width: 320px;
   overflow: hidden;
-
-  font-family:
-    Inter,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-
-  background: #f6f8fb;
-  color: #172033;
-
+  font-family: var(--pcs-font-family, "Inter", "Vazirmatn", "Segoe UI", sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -69,14 +58,11 @@ img {
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.16);
-  color: #0f172a;
+  background: var(--pcs-selection-background, rgba(37, 99, 235, 0.16));
+  color: inherit;
 }
 
-/* ============================================================
-   SCROLLBAR
-============================================================ */
-
+/* Scrollbars follow the active theme tokens. */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -87,36 +73,25 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--pcs-scrollbar-thumb, #cbd5e1);
   border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--pcs-scrollbar-thumb-hover, #94a3b8);
 }
 
-/* ============================================================
-   ACCESSIBILITY
-============================================================ */
-
+/* Keyboard focus remains visible in both color schemes. */
 :focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
-/* ============================================================
-   FORM CONTROLS
-============================================================ */
-
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  color: var(--mui-palette-text-disabled, #94a3b8);
   opacity: 1;
 }
-
-/* ============================================================
-   REDUCED MOTION
-============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   *,
