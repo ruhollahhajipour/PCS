@@ -1305,4 +1305,119 @@ describe("CPM scheduling engine regression", () => {
             "C"
         ]);
     });
+
+    it("schedules an FS successor on its own six-day calendar", () => {
+        const sixDayCalendar: ScheduleCalendar = {
+            ...STANDARD_CALENDAR,
+            id: "six-day",
+            name: "Six-Day Saturday-Thursday",
+            week: {
+                ...STANDARD_CALENDAR.week,
+                6: {
+                    working: true,
+                    intervals: [
+                        {
+                            startHour: 8,
+                            endHour: 16
+                        }
+                    ]
+                }
+            }
+        };
+
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Engineering", 1, [], {
+                calendarId: "standard"
+            }),
+            createActivity(
+                "B",
+                "Weekend Construction",
+                1,
+                [createRelationship("A", "B", "FS")],
+                { calendarId: "six-day" }
+            )
+        ];
+
+        const result = scheduleProject(
+            activities,
+            {
+                ...CALENDARS,
+                "six-day": sixDayCalendar
+            },
+            {
+                projectStart: localDate(2026, 9, 11, 8),
+                defaultCalendarId: "standard"
+            }
+        );
+
+        expectLocalDateTime(result.activities.A.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.B.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 12,
+            hour: 16
+        });
+    });
+
+    it("uses every predecessor when calculating a converging EPC work package", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("CIV", "Civil works", 1),
+            createActivity("MECH", "Mechanical works", 2),
+            createActivity(
+                "PRECOM",
+                "Pre-commissioning",
+                1,
+                [
+                    createRelationship("CIV", "PRECOM", "FS"),
+                    createRelationship("MECH", "PRECOM", "FS")
+                ]
+            )
+        ];
+
+        const result = scheduleProject(
+            activities,
+            CALENDARS,
+            {
+                projectStart: PROJECT_START,
+                defaultCalendarId: "standard"
+            }
+        );
+
+        expectLocalDateTime(result.activities.CIV.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.MECH.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.PRECOM.earlyStart, {
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 16
+        });
+        expectLocalDateTime(result.activities.PRECOM.earlyFinish, {
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 16
+        });
+    });
+
 });
