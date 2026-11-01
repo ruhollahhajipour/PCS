@@ -1420,4 +1420,219 @@ describe("CPM scheduling engine regression", () => {
         });
     });
 
+
+    it("validates FS, SS, FF and SF links together in one EPC network", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Engineering", 2),
+            createActivity("B", "Procurement", 1, [
+                createRelationship("A", "B", "FS")
+            ]),
+            createActivity("C", "Fabrication", 1, [
+                createRelationship("A", "C", "SS")
+            ]),
+            createActivity("D", "Inspection", 1, [
+                createRelationship("B", "D", "FF")
+            ]),
+            createActivity("E", "Early works", 1, [
+                createRelationship("C", "E", "SF")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        for (const id of ["A", "B", "C", "D", "E"]) {
+            expect(result.activities[id].earlyStart).not.toBeNull();
+            expect(result.activities[id].earlyFinish).not.toBeNull();
+        }
+
+        expect(result.activities.B.earlyStart!.getTime())
+            .toBeGreaterThanOrEqual(result.activities.A.earlyFinish!.getTime());
+        expect(result.activities.C.earlyStart!.getTime())
+            .toBeGreaterThanOrEqual(result.activities.A.earlyStart!.getTime());
+        expect(result.activities.D.earlyFinish!.getTime())
+            .toBeGreaterThanOrEqual(result.activities.B.earlyFinish!.getTime());
+        expect(result.activities.E.earlyFinish!.getTime())
+            .toBeGreaterThanOrEqual(result.activities.C.earlyStart!.getTime());
+    });
+
+    it("honors different holiday exceptions on predecessor and successor calendars", () => {
+        const constructionCalendar: ScheduleCalendar = {
+            ...STANDARD_CALENDAR,
+            id: "construction",
+            name: "Construction Calendar",
+            exceptions: [
+                {
+                    date: "2026-09-09",
+                    working: false,
+                    name: "Construction Shutdown"
+                }
+            ]
+        };
+
+        const engineeringCalendar: ScheduleCalendar = {
+            ...STANDARD_CALENDAR,
+            exceptions: [
+                {
+                    date: "2026-09-08",
+                    working: false,
+                    name: "Engineering Holiday"
+                }
+            ]
+        };
+
+        const activities: ScheduleActivity[] = [
+            createActivity("ENG", "Engineering", 2, [], {
+                calendarId: "engineering"
+            }),
+            createActivity("SITE", "Site Execution", 1, [
+                createRelationship("ENG", "SITE", "FS")
+            ], {
+                calendarId: "construction"
+            })
+        ];
+
+        const result = scheduleProject(
+            activities,
+            {
+                engineering: engineeringCalendar,
+                construction: constructionCalendar
+            },
+            {
+                projectStart: localDate(2026, 9, 7, 8),
+                defaultCalendarId: "engineering"
+            }
+        );
+
+        expectLocalDateTime(result.activities.ENG.earlyFinish, {
+            year: 2026, month: 9, day: 9, hour: 16
+        });
+        expectLocalDateTime(result.activities.SITE.earlyStart, {
+            year: 2026, month: 9, day: 10, hour: 8
+        });
+        expectLocalDateTime(result.activities.SITE.earlyFinish, {
+            year: 2026, month: 9, day: 10, hour: 16
+        });
+    });
+
+    it("rejects a circular dependency network without publishing CPM dates", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Activity A", 1, [
+                createRelationship("B", "A", "FS")
+            ]),
+            createActivity("B", "Activity B", 1, [
+                createRelationship("A", "B", "FS")
+            ]),
+            createActivity("C", "Independent Activity", 1)
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.criticalPath).toEqual([]);
+        expect(result.projectStart).toBeNull();
+        expect(result.projectFinish).toBeNull();
+        expect(result.warnings.some(warning => warning.includes("Circular relationship")))
+            .toBe(true);
+
+        for (const activity of Object.values(result.activities)) {
+            expect(activity.earlyStart).toBeNull();
+            expect(activity.earlyFinish).toBeNull();
+            expect(activity.lateStart).toBeNull();
+            expect(activity.lateFinish).toBeNull();
+            expect(activity.isCritical).toBe(false);
+        }
+    });
+
+    it("detects a self-referencing dependency instead of silently discarding it", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("A", "Self Referencing Activity", 1, [
+                createRelationship("A", "A", "FS")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.activities.A.earlyStart).toBeNull();
+        expect(result.activities.A.earlyFinish).toBeNull();
+        expect(result.criticalPath).toEqual([]);
+        expect(result.warnings.some(warning => warning.includes("Circular relationship")))
+            .toBe(true);
+    });
+
+    it("identifies the driving branch in a parallel EPC network", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("START", "Project Start", 1),
+            createActivity("LONG", "Long Lead Equipment", 4, [
+                createRelationship("START", "LONG", "FS")
+            ]),
+            createActivity("SHORT", "Site Preparation", 1, [
+                createRelationship("START", "SHORT", "FS")
+            ]),
+            createActivity("INTEGRATE", "System Integration", 1, [
+                createRelationship("LONG", "INTEGRATE", "FS"),
+                createRelationship("SHORT", "INTEGRATE", "FS")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.activities.START.totalFloat).toBe(0);
+        expect(result.activities.LONG.totalFloat).toBe(0);
+        expect(result.activities.INTEGRATE.totalFloat).toBe(0);
+        expect(result.activities.SHORT.totalFloat).toBeGreaterThan(0);
+        expect(result.activities.START.isCritical).toBe(true);
+        expect(result.activities.LONG.isCritical).toBe(true);
+        expect(result.activities.SHORT.isCritical).toBe(false);
+        expect(result.activities.INTEGRATE.isCritical).toBe(true);
+        expect(result.criticalPath).toEqual([
+            "START",
+            "LONG",
+            "INTEGRATE"
+        ]);
+    });
+
+    it("schedules a 1000-activity dependency chain", () => {
+        const activities: ScheduleActivity[] = Array.from(
+            { length: 1000 },
+            (_, index) => createActivity(
+                `A${index + 1}`,
+                `EPC Activity ${index + 1}`,
+                0.125,
+                index === 0
+                    ? []
+                    : [
+                        createRelationship(
+                            `A${index}`,
+                            `A${index + 1}`,
+                            "FS"
+                        )
+                    ]
+            )
+        );
+
+        const startedAt = Date.now();
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+        const elapsedMs = Date.now() - startedAt;
+
+        expect(Object.keys(result.activities)).toHaveLength(1000);
+        expect(result.criticalPath).toHaveLength(1000);
+        expect(result.activities.A1.earlyStart).not.toBeNull();
+        expect(result.activities.A1000.earlyFinish).not.toBeNull();
+        expect(elapsedMs).toBeLessThan(10000);
+    });
+
 });
