@@ -626,8 +626,14 @@ function earliestStartForFinishAtLeast(
         );
     }
 
+    /*
+     * Preserve the finish clock position when deriving a start from an FF/SF
+     * finish boundary. At a shift-end boundary, subtractWorkingDays can return
+     * the preceding interval end; subtractDuration normalizes that boundary
+     * to the next shift start and can move the successor one day too late.
+     */
     let candidate =
-        subtractDuration(
+        subtractWorkingDays(
             calendar,
             requiredFinish,
             duration
