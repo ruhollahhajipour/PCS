@@ -51,6 +51,8 @@
 
     <ProjectReference Include="..\PCS.Infrastructure\PCS.Infrastructure.csproj" />
 
+    <ProjectReference Include="..\PCS.Infrastructure.Migrations.SqlServer\PCS.Infrastructure.Migrations.SqlServer.csproj" />
+
   </ItemGroup>
 
 </Project>

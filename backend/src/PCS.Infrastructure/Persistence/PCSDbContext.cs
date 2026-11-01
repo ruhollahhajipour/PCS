@@ -135,14 +135,18 @@ public class PCSDbContext : DbContext
         // فقط یک Primary Admin برای هر شرکت
         // ===================================
 
+        string primaryAdminFilter =
+            Database.IsSqlite()
+                ? "\"IsPrimaryAdmin\" = 1"
+                : "[IsPrimaryAdmin] = 1";
+
         modelBuilder.Entity<CompanyUser>()
             .HasIndex(x => new
             {
                 x.CompanyId,
                 x.IsPrimaryAdmin
             })
-            .HasFilter(
-                "\"IsPrimaryAdmin\" = 1")
+            .HasFilter(primaryAdminFilter)
             .IsUnique();
 
 

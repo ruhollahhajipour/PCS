@@ -52,7 +52,10 @@ public static class DatabaseProviderResolver
 
         if (string.Equals(provider, SqlServer, StringComparison.OrdinalIgnoreCase))
         {
-            options.UseSqlServer(connectionString);
+            options.UseSqlServer(
+                connectionString,
+                sqlServer => sqlServer.MigrationsAssembly(
+                    "PCS.Infrastructure.Migrations.SqlServer"));
             return;
         }
 

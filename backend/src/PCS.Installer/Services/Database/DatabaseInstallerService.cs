@@ -37,7 +37,9 @@ public class DatabaseInstallerService
 
 
         options.UseSqlServer(
-            connectionString);
+            connectionString,
+            sqlServer => sqlServer.MigrationsAssembly(
+                "PCS.Infrastructure.Migrations.SqlServer"));
 
 
         using var db =
