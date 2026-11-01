@@ -85,8 +85,8 @@ public class PmsService : IPmsService
 
 
         var existingWbs =
-            (await _wbsRepository.GetAllAsync())
-            .Where(x => x.ProjectId == dto.ProjectId)
+            (await _wbsRepository.FindAsync(
+                x => x.ProjectId == dto.ProjectId && !x.IsDeleted))
             .ToDictionary(
                 x => x.Code,
                 StringComparer.OrdinalIgnoreCase);
@@ -204,11 +204,27 @@ public class PmsService : IPmsService
         // IMPORT ACTIVITIES
         // =====================================================
 
+        var existingActivitiesByCode =
+            (await _activityRepository.FindAsync(
+                x => x.ProjectId == dto.ProjectId && !x.IsDeleted))
+            .ToDictionary(
+                x => x.Code,
+                StringComparer.OrdinalIgnoreCase);
+
         var importedActivitiesByCode = new Dictionary<string, Activity>(
+            StringComparer.OrdinalIgnoreCase);
+        var importedActivityCodes = new HashSet<string>(
             StringComparer.OrdinalIgnoreCase);
 
         foreach(var item in dto.Activities)
         {
+            if (string.IsNullOrWhiteSpace(item.Code))
+                throw new InvalidOperationException("Activity code is required.");
+
+            var activityCode = item.Code.Trim();
+            if (!importedActivityCodes.Add(activityCode))
+                throw new InvalidOperationException(
+                    $"Duplicate activity code '{activityCode}' in the import file.");
             if(!wbsMap.TryGetValue(
                     item.WbsCode.Trim(),
                     out var wbs))
@@ -220,12 +236,9 @@ public class PmsService : IPmsService
 
 
 
-            var existingActivity =
-                await _activityRepository
-                    .FirstOrDefaultAsync(
-                        x =>
-                            x.ProjectId == dto.ProjectId &&
-                            x.Code == item.Code);
+            existingActivitiesByCode.TryGetValue(
+                activityCode,
+                out var existingActivity);
 
 
 
@@ -306,7 +319,7 @@ public class PmsService : IPmsService
                 _activityRepository.Update(
                     existingActivity);
 
-                importedActivitiesByCode[item.Code.Trim()] = existingActivity;
+                importedActivitiesByCode[activityCode] = existingActivity;
             }
             else
             {
@@ -410,7 +423,8 @@ public class PmsService : IPmsService
                 await _activityRepository
                     .AddAsync(activity);
 
-                importedActivitiesByCode[item.Code.Trim()] = activity;
+                importedActivitiesByCode[activityCode] = activity;
+                existingActivitiesByCode[activityCode] = activity;
             }
         }
 

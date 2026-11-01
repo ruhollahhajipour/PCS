@@ -47,12 +47,13 @@ public sealed class PmsServiceTests
             Status = "InProgress"
         };
         var unitOfWork = new RecordingUnitOfWork();
+        var activityRepository = new FakeRepository<Activity>([activity]);
 
         var service = new PmsService(
             new FakeRepository<Project>([new Project { Id = projectId }]),
             new FakeRepository<Company>(),
             new FakeRepository<WbsNode>([wbs]),
-            new FakeRepository<Activity>([activity]),
+            activityRepository,
             unitOfWork,
             new WbsCalculationService(),
             new StubPmsBaselineService());
@@ -87,6 +88,8 @@ public sealed class PmsServiceTests
         });
 
         Assert.True(unitOfWork.Committed);
+        Assert.Equal(1, activityRepository.FindCalls);
+        Assert.Equal(0, activityRepository.FirstOrDefaultCalls);
         Assert.Equal(80m, activity.ActualCost);
         Assert.Equal(120m, activity.EarnedValue);
         Assert.Equal(200m, wbs.Budget);
@@ -210,14 +213,21 @@ public sealed class PmsServiceTests
             return Task.FromResult(item);
         }
 
+        public int FindCalls { get; private set; }
+        public int FirstOrDefaultCalls { get; private set; }
+
         public Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
+            FindCalls++;
             var compiled = predicate.Compile();
             return Task.FromResult<IEnumerable<T>>(_items.Where(compiled).ToList());
         }
 
-        public Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate) =>
-            Task.FromResult(_items.FirstOrDefault(predicate.Compile()));
+        public Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        {
+            FirstOrDefaultCalls++;
+            return Task.FromResult(_items.FirstOrDefault(predicate.Compile()));
+        }
 
         public Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) =>
             Task.FromResult(_items.Any(predicate.Compile()));
