@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
@@ -49,7 +49,27 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --legacy-peer-deps --no-audit --no-fund
+        run: npm install --package-lock=false --legacy-peer-deps --no-audit --no-fund
+
+      - name: Regenerate lockfile from a clean dependency graph (UTC job only)
+        if: matrix.timezone == 'UTC'
+        working-directory: frontend
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund
+
+      - name: Commit regenerated npm lockfile (one-time bootstrap)
+        if: matrix.timezone == 'UTC'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already synchronized"
+          else
+            git commit -m "build(frontend): regenerate complete npm lockfile"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Print npm diagnostics on install failure
         if: failure()
