@@ -700,11 +700,14 @@ function forwardStartCandidate(
 
     switch (type) {
         case "FS":
-            return addLag(
+            return normalizeStart(
                 successorCalendar,
-                predecessor.earlyFinish,
-                lag,
-                unit
+                addLag(
+                    successorCalendar,
+                    predecessor.earlyFinish,
+                    lag,
+                    unit
+                )
             );
 
         case "SS":
