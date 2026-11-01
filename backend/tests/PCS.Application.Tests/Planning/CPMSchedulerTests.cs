@@ -94,6 +94,108 @@ public sealed class CPMSchedulerTests
         Assert.Contains("negative duration", exception.Message);
     }
 
+    [Fact]
+    public async Task ScheduleProjectAsync_CalculatesMixedRelationshipsAndWorkingOffsets()
+    {
+        var projectId = Guid.NewGuid();
+        var a = CreateActivity(projectId, "A");
+        var b = CreateActivity(projectId, "B");
+        var c = CreateActivity(projectId, "C");
+        a.Duration = 2;
+        b.Duration = 3;
+        c.Duration = 1;
+
+        var relationships = new[]
+        {
+            CreateRelationship(a, b, "FS", lag: 1),
+            CreateRelationship(b, c, "FF")
+        };
+
+        var scheduler = CreateScheduler(
+            new[] { a, b, c },
+            relationships);
+
+        var result = await scheduler.ScheduleProjectAsync(projectId);
+
+        Assert.Equal(6, result.ProjectDuration);
+        Assert.Equal(3, result.CriticalActivitiesCount);
+        Assert.Equal(new[] { 0, 3, 5 }, new[]
+        {
+            a.EarlyStart,
+            b.EarlyStart,
+            c.EarlyStart
+        });
+        Assert.Equal(new[] { 2, 6, 6 }, new[]
+        {
+            a.EarlyFinish,
+            b.EarlyFinish,
+            c.EarlyFinish
+        });
+        Assert.Equal(new[] { 0, 0, 0 }, new[]
+        {
+            a.TotalFloat,
+            b.TotalFloat,
+            c.TotalFloat
+        });
+        Assert.Equal(new[] { 0, 0 }, new[]
+        {
+            a.FreeFloat,
+            b.FreeFloat
+        });
+        Assert.All(new[] { a, b, c }, activity => Assert.True(activity.IsCritical));
+    }
+
+    [Fact]
+    public async Task ScheduleProjectAsync_MarksBothParallelCriticalBranches()
+    {
+        var projectId = Guid.NewGuid();
+        var a = CreateActivity(projectId, "A");
+        var b = CreateActivity(projectId, "B");
+        var c = CreateActivity(projectId, "C");
+        var d = CreateActivity(projectId, "D");
+
+        foreach (var activity in new[] { a, b, c, d })
+            activity.Duration = 2;
+
+        var relationships = new[]
+        {
+            CreateRelationship(a, b, "FS"),
+            CreateRelationship(c, d, "FS")
+        };
+
+        var scheduler = CreateScheduler(
+            new[] { a, b, c, d },
+            relationships);
+
+        var result = await scheduler.ScheduleProjectAsync(projectId);
+
+        Assert.Equal(4, result.ProjectDuration);
+        Assert.Equal(4, result.CriticalActivitiesCount);
+        Assert.Equal(
+            new[] { "A", "B", "C", "D" },
+            result.CriticalPath.OrderBy(code => code, StringComparer.Ordinal));
+        Assert.All(
+            new[] { a, b, c, d },
+            activity => Assert.Equal(0, activity.TotalFloat));
+    }
+
+    private static ActivityRelationship CreateRelationship(
+        Activity predecessor,
+        Activity successor,
+        string type,
+        int lag = 0) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            PredecessorId = predecessor.Id,
+            SuccessorId = successor.Id,
+            Predecessor = predecessor,
+            Successor = successor,
+            Type = type,
+            Lag = lag,
+            IsActive = true
+        };
+
     private static Activity CreateActivity(Guid projectId, string code) =>
         new()
         {
