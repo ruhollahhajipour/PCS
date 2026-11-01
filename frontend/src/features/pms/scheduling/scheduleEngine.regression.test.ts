@@ -1602,6 +1602,38 @@ describe("CPM scheduling engine regression", () => {
         ]);
     });
 
+    it("marks both parallel branches critical when an EPC network has multiple critical paths", () => {
+        const activities: ScheduleActivity[] = [
+            createActivity("START", "Project Start", 1),
+            createActivity("LEFT", "Parallel Branch Left", 3, [
+                createRelationship("START", "LEFT", "FS")
+            ]),
+            createActivity("RIGHT", "Parallel Branch Right", 3, [
+                createRelationship("START", "RIGHT", "FS")
+            ]),
+            createActivity("FINISH", "Project Finish", 1, [
+                createRelationship("LEFT", "FINISH", "FS"),
+                createRelationship("RIGHT", "FINISH", "FS")
+            ])
+        ];
+
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+
+        expect(result.activities.START.isCritical).toBe(true);
+        expect(result.activities.LEFT.isCritical).toBe(true);
+        expect(result.activities.RIGHT.isCritical).toBe(true);
+        expect(result.activities.FINISH.isCritical).toBe(true);
+        expect(result.activities.LEFT.totalFloat).toBe(0);
+        expect(result.activities.RIGHT.totalFloat).toBe(0);
+        expect(result.criticalPath).toHaveLength(3);
+        expect(result.criticalPath[0]).toBe("START");
+        expect(["LEFT", "RIGHT"]).toContain(result.criticalPath[1]);
+        expect(result.criticalPath[2]).toBe("FINISH");
+    });
+
     it("schedules a wide network of 10000 independent EPC activities", () => {
         const activities: ScheduleActivity[] = Array.from(
             { length: 10000 },
