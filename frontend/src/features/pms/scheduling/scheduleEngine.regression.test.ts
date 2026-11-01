@@ -1602,6 +1602,29 @@ describe("CPM scheduling engine regression", () => {
         ]);
     });
 
+    it("schedules a wide network of 10000 independent EPC activities", () => {
+        const activities: ScheduleActivity[] = Array.from(
+            { length: 10000 },
+            (_, index) => createActivity(
+                `WIDE-${index + 1}`,
+                `Independent EPC Activity ${index + 1}`,
+                1
+            )
+        );
+
+        const startedAt = Date.now();
+        const result = scheduleProject(activities, CALENDARS, {
+            projectStart: PROJECT_START,
+            defaultCalendarId: "standard"
+        });
+        const elapsedMs = Date.now() - startedAt;
+
+        expect(Object.keys(result.activities)).toHaveLength(10000);
+        expect(result.activities["WIDE-1"].earlyStart).not.toBeNull();
+        expect(result.activities["WIDE-10000"].earlyFinish).not.toBeNull();
+        expect(elapsedMs).toBeLessThan(10000);
+    });
+
     it("schedules a 1000-activity dependency chain", () => {
         const activities: ScheduleActivity[] = Array.from(
             { length: 1000 },

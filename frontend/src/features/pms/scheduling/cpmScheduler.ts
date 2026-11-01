@@ -527,9 +527,13 @@ function topologicalOrder(
             );
 
     const result: string[] = [];
+    let queueIndex = 0;
 
-    while (queue.length) {
-        const id = queue.shift();
+    // Use a read cursor instead of Array.shift(), which repeatedly reindexes
+    // the remaining queue and can degrade wide dependency networks.
+    while (queueIndex < queue.length) {
+        const id = queue[queueIndex];
+        queueIndex += 1;
 
         if (!id) {
             continue;
