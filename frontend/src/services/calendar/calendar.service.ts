@@ -184,7 +184,7 @@ function persianToGregorian(
   jm: number,
   jd: number,
 ): CalendarDateParts {
-  let year = jy + 1595;
+  const year = jy + 1595;
 
   let days =
     -355668 +

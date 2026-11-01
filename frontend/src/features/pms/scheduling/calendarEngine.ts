@@ -1574,7 +1574,7 @@ export function workingHoursBetween(
 
     let total = 0;
 
-    let cursor =
+    const cursor =
         startOfDay(start);
 
     const finishDay =

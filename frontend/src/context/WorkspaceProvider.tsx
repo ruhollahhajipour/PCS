@@ -530,6 +530,9 @@ export function WorkspaceProvider({
         companies,
         plants,
         projects,
+        setCompany,
+        setPlant,
+        setProject,
       ]
     );
 

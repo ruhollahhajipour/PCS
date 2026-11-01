@@ -606,6 +606,7 @@ export default function GanttChart(
                 JSON.stringify(colorSettings)
             );
         } catch {
+            // Local storage may be unavailable in restricted browser contexts.
         }
     }, [colorSettings]);
     const effectiveCustomColors =
@@ -803,6 +804,7 @@ export default function GanttChart(
                 }
             },
             [
+                columns,
                 columns.visibleColumns,
                 columns.setAlignment
             ]
@@ -830,6 +832,7 @@ export default function GanttChart(
                 }
             },
             [
+                columns,
                 columns.visibleColumns,
                 columns.setColumnStyle
             ]
@@ -918,6 +921,7 @@ export default function GanttChart(
                 JSON.stringify(activityCalendarIds)
             );
         } catch {
+            // Local storage may be unavailable in restricted browser contexts.
         }
     }, [activityCalendarIds]);
     const [
@@ -1005,8 +1009,7 @@ export default function GanttChart(
                 statusDate,
                 calendars,
                 projectCalendarId,
-                activityCalendarIds,
-                scheduleRevision
+                activityCalendarIds
             ]
         );
     const displayRows = useMemo(
