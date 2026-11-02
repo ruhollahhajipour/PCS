@@ -92,7 +92,7 @@ public sealed class TenantContextMiddleware
             bool companyExists = await dbContext.Companies
                 .IgnoreQueryFilters()
                 .AnyAsync(
-                    x => x.Id == activeCompanyId.Value && x.IsActive && !x.IsDeleted,
+                    x => x.Id == activeCompanyId.Value && !x.IsDeleted && (isPlatformAdmin || x.IsActive),
                     context.RequestAborted);
 
             if (!companyExists)
