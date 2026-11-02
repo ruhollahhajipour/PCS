@@ -75,17 +75,21 @@ jobs:
       - name: Audit background-job call sites
         shell: pwsh
         run: |
-          $references = git grep -n -E 'IBackgroundJobService|BackgroundJob\\.|RecurringJob\\.' -- backend/src ':!**/HangfireBackgroundJobService.cs' ':!**/IBackgroundJobService.cs' ':!**/DependencyInjection.cs'
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Background-job consumers or direct Hangfire calls were found:"
+          $references = git grep -n -E 'IBackgroundJobService|BackgroundJob[.]|RecurringJob[.]|Hangfire' -- backend/src ':!**/HangfireBackgroundJobService.cs' ':!**/IBackgroundJobService.cs' ':!**/DependencyInjection.cs' ':!**/PCS.Infrastructure.csproj'
+          $grepExitCode = $LASTEXITCODE
+
+          if ($grepExitCode -eq 0) {
+            Write-Host "Background-job consumers or direct Hangfire references were found:"
             $references | Write-Output
+            exit 0
           }
-          elseif ($LASTEXITCODE -eq 1) {
-            Write-Host "No background-job consumers or direct Hangfire calls were found."
+
+          if ($grepExitCode -eq 1) {
+            Write-Host "No background-job consumers or direct Hangfire references were found."
+            exit 0
           }
-          else {
-            exit $LASTEXITCODE
-          }
+
+          exit $grepExitCode
 
       - name: Build solution
         run: dotnet build backend/PCS.Backend.slnx --configuration Release --no-restore

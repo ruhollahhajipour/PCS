@@ -9,7 +9,6 @@ using PCS.Application.Projects.Interfaces;
 using PCS.Application.Planning.Interfaces;
 using PCS.Application.Licensing.Interfaces;
 
-using PCS.Infrastructure.BackgroundJobs;
 using PCS.Infrastructure.Persistence;
 using PCS.Infrastructure.Repositories;
 using PCS.Infrastructure.Services;
@@ -116,15 +115,6 @@ public static class DependencyInjection
         services.AddScoped<
             ILicenseService,
             LicenseService>();
-
-
-        // ==========================
-        // Background Jobs
-        // ==========================
-
-        services.AddScoped<
-            IBackgroundJobService,
-            HangfireBackgroundJobService>();
 
 
         return services;
