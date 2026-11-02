@@ -1803,6 +1803,11 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("ProjectBaseline");
                 });
 
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaseline", b =>
+                {
+                    b.Navigation("Activities");
+                });
+
             modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>
                 {
                     b.HasOne("PCS.Domain.Entities.Project", "Project")
