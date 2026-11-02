@@ -218,6 +218,11 @@ public class PCSDbContext : DbContext
                 CurrentUserId.HasValue &&
                 x.UserId == CurrentUserId);
 
+        modelBuilder.Entity<DigitalSignature>()
+            .HasQueryFilter(x =>
+                CurrentUserId.HasValue &&
+                x.UserId == CurrentUserId);
+
         // PMS records inherit the scope of their owning project.
         modelBuilder.Entity<WbsNode>()
             .HasQueryFilter(x =>

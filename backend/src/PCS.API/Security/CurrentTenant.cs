@@ -28,7 +28,7 @@ public sealed class CurrentTenant : ICurrentTenant
     public bool IsPlatformAdmin =>
         Context?.Items["PCS.IsPlatformAdmin"] is bool value
             ? value
-            : Context?.User.IsInRole("SUPER_ADMIN") == true;
+            : Context?.User.HasClaim("platform_admin", "true") == true;
 
     public bool IsGlobalScope =>
         IsPlatformAdmin && !CompanyId.HasValue;

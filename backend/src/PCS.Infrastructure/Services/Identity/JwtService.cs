@@ -54,7 +54,8 @@ public sealed class JwtService : IJwtService
         string username,
         IEnumerable<string> roles,
         IEnumerable<string> permissions,
-        Guid? companyId)
+        Guid? companyId,
+        bool isPlatformAdmin)
     {
         var claims =
             new List<Claim>
@@ -78,6 +79,14 @@ public sealed class JwtService : IJwtService
                 new Claim(
                     "company_id",
                     companyId.Value.ToString()));
+        }
+
+        if (isPlatformAdmin)
+        {
+            claims.Add(
+                new Claim(
+                    "platform_admin",
+                    "true"));
         }
 
 

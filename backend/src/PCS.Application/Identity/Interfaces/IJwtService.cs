@@ -9,5 +9,6 @@ public interface IJwtService
         string username,
         IEnumerable<string> roles,
         IEnumerable<string> permissions,
-        Guid? companyId);
+        Guid? companyId,
+        bool isPlatformAdmin);
 }

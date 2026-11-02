@@ -31,7 +31,8 @@ public sealed class TenantContextMiddleware
             return;
         }
 
-        bool isPlatformAdmin = context.User.IsInRole("SUPER_ADMIN");
+        bool isPlatformAdmin =
+            context.User.HasClaim("platform_admin", "true");
 
         Guid? tokenCompanyId =
             Guid.TryParse(

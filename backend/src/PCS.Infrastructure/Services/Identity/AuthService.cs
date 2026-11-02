@@ -52,7 +52,10 @@ public sealed class AuthService : IAuthService
 
         Guid? companyId = await _dbContext.CompanyUsers
             .IgnoreQueryFilters()
-            .Where(x => x.UserId == user.Id && x.IsActive)
+            .Where(x =>
+                x.UserId == user.Id &&
+                x.IsActive &&
+                x.Company.IsActive)
             .OrderBy(x => x.AssignedAt)
             .Select(x => (Guid?)x.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
@@ -180,6 +183,10 @@ public sealed class AuthService : IAuthService
             x.CompanyId == null &&
             x.Role.IsActive &&
             string.Equals(
+                x.Role.Scope,
+                "Platform",
+                StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(
                 x.Role.Code,
                 "SUPER_ADMIN",
                 StringComparison.OrdinalIgnoreCase));
@@ -224,7 +231,8 @@ public sealed class AuthService : IAuthService
             user.UserName,
             roles,
             permissions,
-            companyId);
+            companyId,
+            IsPlatformAdmin(user));
 
         return new LoginResponse
         {

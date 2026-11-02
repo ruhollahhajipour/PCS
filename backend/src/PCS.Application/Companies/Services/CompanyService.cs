@@ -122,10 +122,10 @@ public class CompanyService : ICompanyService
 
     public async Task DeleteAsync(Guid id)
     {
-        if (!await CanManageCompanyAsync(id))
+        if (!_currentTenant.IsPlatformAdmin)
         {
             throw new UnauthorizedAccessException(
-                "The current user cannot administer this company.");
+                "Only a platform administrator can delete a company.");
         }
 
         var company = await _repository.GetByIdAsync(id);
