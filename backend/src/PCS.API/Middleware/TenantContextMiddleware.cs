@@ -43,8 +43,26 @@ public sealed class TenantContextMiddleware
             return;
         }
 
-        bool isPlatformAdmin =
+        bool tokenClaimsPlatformAdmin =
             context.User.HasClaim("platform_admin", "true");
+
+        bool hasActivePlatformAdminRole = tokenClaimsPlatformAdmin &&
+            await dbContext.UserRoles
+                .IgnoreQueryFilters()
+                .AnyAsync(
+                    x =>
+                        x.UserId == userId &&
+                        x.IsActive &&
+                        x.CompanyId == null &&
+                        x.Role.IsActive &&
+                        x.Role.Scope == "Platform" &&
+                        x.Role.Code == "SUPER_ADMIN",
+                    context.RequestAborted);
+
+        // A signed JWT is not sufficient proof of a currently active
+        // platform-admin assignment. Re-check the authoritative database
+        // assignment so role revocation takes effect before token expiry.
+        bool isPlatformAdmin = hasActivePlatformAdminRole;
 
         Guid? tokenCompanyId =
             Guid.TryParse(
