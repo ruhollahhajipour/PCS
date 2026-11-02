@@ -75,8 +75,6 @@ public sealed class SoftDeleteRepositoryTests
         Assert.True(retainedRecord.IsDeleted);
         Assert.NotNull(retainedRecord.DeletedAt);
     }
-}
-
 
     [Fact]
     public async Task Generic_repository_rejects_detached_updates()
@@ -160,3 +158,5 @@ public sealed class SoftDeleteRepositoryTests
 
         Assert.Equal("After", (await dbContext.Companies.SingleAsync(x => x.Id == company.Id)).Name);
     }
+
+}
