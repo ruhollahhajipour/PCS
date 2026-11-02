@@ -27,7 +27,10 @@ public class GenericRepository<T> : IGenericRepository<T>
 
     public async Task<T?> GetByIdAsync(Guid id)
     {
-        return await _dbSet.FindAsync(id);
+        // FindAsync may bypass global query filters. Use a normal LINQ
+        // query so tenant filters are always applied to key lookups.
+        return await _dbSet.SingleOrDefaultAsync(
+            entity => EF.Property<Guid>(entity, "Id") == id);
     }
 
     public async Task<IEnumerable<T>> FindAsync(
