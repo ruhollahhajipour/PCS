@@ -1,5 +1,7 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
+using PCS.Domain.Common;
 using PCS.Domain.Entities;
 using PCS.Domain.Entities.Licensing;
 using PCS.Domain.Entities.Planning;
@@ -266,5 +268,54 @@ public class PCSDbContext : DbContext
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Activity.Project.CompanyId == CurrentCompanyId));
+
+        ApplySoftDeleteFilters(modelBuilder);
+    }
+
+    private static void ApplySoftDeleteFilters(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(AuditableEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                continue;
+            }
+
+            var parameter = Expression.Parameter(entityType.ClrType, "entity");
+            Expression filterBody = Expression.Not(
+                Expression.Property(parameter, nameof(AuditableEntity.IsDeleted)));
+
+            var existingFilter = entityType.GetQueryFilter();
+            if (existingFilter is not null)
+            {
+                var existingBody = new ReplaceParameterVisitor(
+                    existingFilter.Parameters[0],
+                    parameter).Visit(existingFilter.Body)!;
+
+                filterBody = Expression.AndAlso(filterBody, existingBody);
+            }
+
+            modelBuilder.Entity(entityType.ClrType)
+                .HasQueryFilter(Expression.Lambda(filterBody, parameter));
+        }
+    }
+
+    private sealed class ReplaceParameterVisitor : ExpressionVisitor
+    {
+        private readonly ParameterExpression _source;
+        private readonly ParameterExpression _target;
+
+        public ReplaceParameterVisitor(
+            ParameterExpression source,
+            ParameterExpression target)
+        {
+            _source = source;
+            _target = target;
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return node == _source ? _target : base.VisitParameter(node);
+        }
     }
 }
