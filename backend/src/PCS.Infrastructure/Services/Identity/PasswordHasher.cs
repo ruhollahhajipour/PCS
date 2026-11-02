@@ -17,7 +17,10 @@ public sealed class PasswordHasher : IPasswordHasher
         32;
 
     private const int DefaultIterations =
-        100_000;
+        600_000;
+
+    private const int MaxAcceptedIterations =
+        1_000_000;
 
 
     public string Hash(
@@ -94,7 +97,7 @@ public sealed class PasswordHasher : IPasswordHasher
         }
 
 
-        if (iterations <= 0)
+        if (iterations <= 0 || iterations > MaxAcceptedIterations)
         {
             return false;
         }
@@ -120,8 +123,8 @@ public sealed class PasswordHasher : IPasswordHasher
         }
 
 
-        if (salt.Length == 0 ||
-            expectedHash.Length == 0)
+        if (salt.Length != SaltSize ||
+            expectedHash.Length != HashSize)
         {
             return false;
         }
