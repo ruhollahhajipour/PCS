@@ -282,40 +282,15 @@ public class PCSDbContext : DbContext
             }
 
             var parameter = Expression.Parameter(entityType.ClrType, "entity");
-            Expression filterBody = Expression.Not(
+            var filterBody = Expression.Not(
                 Expression.Property(parameter, nameof(AuditableEntity.IsDeleted)));
 
-            var existingFilter = entityType.GetQueryFilter();
-            if (existingFilter is not null)
-            {
-                var existingBody = new ReplaceParameterVisitor(
-                    existingFilter.Parameters[0],
-                    parameter).Visit(existingFilter.Body)!;
-
-                filterBody = Expression.AndAlso(filterBody, existingBody);
-            }
-
+            // EF Core 10 named filters compose with the existing tenant filter
+            // instead of replacing it.
             modelBuilder.Entity(entityType.ClrType)
-                .HasQueryFilter(Expression.Lambda(filterBody, parameter));
-        }
-    }
-
-    private sealed class ReplaceParameterVisitor : ExpressionVisitor
-    {
-        private readonly ParameterExpression _source;
-        private readonly ParameterExpression _target;
-
-        public ReplaceParameterVisitor(
-            ParameterExpression source,
-            ParameterExpression target)
-        {
-            _source = source;
-            _target = target;
-        }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            return node == _source ? _target : base.VisitParameter(node);
+                .HasQueryFilter(
+                    "PCS.SoftDelete",
+                    Expression.Lambda(filterBody, parameter));
         }
     }
 }
