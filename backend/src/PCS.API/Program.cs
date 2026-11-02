@@ -1,8 +1,10 @@
 ﻿using System.Text;
+using System.Threading.RateLimiting;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -603,6 +605,23 @@ builder.Services.AddInfrastructure(
 
 builder.Services.AddControllers();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }));
+});
+
 builder.Services
     .AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database");
@@ -937,9 +956,12 @@ using (
 
 app.UseMiddleware<ExceptionMiddleware>();
 
+app.UseRouting();
 
 app.UseCors(
     "PCS");
+
+app.UseRateLimiter();
 
 
 // HTTPS redirection intentionally disabled
