@@ -14,17 +14,10 @@ public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
 
-
-    public AuthController(
-        IAuthService authService)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
     }
-
-
-    // ============================================================
-    // Login
-    // ============================================================
 
     [AllowAnonymous]
     [HttpPost("login")]
@@ -32,62 +25,64 @@ public sealed class AuthController : ControllerBase
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
     {
-        var response =
-            await _authService.LoginAsync(
-                request,
-                cancellationToken);
+        var response = await _authService.LoginAsync(
+            request,
+            cancellationToken);
 
-        if (response == null)
+        if (response is null)
         {
-            return Unauthorized(
-                new
-                {
-                    message =
-                        "Invalid username or password."
-                });
+            return Unauthorized(new
+            {
+                message = "Invalid username or password, or no active company membership."
+            });
         }
 
         return Ok(response);
     }
-
-
-    // ============================================================
-    // Current User
-    // ============================================================
 
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<LoginResponse>> Me(
         CancellationToken cancellationToken)
     {
-        string? userIdClaim =
-            User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(
-                userIdClaim,
-                out Guid userId))
+        if (!TryGetUserId(out Guid userId))
         {
             return Unauthorized();
         }
 
-        var response =
-            await _authService.GetCurrentUserAsync(
-                userId,
-                cancellationToken);
+        Guid? companyId = TryGetCompanyId();
 
-        if (response == null)
-        {
-            return Unauthorized();
-        }
+        var response = await _authService.GetCurrentUserAsync(
+            userId,
+            companyId,
+            cancellationToken);
 
-        return Ok(response);
+        return response is null
+            ? Unauthorized()
+            : Ok(response);
     }
 
+    [Authorize]
+    [HttpPost("select-company")]
+    public async Task<ActionResult<LoginResponse>> SelectCompany(
+        [FromBody] SelectCompanyRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out Guid userId) ||
+            request.CompanyId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
 
-    // ============================================================
-    // Change Password
-    // ============================================================
+        var response = await _authService.SelectCompanyAsync(
+            userId,
+            request.CompanyId,
+            cancellationToken);
+
+        return response is null
+            ? Forbid()
+            : Ok(response);
+    }
 
     [Authorize]
     [HttpPost("change-password")]
@@ -95,38 +90,39 @@ public sealed class AuthController : ControllerBase
         [FromBody] ChangePasswordRequest request,
         CancellationToken cancellationToken)
     {
-        string? userIdClaim =
-            User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(
-                userIdClaim,
-                out Guid userId))
+        if (!TryGetUserId(out Guid userId))
         {
             return Unauthorized();
         }
 
-        bool changed =
-            await _authService.ChangePasswordAsync(
-                userId,
-                request,
-                cancellationToken);
+        bool changed = await _authService.ChangePasswordAsync(
+            userId,
+            request,
+            cancellationToken);
 
         if (!changed)
         {
-            return BadRequest(
-                new
-                {
-                    message =
-                        "The current password is incorrect or the new password is invalid."
-                });
+            return BadRequest(new
+            {
+                message = "The current password is incorrect or the new password is invalid."
+            });
         }
 
-        return Ok(
-            new
-            {
-                message =
-                    "Password changed successfully."
-            });
+        return Ok(new
+        {
+            message = "Password changed successfully."
+        });
     }
+
+    private bool TryGetUserId(out Guid userId) =>
+        Guid.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out userId);
+
+    private Guid? TryGetCompanyId() =>
+        Guid.TryParse(
+            User.FindFirstValue("company_id"),
+            out Guid companyId)
+            ? companyId
+            : null;
 }

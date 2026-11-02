@@ -8,5 +8,6 @@ public interface IJwtService
         Guid userId,
         string username,
         IEnumerable<string> roles,
-        IEnumerable<string> permissions);
+        IEnumerable<string> permissions,
+        Guid? companyId);
 }

@@ -10,6 +10,12 @@ public interface IAuthService
 
     Task<LoginResponse?> GetCurrentUserAsync(
         Guid userId,
+        Guid? companyId,
+        CancellationToken cancellationToken = default);
+
+    Task<LoginResponse?> SelectCompanyAsync(
+        Guid userId,
+        Guid companyId,
         CancellationToken cancellationToken = default);
 
     Task<bool> ChangePasswordAsync(

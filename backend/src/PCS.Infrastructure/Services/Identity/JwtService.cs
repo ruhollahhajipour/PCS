@@ -53,7 +53,8 @@ public sealed class JwtService : IJwtService
         Guid userId,
         string username,
         IEnumerable<string> roles,
-        IEnumerable<string> permissions)
+        IEnumerable<string> permissions,
+        Guid? companyId)
     {
         var claims =
             new List<Claim>
@@ -70,6 +71,14 @@ public sealed class JwtService : IJwtService
                     ClaimTypes.Name,
                     username)
             };
+
+        if (companyId.HasValue)
+        {
+            claims.Add(
+                new Claim(
+                    "company_id",
+                    companyId.Value.ToString()));
+        }
 
 
         foreach (string role in roles.Distinct(
