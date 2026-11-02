@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: sqlserver-migration-scaffold-${{ github.ref }}
@@ -46,31 +46,29 @@ jobs:
           dotnet tool install --global dotnet-ef --version 10.0.10
           "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Generate SQL Server initial migration
+      - name: Verify SQL Server migration artifacts
         shell: pwsh
-        env:
-          Database__Provider: SqlServer
-          ConnectionStrings__DefaultConnection: 'Server=(localdb)\MSSQLLocalDB;Database=PCS_MigrationDesign;Trusted_Connection=True;TrustServerCertificate=True'
-          Jwt__Secret: 'PCS-CI-ONLY-DESIGN-TIME-SECRET-DO-NOT-USE-IN-PRODUCTION-0000000000000000'
         run: |
-          $migrationDirectory = "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations"
-          $existingMigration = Get-ChildItem -Path $migrationDirectory -Filter "*_InitialSqlServer.cs" -ErrorAction SilentlyContinue
+          $migration = "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations/20261101235457_InitialSqlServer.cs"
+          $designer = "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations/20261101235457_InitialSqlServer.Designer.cs"
+          $snapshot = "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations/PCSDbContextModelSnapshot.cs"
 
-          if (-not $existingMigration) {
-            dotnet ef migrations add InitialSqlServer --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --output-dir Migrations
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations
-
-            if (-not (git diff --cached --quiet)) {
-              git commit -m "db(sqlserver): scaffold initial provider migration"
-              git push origin "HEAD:$env:GITHUB_REF_NAME"
+          foreach ($file in @($migration, $designer, $snapshot)) {
+            if (-not (Test-Path $file)) {
+              throw "Required SQL Server migration artifact is missing: $file"
             }
-          } else {
-            Write-Host "SQL Server initial migration already exists; generation skipped."
           }
+
+          $filter = "[IsPrimaryAdmin] = 1 AND [IsActive] = 1"
+          if (-not (Select-String -Path $migration -SimpleMatch $filter -Quiet)) {
+            throw "SQL Server migration does not contain the active primary-admin unique index filter."
+          }
+
+          if (-not (Select-String -Path $snapshot -SimpleMatch $filter -Quiet)) {
+            throw "SQL Server model snapshot does not contain the active primary-admin unique index filter."
+          }
+
+          Write-Host "SQL Server migration artifacts and tenant membership index filter are verified."
 
       - name: Audit background-job call sites
         shell: pwsh
