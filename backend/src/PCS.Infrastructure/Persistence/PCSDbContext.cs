@@ -191,6 +191,19 @@ public class PCSDbContext : DbContext
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
+        // Company memberships are tenant-scoped. When no company has been
+        // selected yet (e.g. company selection after login), a user may only
+        // enumerate their own memberships. Platform administrators retain
+        // global visibility only in their explicit global scope.
+        modelBuilder.Entity<CompanyUser>()
+            .HasQueryFilter("PCS.Tenant", x =>
+                IsGlobalTenantScope ||
+                (CurrentCompanyId.HasValue &&
+                 x.CompanyId == CurrentCompanyId) ||
+                (!CurrentCompanyId.HasValue &&
+                 CurrentUserId.HasValue &&
+                 x.UserId == CurrentUserId));
+
         modelBuilder.Entity<CompanyAdminRequest>()
             .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
