@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           for attempt in $(seq 1 18); do
-            if dotnet ef database update --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --no-build; then
+            if dotnet ef database update --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --configuration Release --no-build; then
               exit 0
             fi
             echo "SQL Server is not ready yet (attempt $attempt/18); retrying in 10 seconds."
@@ -148,4 +148,4 @@ jobs:
           exit 1
 
       - name: Verify applied migration history
-        run: dotnet ef migrations list --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --no-build
+        run: dotnet ef migrations list --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --configuration Release --no-build
