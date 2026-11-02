@@ -151,6 +151,17 @@ public sealed class AuthService : IAuthService
             return isPlatformAdmin;
         }
 
+        if (isPlatformAdmin)
+        {
+            // Platform administrators must be able to inspect and reactivate
+            // inactive companies, but soft-deleted companies remain inaccessible.
+            return await _dbContext.Companies
+                .IgnoreQueryFilters()
+                .AnyAsync(
+                    x => x.Id == companyId.Value && !x.IsDeleted,
+                    cancellationToken);
+        }
+
         bool companyExists = await _dbContext.Companies
             .IgnoreQueryFilters()
             .AnyAsync(
@@ -160,11 +171,6 @@ public sealed class AuthService : IAuthService
         if (!companyExists)
         {
             return false;
-        }
-
-        if (isPlatformAdmin)
-        {
-            return true;
         }
 
         return await _dbContext.CompanyUsers
