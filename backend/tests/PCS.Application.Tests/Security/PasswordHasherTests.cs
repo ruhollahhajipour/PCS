@@ -49,7 +49,7 @@ public sealed class PasswordHasherTests
     {
         var salt = Convert.ToBase64String(new byte[32]);
         var hash = Convert.ToBase64String(new byte[32]);
-        string encodedHash = $"PCS-PBKDF2-SHA256$1000001$${salt}$${hash}";
+        string encodedHash = $"PCS-PBKDF2-SHA256$1000001${salt}${hash}";
 
         Assert.False(_hasher.Verify("password", encodedHash));
     }
