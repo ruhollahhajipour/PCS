@@ -913,7 +913,7 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                 table: "CompanyUsers",
                 columns: new[] { "CompanyId", "IsPrimaryAdmin" },
                 unique: true,
-                filter: "[IsPrimaryAdmin] = 1");
+                filter: "[IsPrimaryAdmin] = 1 AND [IsActive] = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CompanyUsers_CompanyId_UserId",

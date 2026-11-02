@@ -214,7 +214,7 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
 
                     b.HasIndex("CompanyId", "IsPrimaryAdmin")
                         .IsUnique()
-                        .HasFilter("[IsPrimaryAdmin] = 1");
+                        .HasFilter("[IsPrimaryAdmin] = 1 AND [IsActive] = 1");
 
                     b.HasIndex("CompanyId", "UserId")
                         .IsUnique();

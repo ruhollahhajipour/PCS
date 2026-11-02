@@ -137,8 +137,8 @@ public class PCSDbContext : DbContext
 
         string primaryAdminFilter =
             Database.IsSqlite()
-                ? "\"IsPrimaryAdmin\" = 1"
-                : "[IsPrimaryAdmin] = 1";
+                ? "\"IsPrimaryAdmin\" = 1 AND \"IsActive\" = 1"
+                : "[IsPrimaryAdmin] = 1 AND [IsActive] = 1";
 
         modelBuilder.Entity<CompanyUser>()
             .HasIndex(x => new
