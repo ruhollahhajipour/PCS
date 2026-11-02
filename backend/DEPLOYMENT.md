@@ -63,3 +63,9 @@ The image listens on port `8080` and defaults to `Hosting__Mode=Cloud`. Supply t
 - `/health/ready`: readiness; checks that the configured database is reachable.
 
 Apply the selected provider's migrations before starting the API. The container does not mutate the schema at startup. Cloud mode does not scrub or write the checked-in appsettings file.
+
+## Vercel frontend connection
+
+The frontend production build now requires an absolute HTTPS `VITE_API_URL` ending exactly in `/api`. Configure this value separately in the Vercel Preview and Production environments after the real API hostname is available. The checked-in CI value is a non-routable placeholder used only to validate the build; it is not a deployment endpoint.
+
+The SPA rewrite is defined in both the frontend directory and repository root so it works whether the Vercel project's Root Directory is configured as `frontend` or the repository root. No Vercel project settings or environment variables are changed by this repository update.

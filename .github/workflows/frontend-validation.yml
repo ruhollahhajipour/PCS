@@ -67,4 +67,6 @@ jobs:
 
       - name: Build production bundle
         working-directory: frontend
+        env:
+          VITE_API_URL: https://api.example.invalid/api
         run: npm run build
