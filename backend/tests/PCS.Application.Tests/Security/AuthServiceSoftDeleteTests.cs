@@ -212,6 +212,8 @@ public sealed class AuthServiceSoftDeleteTests
 
         public bool Verify(string password, string hash) =>
             string.Equals(Hash(password), hash, StringComparison.Ordinal);
+
+        public bool NeedsRehash(string hash) => false;
     }
 
     private sealed class TestJwtService : IJwtService
