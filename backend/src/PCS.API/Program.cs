@@ -13,8 +13,10 @@ using FluentValidation.AspNetCore;
 
 using PCS.API.Health;
 using PCS.API.Middleware;
+using PCS.API.Security;
 using PCS.Application;
 using PCS.Application.Common.Security;
+using PCS.Application.Common.Interfaces;
 using PCS.Application.Identity;
 using PCS.Application.Identity.Interfaces;
 using PCS.Infrastructure;
@@ -582,6 +584,9 @@ Log.Information(
 // Services
 // ============================================================
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentTenant, CurrentTenant>();
+
 builder.Services.AddApplication();
 
 
@@ -938,6 +943,7 @@ app.UseCors(
 
 app.UseAuthentication();
 
+app.UseMiddleware<TenantContextMiddleware>();
 
 app.UseAuthorization();
 
