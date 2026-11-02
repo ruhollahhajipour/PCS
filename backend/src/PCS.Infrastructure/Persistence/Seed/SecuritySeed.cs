@@ -482,6 +482,19 @@ public static class SecuritySeed
 
         bool createdInitialAdministrator = existingUser is null;
 
+        if (createdInitialAdministrator)
+        {
+            bool anotherSystemUserExists = await userSet
+                .IgnoreQueryFilters()
+                .AnyAsync(x => x.IsSystemUser);
+
+            if (anotherSystemUserExists)
+            {
+                throw new InvalidOperationException(
+                    "The configured initial administrator was not found, but a system user already exists. PCS will not create a second bootstrap administrator automatically.");
+            }
+        }
+
         // A configured bootstrap password is required only when
         // the initial administrator does not already exist.
         if (existingUser == null)
