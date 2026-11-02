@@ -39,7 +39,7 @@ public sealed class AuthService : IAuthService
             .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
             .SingleOrDefaultAsync(
-                x => x.UserName == username && x.IsActive,
+                x => x.UserName == username && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (user is null ||
@@ -55,7 +55,9 @@ public sealed class AuthService : IAuthService
             .Where(x =>
                 x.UserId == user.Id &&
                 x.IsActive &&
-                x.Company.IsActive)
+                !x.IsDeleted &&
+                x.Company.IsActive &&
+                !x.Company.IsDeleted)
             .OrderBy(x => x.AssignedAt)
             .Select(x => (Guid?)x.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
@@ -133,7 +135,7 @@ public sealed class AuthService : IAuthService
             .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
     }
 
@@ -152,7 +154,7 @@ public sealed class AuthService : IAuthService
         bool companyExists = await _dbContext.Companies
             .IgnoreQueryFilters()
             .AnyAsync(
-                x => x.Id == companyId.Value && x.IsActive,
+                x => x.Id == companyId.Value && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (!companyExists)
@@ -171,7 +173,10 @@ public sealed class AuthService : IAuthService
                 x =>
                     x.UserId == user.Id &&
                     x.CompanyId == companyId.Value &&
-                    x.IsActive,
+                    x.IsActive &&
+                    !x.IsDeleted &&
+                    x.Company.IsActive &&
+                    !x.Company.IsDeleted,
                 cancellationToken);
     }
 
@@ -264,7 +269,7 @@ public sealed class AuthService : IAuthService
         var user = await _dbContext.Users
             .IgnoreQueryFilters()
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (user is null ||
