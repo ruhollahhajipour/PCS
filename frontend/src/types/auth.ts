@@ -14,6 +14,8 @@ export interface LoginResponse {
 
   userId: string;
 
+  activeCompanyId?: string | null;
+
   roles: string[];
 
   permissions: string[];

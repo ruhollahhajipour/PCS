@@ -55,6 +55,27 @@ http.interceptors.request.use(
         `Bearer ${token}`;
     }
 
+    let companyId =
+      localStorage.getItem("pcs-active-company-id");
+
+    if (!companyId) {
+      try {
+        const storedWorkspace = JSON.parse(
+          localStorage.getItem("pcs.workspace") ?? "null"
+        );
+
+        companyId =
+          storedWorkspace?.company?.id ?? null;
+      }
+      catch {
+        companyId = null;
+      }
+    }
+
+    if (companyId) {
+      config.headers["X-PCS-CompanyId"] = companyId;
+    }
+
     return config;
   },
   (error) => {

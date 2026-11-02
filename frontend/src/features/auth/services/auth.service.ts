@@ -77,6 +77,16 @@ class AuthService {
     return data;
   }
 
+  async selectCompany(companyId: string): Promise<LoginResponse> {
+    const { data } =
+      await http.post<LoginResponse>(
+        "/auth/select-company",
+        { companyId }
+      );
+
+    return data;
+  }
+
 
   // =========================================================
   // Change Password
@@ -112,6 +122,12 @@ class AuthService {
     );
   }
 
+  getActiveCompanyId(): string | null {
+    return localStorage.getItem(
+      "pcs-active-company-id"
+    );
+  }
+
 
   saveSession(
     response: LoginResponse
@@ -120,6 +136,18 @@ class AuthService {
       "pcs-token",
       response.token
     );
+
+    if (response.activeCompanyId) {
+      localStorage.setItem(
+        "pcs-active-company-id",
+        response.activeCompanyId
+      );
+    }
+    else {
+      localStorage.removeItem(
+        "pcs-active-company-id"
+      );
+    }
 
 
     if (response.refreshToken) {
@@ -143,6 +171,10 @@ class AuthService {
 
     localStorage.removeItem(
       "pcs-refresh-token"
+    );
+
+    localStorage.removeItem(
+      "pcs-active-company-id"
     );
   }
 }

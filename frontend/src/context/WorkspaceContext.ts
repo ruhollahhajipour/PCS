@@ -14,7 +14,7 @@ export interface WorkspaceContextType {
   plants: WorkspacePlant[];
   projects: WorkspaceProject[];
 
-  setCompany: (company: WorkspaceCompany) => void;
+  setCompany: (company: WorkspaceCompany) => Promise<void>;
   setPlant: (plant: WorkspacePlant) => void;
   setProject: (project: WorkspaceProject) => void;
 }

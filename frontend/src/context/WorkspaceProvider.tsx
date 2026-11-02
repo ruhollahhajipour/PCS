@@ -25,6 +25,9 @@ import PlantService
 import ProjectService
   from "../features/projects/services/project.service";
 
+import AuthService
+  from "../features/auth/services/auth.service";
+
 import type {
   Workspace,
   WorkspaceCompany,
@@ -293,11 +296,17 @@ export function WorkspaceProvider({
         const stored =
           loadStoredWorkspace();
 
+        const activeCompanyId =
+          AuthService.getActiveCompanyId();
+
         const selectedCompany =
           realCompanies.find(
             company =>
-              company.id ===
-              stored?.company.id
+              company.id === activeCompanyId
+          ) ??
+          realCompanies.find(
+            company =>
+              company.id === stored?.company.id
           ) ??
           realCompanies[0];
 
@@ -435,49 +444,54 @@ export function WorkspaceProvider({
     }
   }, []);
 
-  const setCompany = useCallback((
+  const setCompany = useCallback(async (
     company: WorkspaceCompany
-  ): void => {
+  ): Promise<void> => {
+    if (!auth?.selectCompany) {
+      throw new Error("Company selection requires an authenticated session.");
+    }
+
+    await auth.selectCompany(company.id);
+
+    const [plantData, projectData] = await Promise.all([
+      PlantService.getAll(),
+      ProjectService.getAll(),
+    ]);
+
+    const realPlants = plantData.map(toWorkspacePlant);
+    const realProjects = projectData.map(toWorkspaceProject);
+
+    setPlants(realPlants);
+    setProjects(realProjects);
+
     const companyPlants =
-      plants.filter(
-        plant =>
-          plant.companyId ===
-          company.id
-      );
+      realPlants.filter(plant => plant.companyId === company.id);
 
     const nextPlant =
       companyPlants[0] ?? {
         id: "",
-        companyId:
-          company.id,
+        companyId: company.id,
         code: "",
         name: "",
       };
 
     const plantProjects =
-      projects.filter(
-        project =>
-          project.plantId ===
-          nextPlant.id
-      );
+      realProjects.filter(project => project.plantId === nextPlant.id);
 
     const nextProject =
       plantProjects[0] ?? {
         id: "",
-        plantId:
-          nextPlant.id,
+        plantId: nextPlant.id,
         code: "",
         name: "",
       };
 
     persistWorkspace({
       company,
-      plant:
-        nextPlant,
-      project:
-        nextProject,
+      plant: nextPlant,
+      project: nextProject,
     });
-  }, [plants, projects, persistWorkspace]);
+  }, [auth, persistWorkspace]);
 
   const setPlant = useCallback((
     plant: WorkspacePlant

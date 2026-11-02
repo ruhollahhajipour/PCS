@@ -23,6 +23,8 @@ export interface AuthContextType {
 
   refreshUser: () => Promise<void>;
 
+  selectCompany: (companyId: string) => Promise<void>;
+
   logout: () => Promise<void>;
 }
 

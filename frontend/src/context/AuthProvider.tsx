@@ -234,6 +234,16 @@ export function AuthProvider({
 
 
   // ===========================================================
+  // Select Active Company
+  // ===========================================================
+
+  async function selectCompany(companyId: string): Promise<void> {
+    const response = await AuthService.selectCompany(companyId);
+    applyAuthenticationResponse(response);
+  }
+
+
+  // ===========================================================
   // Refresh Current User
   // ===========================================================
 
@@ -313,6 +323,8 @@ export function AuthProvider({
         login,
 
         refreshUser,
+
+        selectCompany,
 
         logout,
       }}
