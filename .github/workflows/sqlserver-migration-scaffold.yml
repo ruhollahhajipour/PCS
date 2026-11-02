@@ -9,6 +9,7 @@ on:
       - "backend/src/PCS.Infrastructure.Migrations.SqlServer/**"
       - "backend/src/PCS.Infrastructure/Persistence/DatabaseProviderResolver.cs"
       - "backend/src/PCS.Infrastructure/Persistence/PCSDbContext.cs"
+      - "backend/src/PCS.Infrastructure/Migrations/**"
       - "backend/src/PCS.API/PCS.API.csproj"
       - "backend/src/PCS.Installer/PCS.Installer.csproj"
       - "backend/src/PCS.Installer/Services/Database/DatabaseInstallerService.cs"
