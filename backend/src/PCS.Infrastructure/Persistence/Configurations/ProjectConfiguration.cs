@@ -30,6 +30,18 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Budget)
             .HasPrecision(18, 2);
 
+        builder.Property(x => x.ActualCost)
+            .HasPrecision(18, 4);
+
+        builder.Property(x => x.Progress)
+            .HasPrecision(9, 4);
+
+        builder.Property(x => x.SPI)
+            .HasPrecision(9, 4);
+
+        builder.Property(x => x.CPI)
+            .HasPrecision(9, 4);
+
 
         // ==========================
         // Company

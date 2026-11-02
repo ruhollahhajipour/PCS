@@ -69,3 +69,7 @@ Apply the selected provider's migrations before starting the API. The container 
 The frontend production build now requires an absolute HTTPS `VITE_API_URL` ending exactly in `/api`. Configure this value separately in the Vercel Preview and Production environments after the real API hostname is available. The checked-in CI value is a non-routable placeholder used only to validate the build; it is not a deployment endpoint.
 
 The SPA rewrite is defined in both the frontend directory and repository root so it works whether the Vercel project's Root Directory is configured as `frontend` or the repository root. No Vercel project settings or environment variables are changed by this repository update.
+
+## SQL Server numeric precision
+
+The EF model explicitly configures decimal precision for Project EVM metrics, Activity progress/cost values, and WBS roll-up weights and values. The SQL Server migration pipeline refreshes both provider snapshots and applies the resulting SQL Server migration against an ephemeral SQL Server instance. The `Activity.PercentComplete` compatibility property remains persisted for backward compatibility and receives the same precision as `Progress`; it is not dropped in this migration.

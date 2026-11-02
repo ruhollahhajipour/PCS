@@ -84,16 +84,16 @@ jobs:
 
           $env:Database__Provider = "Sqlite"
           $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\pcs-sqlite-design.db"
-          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure/Migrations" -Filter "*_TenantQueryFilters.cs" -ErrorAction SilentlyContinue)) {
-            dotnet ef migrations add TenantQueryFilters --project $sqliteProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure/Migrations" -Filter "*_TenantScopeAndEvmPrecision.cs" -ErrorAction SilentlyContinue)) {
+            dotnet ef migrations add TenantScopeAndEvmPrecision --project $sqliteProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             $changed = $true
           }
 
           $env:Database__Provider = "SqlServer"
           $env:ConnectionStrings__DefaultConnection = "Server=(localdb)\MSSQLLocalDB;Database=PCS_MigrationDesign;Integrated Security=True;TrustServerCertificate=True"
-          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations" -Filter "*_TenantQueryFilters.cs" -ErrorAction SilentlyContinue)) {
-            dotnet ef migrations add TenantQueryFilters --project $sqlServerProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations" -Filter "*_TenantScopeAndEvmPrecision.cs" -ErrorAction SilentlyContinue)) {
+            dotnet ef migrations add TenantScopeAndEvmPrecision --project $sqlServerProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             $changed = $true
           }

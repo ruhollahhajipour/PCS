@@ -42,19 +42,28 @@ public class WbsNodeConfiguration : IEntityTypeConfiguration<WbsNode>
         // ==========================================
 
         builder.Property(x => x.Budget)
-            .HasPrecision(18, 2);
-
+            .HasPrecision(18, 4);
 
         builder.Property(x => x.ActualCost)
-            .HasPrecision(18, 2);
-
+            .HasPrecision(18, 4);
 
         builder.Property(x => x.Weight)
-            .HasPrecision(5, 2);
-
+            .HasPrecision(9, 4);
 
         builder.Property(x => x.Progress)
-            .HasPrecision(5, 2);
+            .HasPrecision(9, 4);
+
+        builder.Property(x => x.WeightFactor)
+            .HasPrecision(18, 8);
+
+        builder.Property(x => x.WeightValue)
+            .HasPrecision(18, 8);
+
+        builder.Property(x => x.EarnedValue)
+            .HasPrecision(18, 4);
+
+        builder.Property(x => x.PlannedValue)
+            .HasPrecision(18, 4);
 
 
 
