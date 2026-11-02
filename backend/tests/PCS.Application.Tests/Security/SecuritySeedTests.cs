@@ -69,13 +69,20 @@ public sealed class SecuritySeedTests
             .AnyAsync(x => x.RoleId == superAdminRole.Id && x.PermissionId == permission.Id));
         Assert.Equal(1, await context.Users.IgnoreQueryFilters()
             .CountAsync(x => x.UserName == "bootstrap-admin"));
+
+        var changedUsernameConfiguration = CreateConfiguration("bootstrap-admin-rotated");
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => SecuritySeed.SeedAsync(context, changedUsernameConfiguration, passwordHasher));
+
+        Assert.Equal(1, await context.Users.IgnoreQueryFilters()
+            .CountAsync(x => x.IsSystemUser));
     }
 
-    private static IConfiguration CreateConfiguration()
+    private static IConfiguration CreateConfiguration(string username = "bootstrap-admin")
     {
         var values = new Dictionary<string, string?>
         {
-            ["InitialAdmin:Username"] = "bootstrap-admin",
+            ["InitialAdmin:Username"] = username,
             ["InitialAdmin:Password"] = new string('x', 16),
             ["InitialAdmin:FirstName"] = "PCS",
             ["InitialAdmin:LastName"] = "Test Admin",
