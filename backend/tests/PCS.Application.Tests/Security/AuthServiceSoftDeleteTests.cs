@@ -128,6 +128,84 @@ public sealed class AuthServiceSoftDeleteTests
         Assert.Null(await authService.GetCurrentUserAsync(user.Id, company.Id));
     }
 
+    [Fact]
+    public async Task Platform_admin_can_select_inactive_company_but_not_soft_deleted_company()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var hasher = new TestPasswordHasher();
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "platform-admin",
+            PasswordHash = hasher.Hash("correct-password"),
+            IsActive = true,
+            IsSystemUser = true
+        };
+        var superAdminRole = new Role
+        {
+            Id = Guid.NewGuid(),
+            Code = "SUPER_ADMIN",
+            Name = "Super Admin",
+            Scope = "Platform",
+            IsActive = true
+        };
+        var userRole = new UserRole
+        {
+            UserId = user.Id,
+            RoleId = superAdminRole.Id,
+            CompanyId = null,
+            IsActive = true
+        };
+        var inactiveCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "INACTIVE-COMPANY",
+            Name = "Inactive Company",
+            IsActive = false
+        };
+        var deletedCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "DELETED-COMPANY",
+            Name = "Deleted Company",
+            IsActive = false,
+            IsDeleted = true
+        };
+
+        dbContext.AddRange(
+            user,
+            superAdminRole,
+            userRole,
+            inactiveCompany,
+            deletedCompany);
+        await dbContext.SaveChangesAsync();
+
+        var authService = new AuthService(
+            dbContext,
+            hasher,
+            new TestJwtService());
+
+        var inactiveSelection = await authService.SelectCompanyAsync(
+            user.Id,
+            inactiveCompany.Id);
+        var deletedSelection = await authService.SelectCompanyAsync(
+            user.Id,
+            deletedCompany.Id);
+
+        Assert.NotNull(inactiveSelection);
+        Assert.Equal(inactiveCompany.Id, inactiveSelection.ActiveCompanyId);
+        Assert.Null(deletedSelection);
+    }
+
     private sealed class TestPasswordHasher : IPasswordHasher
     {
         public string Hash(string password) => $"test-hash:{password}";
