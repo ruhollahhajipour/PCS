@@ -108,7 +108,7 @@ public class DatabaseInstallerService
                 $"Server={context.DatabaseServer};" +
                 $"Database={context.DatabaseName};" +
                 "Trusted_Connection=True;" +
-                "TrustServerCertificate=True;";
+                "Encrypt=True;TrustServerCertificate=False;";
         }
 
 
@@ -117,7 +117,7 @@ public class DatabaseInstallerService
             $"Database={context.DatabaseName};" +
             $"User Id={context.Username};" +
             $"Password={context.Password};" +
-            "TrustServerCertificate=True;";
+            "Encrypt=True;TrustServerCertificate=False;";
     }
 
 
