@@ -173,98 +173,98 @@ public class PCSDbContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<Plant>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<Project>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<UserRole>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 x.CompanyId == null ||
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<CompanyAdminRequest>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<License>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<LicenseModule>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.License.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<AuditLog>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<Notification>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 CurrentUserId.HasValue &&
                 x.UserId == CurrentUserId);
 
         modelBuilder.Entity<DigitalSignature>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 CurrentUserId.HasValue &&
                 x.UserId == CurrentUserId);
 
         // PMS records inherit the scope of their owning project.
         modelBuilder.Entity<WbsNode>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<Activity>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<ActivityRelationship>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Predecessor.Project.CompanyId == CurrentCompanyId &&
                  x.Successor.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<ProjectBaseline>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<ProjectBaselineActivity>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.ProjectBaseline.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<ProjectCalendar>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Project.CompanyId == CurrentCompanyId));
 
         modelBuilder.Entity<ProgressEntry>()
-            .HasQueryFilter(x =>
+            .HasQueryFilter("PCS.Tenant", x =>
                 IsGlobalTenantScope ||
                 (CurrentCompanyId.HasValue &&
                  x.Activity.Project.CompanyId == CurrentCompanyId));
