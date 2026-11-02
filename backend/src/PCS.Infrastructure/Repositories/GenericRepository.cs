@@ -87,10 +87,27 @@ public class GenericRepository<T> : IGenericRepository<T>
     {
         if (entity is AuditableEntity auditableEntity)
         {
+            var entry = _context.Entry(entity);
+
+            if (entry.State == EntityState.Added)
+            {
+                _dbSet.Remove(entity);
+                return;
+            }
+
+            if (entry.State == EntityState.Detached)
+            {
+                _dbSet.Attach(entity);
+            }
+
             auditableEntity.IsDeleted = true;
             auditableEntity.DeletedAt = DateTime.UtcNow;
             auditableEntity.UpdatedAt = DateTime.UtcNow;
-            _dbSet.Update(entity);
+
+            entry = _context.Entry(entity);
+            entry.Property(nameof(AuditableEntity.IsDeleted)).IsModified = true;
+            entry.Property(nameof(AuditableEntity.DeletedAt)).IsModified = true;
+            entry.Property(nameof(AuditableEntity.UpdatedAt)).IsModified = true;
             return;
         }
 
