@@ -237,6 +237,42 @@ public sealed class TenantIsolationTests
                 () => projectRepository.Update(projectB));
             Assert.Throws<InvalidOperationException>(
                 () => projectRepository.Delete(projectB));
+
+            var dedicatedProjectRepository = new ProjectRepository(tenantContext);
+            Assert.Throws<InvalidOperationException>(
+                () => dedicatedProjectRepository.Update(projectB));
+            Assert.Throws<InvalidOperationException>(
+                () => dedicatedProjectRepository.Delete(projectB));
+
+            var activityRepository = new ActivityRepository(tenantContext);
+            Assert.Throws<InvalidOperationException>(
+                () => activityRepository.Update(activityB));
+
+            var relationshipRepository =
+                new ActivityRelationshipRepository(tenantContext);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => relationshipRepository.AddRangeAsync(
+                [
+                    new ActivityRelationship
+                    {
+                        Id = Guid.NewGuid(),
+                        PredecessorId = activityA.Id,
+                        SuccessorId = activityB.Id,
+                        Type = "FS"
+                    }
+                ]));
+
+            Assert.Throws<InvalidOperationException>(
+                () => relationshipRepository.DeleteRange(
+                [
+                    new ActivityRelationship
+                    {
+                        Id = Guid.NewGuid(),
+                        PredecessorId = activityA.Id,
+                        SuccessorId = activityA.Id
+                    }
+                ]));
         }
 
         await using (var platformContext =
