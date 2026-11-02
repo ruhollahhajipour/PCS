@@ -8,7 +8,6 @@ public sealed class ExceptionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
 
-
     public ExceptionMiddleware(
         RequestDelegate next,
         ILogger<ExceptionMiddleware> logger)
@@ -16,8 +15,6 @@ public sealed class ExceptionMiddleware
         _next = next;
         _logger = logger;
     }
-
-
 
     public async Task InvokeAsync(
         HttpContext context)
@@ -30,48 +27,23 @@ public sealed class ExceptionMiddleware
         {
             _logger.LogError(
                 ex,
-                "Unhandled exception occurred");
+                "Unhandled exception occurred for request {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
 
-
-            context.Response.ContentType =
-                "application/json";
-
-
-            context.Response.StatusCode =
-                (int)HttpStatusCode.InternalServerError;
-
-
-
-            var errors = new List<string>();
-
-
-            var current = ex;
-
-
-            while (current != null)
+            if (context.Response.HasStarted)
             {
-                if (!string.IsNullOrWhiteSpace(
-                    current.Message))
-                {
-                    errors.Add(
-                        current.Message);
-                }
-
-
-                current = current.InnerException;
+                throw;
             }
 
+            context.Response.Clear();
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
+            var response = ApiResponse<object>.Fail(
+                "An unexpected error occurred.");
 
-            var response =
-                ApiResponse<object>.Fail(
-                    "An unexpected error occurred.",
-                    errors.ToArray());
-
-
-
-            await context.Response.WriteAsJsonAsync(
-                response);
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
