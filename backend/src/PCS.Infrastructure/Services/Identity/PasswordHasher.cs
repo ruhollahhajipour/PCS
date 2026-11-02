@@ -57,6 +57,114 @@ public sealed class PasswordHasher : IPasswordHasher
     }
 
 
+
+    public bool NeedsRehash(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            return true;
+        }
+
+        string[] parts = hash.Split('    {
+        if (string.IsNullOrWhiteSpace(password) ||
+            string.IsNullOrWhiteSpace(hash))
+        {
+            return false;
+        }
+
+
+        string[] parts =
+            hash.Split(
+                '$',
+                StringSplitOptions.None);
+
+
+        if (parts.Length != 4)
+        {
+            return false;
+        }
+
+
+        if (!string.Equals(
+                parts[0],
+                Prefix,
+                StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+
+        if (!int.TryParse(
+                parts[1],
+                out int iterations))
+        {
+            return false;
+        }
+
+
+        if (iterations <= 0 || iterations > MaxAcceptedIterations)
+        {
+            return false;
+        }
+
+
+        byte[] salt;
+
+        byte[] expectedHash;
+
+        try
+        {
+            salt =
+                Convert.FromBase64String(
+                    parts[2]);
+
+            expectedHash =
+                Convert.FromBase64String(
+                    parts[3]);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+
+        if (salt.Length != SaltSize ||
+            expectedHash.Length != HashSize)
+        {
+            return false;
+        }
+
+
+        byte[] actualHash;
+
+        try
+        {
+            actualHash =
+                Rfc2898DeriveBytes.Pbkdf2(
+                    password,
+                    salt,
+                    iterations,
+                    HashAlgorithmName.SHA256,
+                    expectedHash.Length);
+        }
+        catch
+        {
+            return false;
+        }
+
+
+        return CryptographicOperations.FixedTimeEquals(
+            actualHash,
+            expectedHash);
+    }
+}, StringSplitOptions.None);
+
+        return parts.Length != 4 ||
+               !string.Equals(parts[0], Prefix, StringComparison.Ordinal) ||
+               !int.TryParse(parts[1], out int iterations) ||
+               iterations < DefaultIterations;
+    }
+
     public bool Verify(
         string password,
         string hash)
