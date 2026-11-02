@@ -23,7 +23,7 @@ if (import.meta.env.PROD) {
 
   if (
     parsedApiUrl.protocol !== "https:" ||
-    parsedApiUrl.pathname.replace(/\\/+$/, "") !== "/api" ||
+    parsedApiUrl.pathname.replace(/\/+$/, "") !== "/api" ||
     parsedApiUrl.search ||
     parsedApiUrl.hash
   ) {
