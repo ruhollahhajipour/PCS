@@ -40,3 +40,11 @@ Do not point SQL Server deployments at the existing SQLite migration set. SQL Se
 ## Logging
 
 The API writes structured logs to standard output. On Windows it additionally writes rolling files under the current user's Local AppData PCS Logs directory. Linux/container deployments do not write application log files into the container filesystem.
+
+## CORS and API documentation
+
+CORS uses the exact origins in `Cors:AllowedOrigins`; wildcard origins are not enabled. In Development, the API falls back to `http://localhost:5173` when no origins are configured. Cloud mode refuses to start without an explicit origin allow-list.
+
+Configure cloud origins with environment variables such as `Cors__AllowedOrigins__0=https://your-frontend-domain`. Do not include URL paths in origin entries.
+
+Swagger is enabled only outside Cloud mode and is enabled by default in Development. Cloud mode keeps Swagger disabled. Cloud JWT signing material must be supplied through the `Jwt__Secret` deployment secret environment variable; do not commit it to configuration files.

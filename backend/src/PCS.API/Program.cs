@@ -501,6 +501,77 @@ Log.Information(
 
 
 // ============================================================
+// Hosting and security configuration
+// ============================================================
+
+string hostingMode =
+    builder.Configuration["Hosting:Mode"] ??
+    (!string.IsNullOrWhiteSpace(installedRoot)
+        ? "OnPremise"
+        : "Development");
+
+bool isCloudHosting =
+    string.Equals(
+        hostingMode,
+        "Cloud",
+        StringComparison.OrdinalIgnoreCase);
+
+bool swaggerEnabled =
+    !isCloudHosting &&
+    (builder.Environment.IsDevelopment() ||
+     builder.Configuration.GetValue<bool>("Swagger:Enabled"));
+
+string[] allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+allowedOrigins =
+    allowedOrigins
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Select(origin => origin.Trim().TrimEnd('/'))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+foreach (string origin in allowedOrigins)
+{
+    if (
+        !Uri.TryCreate(origin, UriKind.Absolute, out Uri? parsedOrigin) ||
+        (parsedOrigin.Scheme != Uri.UriSchemeHttp &&
+         parsedOrigin.Scheme != Uri.UriSchemeHttps) ||
+        parsedOrigin.AbsolutePath != "/" ||
+        !string.IsNullOrEmpty(parsedOrigin.Query) ||
+        !string.IsNullOrEmpty(parsedOrigin.Fragment))
+    {
+        throw new InvalidOperationException(
+            $"Invalid PCS CORS origin '{origin}'. Configure only an absolute HTTP or HTTPS origin without a path.");
+    }
+}
+
+if (isCloudHosting && allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "Cloud hosting requires at least one explicit Cors:AllowedOrigins entry.");
+}
+
+if (
+    isCloudHosting &&
+    string.IsNullOrWhiteSpace(
+        Environment.GetEnvironmentVariable("Jwt__Secret")))
+{
+    throw new InvalidOperationException(
+        "Cloud hosting requires Jwt__Secret to be supplied through the deployment secret environment.");
+}
+
+Log.Information(
+    "PCS hosting mode: {HostingMode}; Swagger enabled: {SwaggerEnabled}; CORS origins: {CorsOriginCount}.",
+    hostingMode,
+    swaggerEnabled,
+    allowedOrigins.Length);
+
+
+// ============================================================
 // Services
 // ============================================================
 
@@ -523,7 +594,10 @@ builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddEndpointsApiExplorer();
 
 
-builder.Services.AddSwaggerGen();
+if (swaggerEnabled)
+{
+    builder.Services.AddSwaggerGen();
+}
 
 
 // ============================================================
@@ -637,8 +711,16 @@ builder.Services.AddCors(
             "PCS",
             policy =>
             {
+                if (allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins);
+                }
+                else
+                {
+                    policy.SetIsOriginAllowed(_ => false);
+                }
+
                 policy
-                    .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -656,22 +738,6 @@ var app =
 // ============================================================
 // Determine Frontend Path
 // ============================================================
-
-string hostingMode =
-    builder.Configuration["Hosting:Mode"] ??
-    (!string.IsNullOrWhiteSpace(installedRoot)
-        ? "OnPremise"
-        : "Development");
-
-bool isCloudHosting =
-    string.Equals(
-        hostingMode,
-        "Cloud",
-        StringComparison.OrdinalIgnoreCase);
-
-Log.Information(
-    "PCS hosting mode: {HostingMode}.",
-    hostingMode);
 
 string? frontendPath = null;
 
@@ -867,10 +933,11 @@ app.UseAuthorization();
 // Swagger
 // ============================================================
 
-app.UseSwagger();
-
-
-app.UseSwaggerUI();
+if (swaggerEnabled)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 // ============================================================
