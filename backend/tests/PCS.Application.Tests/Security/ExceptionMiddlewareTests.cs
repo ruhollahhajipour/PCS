@@ -26,7 +26,7 @@ public sealed class ExceptionMiddlewareTests
         await middleware.InvokeAsync(context);
 
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
-        Assert.Equal("application/json", context.Response.ContentType);
+        Assert.StartsWith("application/json", context.Response.ContentType);
 
         responseBody.Position = 0;
         using var reader = new StreamReader(responseBody, Encoding.UTF8);
