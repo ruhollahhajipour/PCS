@@ -208,7 +208,7 @@ namespace PCS.Infrastructure.Migrations
 
                     b.HasIndex("CompanyId", "IsPrimaryAdmin")
                         .IsUnique()
-                        .HasFilter("\"IsPrimaryAdmin\" = 1");
+                        .HasFilter("\"IsPrimaryAdmin\" = 1 AND \"IsActive\" = 1");
 
                     b.HasIndex("CompanyId", "UserId")
                         .IsUnique();
@@ -386,7 +386,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ActualFinish")
@@ -396,7 +396,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CalendarId")
@@ -442,7 +442,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("EarnedValue")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("FreeFloat")
@@ -469,6 +469,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("PercentComplete")
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("PlannedFinish")
@@ -478,7 +479,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Progress")
-                        .HasPrecision(5, 2)
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("ProjectId")
@@ -504,7 +505,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Weight")
-                        .HasPrecision(5, 2)
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -694,14 +695,14 @@ namespace PCS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasFilter("IsApproved = 1 AND IsActive = 1");
+
                     b.HasIndex("ProjectId", "Name")
                         .IsUnique();
 
                     b.HasIndex("ProjectId", "Version");
-
-                    b.HasIndex("ProjectId")
-                        .IsUnique()
-                        .HasFilter("IsApproved = 1 AND IsActive = 1");
 
                     b.ToTable("ProjectBaselines", (string)null);
                 });
@@ -712,12 +713,12 @@ namespace PCS.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ActivityId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("ActivityCode")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ActivityId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ActivityName")
@@ -752,14 +753,14 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<bool>("IsMilestone")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PlannedDuration")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("PlannedFinish")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("PlannedStart")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("PlannedDuration")
-                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("ProjectBaselineId")
                         .HasColumnType("TEXT");
@@ -770,13 +771,6 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("WorkingDaysMask")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("WorkingHoursPerDay")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("WbsCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -785,6 +779,13 @@ namespace PCS.Infrastructure.Migrations
                     b.Property<string>("WbsName")
                         .IsRequired()
                         .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("WorkingDaysMask")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("WorkingHoursPerDay")
+                        .HasPrecision(5, 2)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -893,11 +894,11 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
-                        .HasPrecision(18, 2)
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Code")
@@ -921,6 +922,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("EarnedValue")
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ExternalCode")
@@ -952,10 +954,11 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("PlannedValue")
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Progress")
-                        .HasPrecision(5, 2)
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("ProjectId")
@@ -976,13 +979,15 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Weight")
-                        .HasPrecision(5, 2)
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("WeightFactor")
+                        .HasPrecision(18, 8)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("WeightValue")
+                        .HasPrecision(18, 8)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -1073,6 +1078,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
+                        .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Budget")
@@ -1080,6 +1086,7 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("CPI")
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Client")
@@ -1146,9 +1153,11 @@ namespace PCS.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Progress")
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("SPI")
+                        .HasPrecision(9, 4)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ShortName")
@@ -1990,6 +1999,11 @@ namespace PCS.Infrastructure.Migrations
                     b.Navigation("Predecessors");
 
                     b.Navigation("Successors");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaseline", b =>
+                {
+                    b.Navigation("Activities");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Planning.WbsNode", b =>

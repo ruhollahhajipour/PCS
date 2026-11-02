@@ -392,8 +392,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("ActualCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime?>("ActualFinish")
                         .HasColumnType("datetime2");
@@ -402,8 +402,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Budget")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid?>("CalendarId")
                         .HasColumnType("uniqueidentifier");
@@ -448,8 +448,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("EarnedValue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<int>("FreeFloat")
                         .HasColumnType("int");
@@ -475,7 +475,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("nvarchar(250)");
 
                     b.Property<decimal>("PercentComplete")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<DateTime?>("PlannedFinish")
                         .HasColumnType("datetime2");
@@ -484,8 +485,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Progress")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
@@ -510,8 +511,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Weight")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.HasKey("Id");
 
@@ -899,12 +900,12 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("ActualCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("Budget")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -927,7 +928,8 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("EarnedValue")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("ExternalCode")
                         .HasColumnType("nvarchar(max)");
@@ -958,11 +960,12 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("PlannedValue")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("Progress")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
@@ -982,14 +985,16 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Weight")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<decimal>("WeightFactor")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.Property<decimal>("WeightValue")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
 
                     b.HasKey("Id");
 
@@ -1079,14 +1084,16 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("ActualCost")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("Budget")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("CPI")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<string>("Client")
                         .HasColumnType("nvarchar(max)");
@@ -1152,10 +1159,12 @@ namespace PCS.Infrastructure.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Progress")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<decimal>("SPI")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
 
                     b.Property<string>("ShortName")
                         .HasColumnType("nvarchar(max)");
