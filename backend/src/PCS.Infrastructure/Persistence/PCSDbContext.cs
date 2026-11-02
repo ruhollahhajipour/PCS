@@ -163,6 +163,20 @@ public class PCSDbContext : DbContext
             .HasFilter(primaryAdminFilter)
             .IsUnique();
 
+        string activeMembershipFilter =
+            Database.IsSqlite()
+                ? "\"IsDeleted\" = 0"
+                : "[IsDeleted] = 0";
+
+        modelBuilder.Entity<CompanyUser>()
+            .HasIndex(x => new
+            {
+                x.CompanyId,
+                x.UserId
+            })
+            .IsUnique()
+            .HasFilter(activeMembershipFilter);
+
 
         // ===================================
         // Unique Username
