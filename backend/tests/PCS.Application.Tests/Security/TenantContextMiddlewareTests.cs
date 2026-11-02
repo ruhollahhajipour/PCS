@@ -146,7 +146,29 @@ public sealed class TenantContextMiddlewareTests
             IsDeleted = true
         };
 
-        dbContext.AddRange(user, inactiveCompany, deletedCompany);
+        var platformRole = new Role
+        {
+            Id = Guid.NewGuid(),
+            Code = "SUPER_ADMIN",
+            Name = "Platform Administrator",
+            Scope = "Platform",
+            IsActive = true,
+            IsSystemRole = true
+        };
+        var platformAssignment = new UserRole
+        {
+            UserId = user.Id,
+            RoleId = platformRole.Id,
+            CompanyId = null,
+            IsActive = true
+        };
+
+        dbContext.AddRange(
+            user,
+            platformRole,
+            platformAssignment,
+            inactiveCompany,
+            deletedCompany);
         await dbContext.SaveChangesAsync();
 
         bool inactiveNextCalled = false;
@@ -180,6 +202,56 @@ public sealed class TenantContextMiddlewareTests
 
         Assert.Equal(StatusCodes.Status404NotFound, deletedContext.Response.StatusCode);
         Assert.False(deletedNextCalled);
+    }
+
+    [Fact]
+    public async Task Revoked_platform_admin_assignment_is_not_overridden_by_jwt_claim()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "revoked-platform-admin",
+            PasswordHash = "not-used",
+            IsActive = true,
+            IsSystemUser = true
+        };
+        var inactiveCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "REVOKED-PLATFORM",
+            Name = "Inactive Company",
+            IsActive = false
+        };
+
+        dbContext.AddRange(user, inactiveCompany);
+        await dbContext.SaveChangesAsync();
+
+        bool nextCalled = false;
+        var middleware = new TenantContextMiddleware(_ =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var context = CreateHttpContext(
+            user.Id,
+            inactiveCompany.Id,
+            isPlatformAdmin: true);
+
+        await middleware.InvokeAsync(context, dbContext);
+
+        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+        Assert.False(nextCalled);
     }
 
     private static async Task<(User User, Company Company)> SeedAsync(
