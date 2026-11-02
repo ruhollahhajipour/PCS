@@ -26,6 +26,8 @@ jobs:
   scaffold-and-verify:
     runs-on: windows-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,6 +71,53 @@ jobs:
           }
 
           Write-Host "SQL Server migration artifacts and tenant membership index filter are verified."
+
+      - name: Refresh provider-specific tenant filter snapshots
+        shell: pwsh
+        env:
+          Jwt__Secret: "PCS-CI-ONLY-DESIGN-TIME-SECRET-DO-NOT-USE-IN-PRODUCTION-0000000000000000"
+        run: |
+          $sqliteProject = "backend/src/PCS.Infrastructure/PCS.Infrastructure.csproj"
+          $sqlServerProject = "backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj"
+          $startupProject = "backend/src/PCS.API/PCS.API.csproj"
+          $changed = $false
+
+          $env:Database__Provider = "Sqlite"
+          $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\pcs-sqlite-design.db"
+          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure/Migrations" -Filter "*_TenantQueryFilters.cs" -ErrorAction SilentlyContinue)) {
+            dotnet ef migrations add TenantQueryFilters --project $sqliteProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $changed = $true
+          }
+
+          $env:Database__Provider = "SqlServer"
+          $env:ConnectionStrings__DefaultConnection = "Server=(localdb)\MSSQLLocalDB;Database=PCS_MigrationDesign;Integrated Security=True;TrustServerCertificate=True"
+          if (-not (Get-ChildItem "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations" -Filter "*_TenantQueryFilters.cs" -ErrorAction SilentlyContinue)) {
+            dotnet ef migrations add TenantQueryFilters --project $sqlServerProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $changed = $true
+          }
+
+          if ($changed) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add backend/src/PCS.Infrastructure/Migrations backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations
+            git commit -m "chore(db): sync provider snapshots for tenant query filters"
+            git push origin "HEAD:$env:GITHUB_REF_NAME"
+          }
+          else {
+            Write-Host "Provider migration snapshots already include tenant query filters."
+          }
+
+      - name: Apply SQLite migrations to an ephemeral database
+        shell: pwsh
+        env:
+          Database__Provider: Sqlite
+          ConnectionStrings__DefaultConnection: "Data Source=pcs-sqlite-migration-test.db"
+          Jwt__Secret: "PCS-CI-ONLY-DESIGN-TIME-SECRET-DO-NOT-USE-IN-PRODUCTION-0000000000000000"
+        run: |
+          dotnet ef database update --project backend/src/PCS.Infrastructure/PCS.Infrastructure.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Audit background-job call sites
         shell: pwsh
