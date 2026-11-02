@@ -31,6 +31,18 @@ public sealed class TenantContextMiddleware
             return;
         }
 
+        bool userIsActive = await dbContext.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
+                context.RequestAborted);
+
+        if (!userIsActive)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
         bool isPlatformAdmin =
             context.User.HasClaim("platform_admin", "true");
 
@@ -80,7 +92,7 @@ public sealed class TenantContextMiddleware
             bool companyExists = await dbContext.Companies
                 .IgnoreQueryFilters()
                 .AnyAsync(
-                    x => x.Id == activeCompanyId.Value && x.IsActive,
+                    x => x.Id == activeCompanyId.Value && x.IsActive && !x.IsDeleted,
                     context.RequestAborted);
 
             if (!companyExists)
@@ -97,7 +109,12 @@ public sealed class TenantContextMiddleware
                         x =>
                             x.UserId == userId &&
                             x.CompanyId == activeCompanyId.Value &&
-                            x.IsActive,
+                            x.IsActive &&
+                            !x.IsDeleted &&
+                            x.User.IsActive &&
+                            !x.User.IsDeleted &&
+                            x.Company.IsActive &&
+                            !x.Company.IsDeleted,
                         context.RequestAborted);
 
                 if (!isMember)
