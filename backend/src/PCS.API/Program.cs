@@ -514,6 +514,13 @@ string hostingMode =
         ? "OnPremise"
         : "Development");
 
+if (!new[] { "OnPremise", "Cloud", "Development" }
+    .Contains(hostingMode, StringComparer.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        $"Unsupported PCS hosting mode '{hostingMode}'. Supported values are OnPremise, Cloud, and Development.");
+}
+
 bool isCloudHosting =
     string.Equals(
         hostingMode,
@@ -567,10 +574,10 @@ if (isCloudHosting && allowedOrigins.Length == 0)
 if (
     isCloudHosting &&
     string.IsNullOrWhiteSpace(
-        Environment.GetEnvironmentVariable("Jwt__Secret")))
+        builder.Configuration["Jwt:Secret"]))
 {
     throw new InvalidOperationException(
-        "Cloud hosting requires Jwt__Secret to be supplied through the deployment secret environment.");
+        "Cloud hosting requires Jwt:Secret to be supplied by a deployment secret provider.");
 }
 
 Log.Information(
