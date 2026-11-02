@@ -48,6 +48,11 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
+        if (_passwordHasher.NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = _passwordHasher.Hash(request.Password);
+        }
+
         bool isPlatformAdmin = IsPlatformAdmin(user);
 
         Guid? companyId = await _dbContext.CompanyUsers
