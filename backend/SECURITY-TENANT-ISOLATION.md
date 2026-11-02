@@ -15,6 +15,7 @@ This document records findings from the repository audit at the time of writing.
 5. `PlantService.GetAllAsync` returns all active plants; company filtering exists only in a separate method and is not the default controller route. Plant create/update does not verify the caller's company membership.
 6. `CompaniesController`, `ProjectsController`, `PlantsController`, and PMS controllers rely on global permission claims. PMS routes with a `projectId` do not perform a shared project-to-company authorization check.
 7. The schema contains `CompanyUser` active memberships and `UserRole.CompanyId`, but the audited authentication and resource authorization paths do not consistently use these fields.
+8. The frontend HTTP client sends the selected workspace as `X-PCS-CompanyId` (from local storage), but the audited API pipeline does not validate or bind this header to an authenticated membership. Treating it as authoritative without server-side validation would allow tenant spoofing.
 
 ## Required design before implementation
 
