@@ -109,6 +109,79 @@ public sealed class TenantContextMiddlewareTests
         Assert.Equal(company.Id, context.Items["PCS.CompanyId"]);
     }
 
+    [Fact]
+    public async Task Platform_admin_can_access_inactive_company_but_not_deleted_company()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "platform-admin",
+            PasswordHash = "not-used",
+            IsActive = true,
+            IsSystemUser = true
+        };
+        var inactiveCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "PLATFORM-INACTIVE",
+            Name = "Inactive Company",
+            IsActive = false
+        };
+        var deletedCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "PLATFORM-DELETED",
+            Name = "Deleted Company",
+            IsActive = false,
+            IsDeleted = true
+        };
+
+        dbContext.AddRange(user, inactiveCompany, deletedCompany);
+        await dbContext.SaveChangesAsync();
+
+        bool inactiveNextCalled = false;
+        var inactiveMiddleware = new TenantContextMiddleware(_ =>
+        {
+            inactiveNextCalled = true;
+            return Task.CompletedTask;
+        });
+        var inactiveContext = CreateHttpContext(
+            user.Id,
+            inactiveCompany.Id,
+            isPlatformAdmin: true);
+
+        await inactiveMiddleware.InvokeAsync(inactiveContext, dbContext);
+
+        Assert.Equal(StatusCodes.Status200OK, inactiveContext.Response.StatusCode);
+        Assert.True(inactiveNextCalled);
+
+        bool deletedNextCalled = false;
+        var deletedMiddleware = new TenantContextMiddleware(_ =>
+        {
+            deletedNextCalled = true;
+            return Task.CompletedTask;
+        });
+        var deletedContext = CreateHttpContext(
+            user.Id,
+            deletedCompany.Id,
+            isPlatformAdmin: true);
+
+        await deletedMiddleware.InvokeAsync(deletedContext, dbContext);
+
+        Assert.Equal(StatusCodes.Status404NotFound, deletedContext.Response.StatusCode);
+        Assert.False(deletedNextCalled);
+    }
+
     private static async Task<(User User, Company Company)> SeedAsync(
         PCSDbContext dbContext,
         bool userIsDeleted,
@@ -146,13 +219,24 @@ public sealed class TenantContextMiddlewareTests
         return (user, company);
     }
 
-    private static DefaultHttpContext CreateHttpContext(Guid userId, Guid companyId)
+    private static DefaultHttpContext CreateHttpContext(
+        Guid userId,
+        Guid companyId,
+        bool isPlatformAdmin = false)
     {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new("company_id", companyId.ToString())
+        };
+
+        if (isPlatformAdmin)
+        {
+            claims.Add(new Claim("platform_admin", "true"));
+        }
+
         var identity = new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim("company_id", companyId.ToString())
-            ],
+            claims,
             authenticationType: "PCS-Test");
 
         return new DefaultHttpContext
