@@ -8,12 +8,17 @@ namespace PCS.Application.Projects.Services;
 public class ProjectService : IProjectService
 {
     private readonly IGenericRepository<Project> _repository;
-
+    private readonly IGenericRepository<Plant> _plantRepository;
+    private readonly ICurrentTenant _currentTenant;
 
     public ProjectService(
-        IGenericRepository<Project> repository)
+        IGenericRepository<Project> repository,
+        IGenericRepository<Plant> plantRepository,
+        ICurrentTenant currentTenant)
     {
         _repository = repository;
+        _plantRepository = plantRepository;
+        _currentTenant = currentTenant;
     }
 
 
@@ -42,6 +47,8 @@ public class ProjectService : IProjectService
         CreateProjectDto request)
     {
         ValidateRequest(request);
+        EnsureCompanyScope(request.CompanyId);
+        await EnsurePlantScopeAsync(request.PlantId, request.CompanyId);
 
 
         var project = new Project();
@@ -77,6 +84,12 @@ public class ProjectService : IProjectService
             throw new KeyNotFoundException(
                 $"Project '{id}' was not found.");
 
+        if (request.CompanyId != project.CompanyId)
+            throw new InvalidOperationException(
+                "A project cannot be reassigned to another company.");
+
+        EnsureCompanyScope(project.CompanyId);
+        await EnsurePlantScopeAsync(request.PlantId, project.CompanyId);
 
 
         MapToEntity(
@@ -117,6 +130,41 @@ public class ProjectService : IProjectService
 
 
 
+
+    private void EnsureCompanyScope(Guid companyId)
+    {
+        if (_currentTenant.CompanyId.HasValue &&
+            _currentTenant.CompanyId.Value != companyId)
+        {
+            throw new UnauthorizedAccessException(
+                "The project company is outside the active tenant.");
+        }
+
+        if (!_currentTenant.IsPlatformAdmin &&
+            !_currentTenant.CompanyId.HasValue)
+        {
+            throw new UnauthorizedAccessException(
+                "An active company context is required.");
+        }
+    }
+
+    private async Task EnsurePlantScopeAsync(
+        Guid? plantId,
+        Guid companyId)
+    {
+        if (!plantId.HasValue)
+        {
+            return;
+        }
+
+        var plant = await _plantRepository.GetByIdAsync(plantId.Value);
+
+        if (plant is null || plant.CompanyId != companyId)
+        {
+            throw new ArgumentException(
+                "The selected plant does not belong to the project company.");
+        }
+    }
 
     private static void MapToEntity(
         Project project,

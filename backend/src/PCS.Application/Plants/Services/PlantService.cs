@@ -8,11 +8,14 @@ namespace PCS.Application.Plants.Services;
 public class PlantService : IPlantService
 {
     private readonly IGenericRepository<Plant> _repository;
+    private readonly ICurrentTenant _currentTenant;
 
     public PlantService(
-        IGenericRepository<Plant> repository)
+        IGenericRepository<Plant> repository,
+        ICurrentTenant currentTenant)
     {
         _repository = repository;
+        _currentTenant = currentTenant;
     }
 
     public async Task<IEnumerable<PlantDto>> GetAllAsync()
@@ -27,6 +30,12 @@ public class PlantService : IPlantService
     public async Task<IEnumerable<PlantDto>> GetByCompanyIdAsync(
         Guid companyId)
     {
+        if (_currentTenant.CompanyId.HasValue &&
+            _currentTenant.CompanyId.Value != companyId)
+        {
+            return [];
+        }
+
         var plants = await _repository.GetAllAsync();
 
         return plants
@@ -49,6 +58,7 @@ public class PlantService : IPlantService
         CreatePlantDto dto)
     {
         ValidateRequest(dto);
+        EnsureCompanyScope(dto.CompanyId);
 
         var plant = new Plant
         {
@@ -74,6 +84,7 @@ public class PlantService : IPlantService
         CreatePlantDto dto)
     {
         ValidateRequest(dto);
+        EnsureCompanyScope(dto.CompanyId);
 
         var plant =
             await _repository.GetByIdAsync(id);
@@ -82,6 +93,12 @@ public class PlantService : IPlantService
         {
             throw new KeyNotFoundException(
                 $"Plant '{id}' was not found.");
+        }
+
+        if (plant.CompanyId != dto.CompanyId)
+        {
+            throw new InvalidOperationException(
+                "A plant cannot be reassigned to another company.");
         }
 
         plant.Code = dto.Code.Trim();
@@ -113,6 +130,23 @@ public class PlantService : IPlantService
         _repository.Delete(plant);
 
         await _repository.SaveChangesAsync();
+    }
+
+    private void EnsureCompanyScope(Guid companyId)
+    {
+        if (_currentTenant.CompanyId.HasValue &&
+            _currentTenant.CompanyId.Value != companyId)
+        {
+            throw new UnauthorizedAccessException(
+                "The plant company is outside the active tenant.");
+        }
+
+        if (!_currentTenant.IsPlatformAdmin &&
+            !_currentTenant.CompanyId.HasValue)
+        {
+            throw new UnauthorizedAccessException(
+                "An active company context is required.");
+        }
     }
 
     private static void ValidateRequest(
