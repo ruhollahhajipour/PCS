@@ -84,7 +84,8 @@ public class CompanyUserConfiguration
             x.CompanyId,
             x.UserId
         })
-        .IsUnique();
+        .IsUnique()
+        .HasFilter("\"IsDeleted\" = 0");
 
 
 
