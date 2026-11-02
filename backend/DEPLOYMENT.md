@@ -48,3 +48,18 @@ CORS uses the exact origins in `Cors:AllowedOrigins`; wildcard origins are not e
 Configure cloud origins with environment variables such as `Cors__AllowedOrigins__0=https://your-frontend-domain`. Do not include URL paths in origin entries.
 
 Swagger is enabled only outside Cloud mode and is enabled by default in Development. Cloud mode keeps Swagger disabled. Cloud JWT signing material must be supplied through the `Jwt__Secret` deployment secret environment variable; do not commit it to configuration files.
+
+## Container build and health checks
+
+Build the backend image without publishing it to a registry:
+
+```bash
+docker build -f backend/Dockerfile -t pcs-api:local backend
+```
+
+The image listens on port `8080` and defaults to `Hosting__Mode=Cloud`. Supply the database provider, connection string, JWT secret, CORS allow-list, and initial administrator bootstrap values through the runtime environment/secret store.
+
+- `/health/live`: process liveness; does not query the database.
+- `/health/ready`: readiness; checks that the configured database is reachable.
+
+Apply the selected provider's migrations before starting the API. The container does not mutate the schema at startup. Cloud mode does not scrub or write the checked-in appsettings file.

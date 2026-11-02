@@ -4,12 +4,14 @@ using System.Text.Json.Nodes;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 
 using FluentValidation.AspNetCore;
 
+using PCS.API.Health;
 using PCS.API.Middleware;
 using PCS.Application;
 using PCS.Application.Common.Security;
@@ -589,6 +591,10 @@ builder.Services.AddInfrastructure(
 
 builder.Services.AddControllers();
 
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database");
+
 
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -891,7 +897,9 @@ using (
     string bootstrapSettingsPath =
         Path.Combine(baseDirectory, "appsettings.json");
 
-    if (File.Exists(bootstrapSettingsPath))
+    if (
+        !isCloudHosting &&
+        File.Exists(bootstrapSettingsPath))
     {
         var settingsJson =
             JsonNode.Parse(await File.ReadAllTextAsync(bootstrapSettingsPath));
@@ -943,6 +951,22 @@ if (swaggerEnabled)
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+
+// ============================================================
+// Health endpoints
+// ============================================================
+
+// Liveness does not depend on external resources.
+app.MapHealthChecks(
+    "/health/live",
+    new HealthCheckOptions
+    {
+        Predicate = _ => false
+    });
+
+// Readiness verifies the configured database connection.
+app.MapHealthChecks("/health/ready");
 
 
 // ============================================================

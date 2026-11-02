@@ -153,3 +153,41 @@ jobs:
 
       - name: Verify applied migration history
         run: dotnet ef migrations list --project backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj --startup-project backend/src/PCS.API/PCS.API.csproj --context PCSDbContext --configuration Release --no-build
+
+      - name: Build backend API container image
+        run: docker build --file backend/Dockerfile --tag pcs-api:ci backend
+
+      - name: Start API container and verify readiness
+        shell: bash
+        run: |
+          JWT_SECRET="$(openssl rand -hex 32)"
+          ADMIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "::add-mask::$JWT_SECRET"
+          echo "::add-mask::$ADMIN_PASSWORD"
+
+          docker run --detach --name pcs-api-ci --network host \
+            --env ASPNETCORE_URLS=http://+:8080 \
+            --env Hosting__Mode=Cloud \
+            --env Database__Provider=SqlServer \
+            --env "ConnectionStrings__DefaultConnection=$ConnectionStrings__DefaultConnection" \
+            --env "Jwt__Secret=$JWT_SECRET" \
+            --env "InitialAdmin__Username=ci-admin" \
+            --env "InitialAdmin__Password=$ADMIN_PASSWORD" \
+            --env "InitialAdmin__FirstName=CI" \
+            --env "InitialAdmin__LastName=Administrator" \
+            --env "InitialAdmin__Email=ci-admin@example.invalid" \
+            --env Cors__AllowedOrigins__0=https://ci.example.invalid \
+            pcs-api:ci
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/health/ready; then
+              echo "PCS API readiness check succeeded."
+              docker rm --force pcs-api-ci
+              exit 0
+            fi
+            sleep 5
+          done
+
+          docker logs pcs-api-ci
+          docker rm --force pcs-api-ci
+          exit 1
