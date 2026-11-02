@@ -17,6 +17,7 @@ public sealed class PasswordHasherTests
 
         Assert.Equal("PCS-PBKDF2-SHA256", parts[0]);
         Assert.Equal("600000", parts[1]);
+        Assert.False(_hasher.NeedsRehash(encodedHash));
         Assert.True(_hasher.Verify(password, encodedHash));
         Assert.False(_hasher.Verify("wrong-password", encodedHash));
     }
@@ -41,6 +42,7 @@ public sealed class PasswordHasherTests
             Convert.ToBase64String(salt),
             Convert.ToBase64String(derivedKey));
 
+        Assert.True(_hasher.NeedsRehash(legacyHash));
         Assert.True(_hasher.Verify(password, legacyHash));
     }
 
