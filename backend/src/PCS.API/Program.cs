@@ -534,6 +534,11 @@ allowedOrigins =
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
+if (builder.Environment.IsDevelopment() && allowedOrigins.Length == 0)
+{
+    allowedOrigins = ["http://localhost:5173"];
+}
+
 foreach (string origin in allowedOrigins)
 {
     if (
