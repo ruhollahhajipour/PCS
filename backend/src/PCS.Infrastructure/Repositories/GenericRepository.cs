@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PCS.Application.Common.Interfaces;
+using PCS.Domain.Common;
 using PCS.Infrastructure.Persistence;
 
 namespace PCS.Infrastructure.Repositories;
@@ -84,13 +85,25 @@ public class GenericRepository<T> : IGenericRepository<T>
 
     public void Delete(T entity)
     {
+        if (entity is AuditableEntity auditableEntity)
+        {
+            auditableEntity.IsDeleted = true;
+            auditableEntity.DeletedAt = DateTime.UtcNow;
+            auditableEntity.UpdatedAt = DateTime.UtcNow;
+            _dbSet.Update(entity);
+            return;
+        }
+
         _dbSet.Remove(entity);
     }
 
     public void DeleteRange(
         IEnumerable<T> entities)
     {
-        _dbSet.RemoveRange(entities);
+        foreach (var entity in entities)
+        {
+            Delete(entity);
+        }
     }
 
     public async Task SaveChangesAsync()
