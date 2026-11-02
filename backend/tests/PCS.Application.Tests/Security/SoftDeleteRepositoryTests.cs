@@ -76,3 +76,87 @@ public sealed class SoftDeleteRepositoryTests
         Assert.NotNull(retainedRecord.DeletedAt);
     }
 }
+
+
+    [Fact]
+    public async Task Generic_repository_rejects_detached_updates()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var repository = new GenericRepository<Company>(dbContext);
+        var detachedCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "DETACHED-UPDATE",
+            Name = "Detached Update"
+        };
+
+        Assert.Throws<InvalidOperationException>(
+            () => repository.Update(detachedCompany));
+    }
+
+    [Fact]
+    public async Task Generic_repository_rejects_detached_deletes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var repository = new GenericRepository<Company>(dbContext);
+        var detachedCompany = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "DETACHED-DELETE",
+            Name = "Detached Delete"
+        };
+
+        Assert.Throws<InvalidOperationException>(
+            () => repository.Delete(detachedCompany));
+    }
+
+    [Fact]
+    public async Task Generic_repository_updates_tracked_entities_without_detaching_them()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var company = new Company
+        {
+            Id = Guid.NewGuid(),
+            Code = "TRACKED-UPDATE",
+            Name = "Before"
+        };
+
+        dbContext.Companies.Add(company);
+        await dbContext.SaveChangesAsync();
+
+        var trackedCompany = await dbContext.Companies.SingleAsync(x => x.Id == company.Id);
+        trackedCompany.Name = "After";
+
+        var repository = new GenericRepository<Company>(dbContext);
+        repository.Update(trackedCompany);
+        await repository.SaveChangesAsync();
+
+        Assert.Equal("After", (await dbContext.Companies.SingleAsync(x => x.Id == company.Id)).Name);
+    }
