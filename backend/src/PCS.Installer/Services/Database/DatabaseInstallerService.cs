@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PCS.Infrastructure.Persistence;
 using PCS.Installer.Models;
@@ -102,22 +103,37 @@ public class DatabaseInstallerService
     private string BuildSqlServerConnection(
         InstallerContext context)
     {
+        // The builder escapes values, so a password containing ';' or '='
+        // cannot corrupt or inject additional connection-string options.
+        var builder =
+            new SqlConnectionStringBuilder
+            {
+                DataSource =
+                    context.DatabaseServer,
+
+                InitialCatalog =
+                    context.DatabaseName,
+
+                Encrypt =
+                    SqlConnectionEncryptOption.Mandatory,
+
+                TrustServerCertificate =
+                    false
+            };
+
+
         if (context.WindowsAuthentication)
         {
-            return
-                $"Server={context.DatabaseServer};" +
-                $"Database={context.DatabaseName};" +
-                "Trusted_Connection=True;" +
-                "Encrypt=True;TrustServerCertificate=False;";
+            builder.IntegratedSecurity = true;
+        }
+        else
+        {
+            builder.UserID = context.Username;
+            builder.Password = context.Password;
         }
 
 
-        return
-            $"Server={context.DatabaseServer};" +
-            $"Database={context.DatabaseName};" +
-            $"User Id={context.Username};" +
-            $"Password={context.Password};" +
-            "Encrypt=True;TrustServerCertificate=False;";
+        return builder.ConnectionString;
     }
 
 
