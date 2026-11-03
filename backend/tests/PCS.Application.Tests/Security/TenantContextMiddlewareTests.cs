@@ -367,7 +367,7 @@ public sealed class TenantContextMiddlewareTests
     private sealed class TestJwtService : IJwtService
     {
         public string CreateSecurityStamp(string passwordHash) =>
-            "test-security-stamp";
+            $"test:{passwordHash}";
 
         public string GenerateToken(
             Guid userId,
@@ -383,7 +383,7 @@ public sealed class TenantContextMiddlewareTests
         Guid userId,
         Guid companyId,
         bool isPlatformAdmin = false,
-        string? securityStamp = "test-security-stamp")
+        string? securityStamp = "test:not-used")
     {
         var claims = new List<Claim>
         {
