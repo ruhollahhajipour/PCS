@@ -59,7 +59,7 @@ public sealed class TenantContextMiddleware
         }
 
         byte[] expectedStamp = Encoding.UTF8.GetBytes(
-            jwtService.CreateSecurityStamp(userSecurity.PasswordHash));
+            jwtService.CreateSecurityStamp(userId, userSecurity.PasswordHash));
         byte[] actualStamp = Encoding.UTF8.GetBytes(suppliedSecurityStamp);
 
         if (expectedStamp.Length != actualStamp.Length ||
