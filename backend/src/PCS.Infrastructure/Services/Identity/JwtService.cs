@@ -44,13 +44,20 @@ public sealed class JwtService : IJwtService
         }
     }
 
-    public string CreateSecurityStamp(string passwordHash)
+    public string CreateSecurityStamp(Guid userId, string passwordHash)
     {
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A valid user identifier is required.",
+                nameof(userId));
+        }
+
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
 
         byte[] key = Encoding.UTF8.GetBytes(_settings.Secret);
         byte[] payload = Encoding.UTF8.GetBytes(
-            SecurityStampDomain + passwordHash);
+            $"{SecurityStampDomain}{userId:D}:{passwordHash}");
 
         using var hmac = new HMACSHA256(key);
         return Convert.ToHexString(hmac.ComputeHash(payload));
