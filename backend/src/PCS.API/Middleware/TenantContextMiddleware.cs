@@ -1,5 +1,10 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+
 using Microsoft.EntityFrameworkCore;
+
+using PCS.Application.Identity.Interfaces;
 using PCS.Infrastructure.Persistence;
 
 namespace PCS.API.Middleware;
@@ -15,7 +20,8 @@ public sealed class TenantContextMiddleware
 
     public async Task InvokeAsync(
         HttpContext context,
-        PCSDbContext dbContext)
+        PCSDbContext dbContext,
+        IJwtService jwtService)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
@@ -31,13 +37,33 @@ public sealed class TenantContextMiddleware
             return;
         }
 
-        bool userIsActive = await dbContext.Users
+        var userSecurity = await dbContext.Users
             .IgnoreQueryFilters()
-            .AnyAsync(
-                x => x.Id == userId && x.IsActive && !x.IsDeleted,
-                context.RequestAborted);
+            .Where(x => x.Id == userId && x.IsActive && !x.IsDeleted)
+            .Select(x => new { x.PasswordHash })
+            .SingleOrDefaultAsync(context.RequestAborted);
 
-        if (!userIsActive)
+        if (userSecurity is null)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        string? suppliedSecurityStamp =
+            context.User.FindFirstValue("security_stamp");
+
+        if (string.IsNullOrWhiteSpace(suppliedSecurityStamp))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        byte[] expectedStamp = Encoding.UTF8.GetBytes(
+            jwtService.CreateSecurityStamp(userSecurity.PasswordHash));
+        byte[] actualStamp = Encoding.UTF8.GetBytes(suppliedSecurityStamp);
+
+        if (expectedStamp.Length != actualStamp.Length ||
+            !CryptographicOperations.FixedTimeEquals(expectedStamp, actualStamp))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
@@ -59,9 +85,8 @@ public sealed class TenantContextMiddleware
                         x.Role.Code == "SUPER_ADMIN",
                     context.RequestAborted);
 
-        // A signed JWT is not sufficient proof of a currently active
-        // platform-admin assignment. Re-check the authoritative database
-        // assignment so role revocation takes effect before token expiry.
+        // The platform-admin flag is accepted only when the assignment is
+        // still active in the authoritative database.
         bool isPlatformAdmin = hasActivePlatformAdminRole;
 
         Guid? tokenCompanyId =
@@ -110,7 +135,10 @@ public sealed class TenantContextMiddleware
             bool companyExists = await dbContext.Companies
                 .IgnoreQueryFilters()
                 .AnyAsync(
-                    x => x.Id == activeCompanyId.Value && !x.IsDeleted && (isPlatformAdmin || x.IsActive),
+                    x =>
+                        x.Id == activeCompanyId.Value &&
+                        !x.IsDeleted &&
+                        (isPlatformAdmin || x.IsActive),
                     context.RequestAborted);
 
             if (!companyExists)
