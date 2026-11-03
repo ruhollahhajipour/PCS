@@ -283,7 +283,7 @@ public sealed class TenantContextMiddlewareTests
         var context = CreateHttpContext(
             user.Id,
             company.Id,
-            securityStamp: null);
+            includeSecurityStamp: false);
 
         await middleware.InvokeAsync(context, dbContext, new TestJwtService());
 
@@ -366,8 +366,8 @@ public sealed class TenantContextMiddlewareTests
 
     private sealed class TestJwtService : IJwtService
     {
-        public string CreateSecurityStamp(string passwordHash) =>
-            $"test:{passwordHash}";
+        public string CreateSecurityStamp(Guid userId, string passwordHash) =>
+            $"test:{userId}:{passwordHash}";
 
         public string GenerateToken(
             Guid userId,
@@ -383,7 +383,8 @@ public sealed class TenantContextMiddlewareTests
         Guid userId,
         Guid companyId,
         bool isPlatformAdmin = false,
-        string? securityStamp = "test:not-used")
+        bool includeSecurityStamp = true,
+        string? securityStamp = null)
     {
         var claims = new List<Claim>
         {
@@ -391,9 +392,11 @@ public sealed class TenantContextMiddlewareTests
             new("company_id", companyId.ToString())
         };
 
-        if (!string.IsNullOrWhiteSpace(securityStamp))
+        if (includeSecurityStamp)
         {
-            claims.Add(new Claim("security_stamp", securityStamp));
+            claims.Add(new Claim(
+                "security_stamp",
+                securityStamp ?? $"test:{userId}:not-used"));
         }
 
         if (isPlatformAdmin)
