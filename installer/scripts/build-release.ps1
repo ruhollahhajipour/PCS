@@ -1,56 +1,115 @@
+#requires -Version 5.1
+<#
+.SYNOPSIS
+    Builds the Windows on-premise installer (PCSSetup.exe) from a clean checkout.
+
+.DESCRIPTION
+    Produces exactly the inputs that backend/src/PCS.Installer/PCS.Installer.csproj
+    validates in its PrepareSetupPackage target:
+
+      frontend/dist                                  (VITE_API_URL=/api, same-origin)
+      backend/publish/PCS.API/PCS.API.exe            (self-contained win-x64)
+      backend/src/PCS.Launcher/bin/Release/net10.0-windows/win-x64/publish
+
+    and then publishes the installer, which bundles them into
+    backend/src/PCS.Installer/Setup/PCSSetup.exe.
+
+    Run on Windows with the .NET 10 SDK and Node.js 22.
+#>
+[CmdletBinding()]
+param()
+
 $ErrorActionPreference = "Stop"
+
+function Invoke-Step {
+    param(
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [scriptblock] $Action
+    )
+
+    Write-Host ""
+    Write-Host "==> $Name"
+    $global:LASTEXITCODE = 0
+    & $Action
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name failed with exit code $LASTEXITCODE"
+    }
+}
 
 Write-Host ""
 Write-Host "====================================="
 Write-Host " PCS Build & Release"
 Write-Host "====================================="
-Write-Host ""
 
-$root = Resolve-Path "$PSScriptRoot\..\.."
-
-$backend = Join-Path $root "backend"
+$root     = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$backend  = Join-Path $root "backend"
 $frontend = Join-Path $root "frontend"
-$publish = Join-Path $root "installer\publish"
+$apiOut   = Join-Path $backend "publish\PCS.API"
+$setupExe = Join-Path $backend "src\PCS.Installer\Setup\PCSSetup.exe"
 
-if (Test-Path $publish) {
-    Remove-Item $publish -Recurse -Force
-}
-
-New-Item -ItemType Directory -Path $publish | Out-Null
-New-Item -ItemType Directory -Path "$publish\server" | Out-Null
-New-Item -ItemType Directory -Path "$publish\client" | Out-Null
-
-Write-Host "Publishing Backend..."
-dotnet publish "$backend\src\PCS.API" `
-    -c Release `
-    -o "$publish\server"
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
-
-Write-Host "Building Frontend..."
+# ---------------------------------------------------------------
+# Frontend (served by PCS.API from the same origin => relative /api)
+# ---------------------------------------------------------------
 Push-Location $frontend
 try {
-    # The on-premise API serves the SPA from the same origin, so the
-    # frontend must call the relative /api path (not an absolute HTTPS URL).
     $env:VITE_API_URL = "/api"
 
     # Same install flags as .github/workflows/frontend-validation.yml.
-    npm ci --legacy-peer-deps --no-audit --no-fund
-    if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
+    Invoke-Step "Install frontend dependencies" {
+        npm ci --legacy-peer-deps --no-audit --no-fund
+    }
 
-    npm run build
-    if ($LASTEXITCODE -ne 0) { throw "npm run build failed with exit code $LASTEXITCODE" }
+    Invoke-Step "Build frontend" { npm run build }
 }
 finally {
     Remove-Item Env:VITE_API_URL -ErrorAction SilentlyContinue
     Pop-Location
 }
 
-Copy-Item `
-    "$frontend\dist\*" `
-    "$publish\client" `
-    -Recurse
+if (-not (Test-Path (Join-Path $frontend "dist\index.html"))) {
+    throw "Frontend build did not produce frontend\dist\index.html"
+}
+
+# ---------------------------------------------------------------
+# API: self-contained so the target machine needs no .NET runtime
+# ---------------------------------------------------------------
+if (Test-Path $apiOut) {
+    Remove-Item $apiOut -Recurse -Force
+}
+
+Invoke-Step "Publish PCS.API (win-x64, self-contained)" {
+    dotnet publish (Join-Path $backend "src\PCS.API\PCS.API.csproj") `
+        -c Release -r win-x64 --self-contained true -o $apiOut
+}
+
+if (-not (Test-Path (Join-Path $apiOut "PCS.API.exe"))) {
+    throw "API publish did not produce PCS.API.exe"
+}
+
+# ---------------------------------------------------------------
+# Launcher (single-file, self-contained; settings are in its csproj)
+# ---------------------------------------------------------------
+Invoke-Step "Publish PCS.Launcher" {
+    dotnet publish (Join-Path $backend "src\PCS.Launcher\PCS.Launcher.csproj") -c Release
+}
+
+# ---------------------------------------------------------------
+# Installer (bundles API + frontend + launcher into PCSSetup.exe)
+# ---------------------------------------------------------------
+Invoke-Step "Publish PCS.Installer" {
+    dotnet publish (Join-Path $backend "src\PCS.Installer\PCS.Installer.csproj") -c Release
+}
+
+if (-not (Test-Path $setupExe)) {
+    throw "Installer publish did not produce $setupExe"
+}
+
+$hash = (Get-FileHash $setupExe -Algorithm SHA256).Hash
+$sizeMb = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
 
 Write-Host ""
 Write-Host "====================================="
 Write-Host " Build Completed Successfully"
+Write-Host " $setupExe"
+Write-Host " $sizeMb MB  SHA256 $hash"
 Write-Host "====================================="
