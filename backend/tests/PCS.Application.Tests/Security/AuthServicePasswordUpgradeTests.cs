@@ -86,12 +86,15 @@ public sealed class AuthServicePasswordUpgradeTests
 
     private sealed class TestJwtService : IJwtService
     {
+        public string CreateSecurityStamp(Guid userId, string passwordHash) => "test-security-stamp";
+
         public string GenerateToken(
             Guid userId,
             string username,
             IEnumerable<string> roles,
             IEnumerable<string> permissions,
             Guid? companyId,
-            bool isPlatformAdmin) => "test-token";
+            bool isPlatformAdmin,
+            string securityStamp) => "test-token";
     }
 }

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 using Microsoft.Extensions.Configuration;
@@ -12,11 +13,10 @@ namespace PCS.Infrastructure.Services.Identity;
 
 public sealed class JwtService : IJwtService
 {
+    private const string SecurityStampDomain = "PCS:security-stamp:v1:";
     private readonly JwtSettings _settings;
 
-
-    public JwtService(
-        IConfiguration configuration)
+    public JwtService(IConfiguration configuration)
     {
         _settings =
             configuration
@@ -25,21 +25,17 @@ public sealed class JwtService : IJwtService
             ?? throw new InvalidOperationException(
                 "PCS JWT configuration was not found.");
 
-
-        if (string.IsNullOrWhiteSpace(
-                _settings.Secret))
+        if (string.IsNullOrWhiteSpace(_settings.Secret))
         {
             throw new InvalidOperationException(
                 "PCS JWT secret is not configured.");
         }
-
 
         if (_settings.Secret.Length < 32)
         {
             throw new InvalidOperationException(
                 "PCS JWT secret must contain at least 32 characters.");
         }
-
 
         if (_settings.ExpirationMinutes <= 0)
         {
@@ -48,6 +44,24 @@ public sealed class JwtService : IJwtService
         }
     }
 
+    public string CreateSecurityStamp(Guid userId, string passwordHash)
+    {
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A valid user identifier is required.",
+                nameof(userId));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
+
+        byte[] key = Encoding.UTF8.GetBytes(_settings.Secret);
+        byte[] payload = Encoding.UTF8.GetBytes(
+            $"{SecurityStampDomain}{userId:D}:{passwordHash}");
+
+        using var hmac = new HMACSHA256(key);
+        return Convert.ToHexString(hmac.ComputeHash(payload));
+    }
 
     public string GenerateToken(
         Guid userId,
@@ -55,103 +69,62 @@ public sealed class JwtService : IJwtService
         IEnumerable<string> roles,
         IEnumerable<string> permissions,
         Guid? companyId,
-        bool isPlatformAdmin)
+        bool isPlatformAdmin,
+        string securityStamp)
     {
-        var claims =
-            new List<Claim>
-            {
-                new(
-                    JwtRegisteredClaimNames.Sub,
-                    userId.ToString()),
+        ArgumentException.ThrowIfNullOrWhiteSpace(securityStamp);
 
-                new(
-                    ClaimTypes.NameIdentifier,
-                    userId.ToString()),
-
-                new(
-                    ClaimTypes.Name,
-                    username)
-            };
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Name, username),
+            new("security_stamp", securityStamp)
+        };
 
         if (companyId.HasValue)
         {
-            claims.Add(
-                new Claim(
-                    "company_id",
-                    companyId.Value.ToString()));
+            claims.Add(new Claim("company_id", companyId.Value.ToString()));
         }
 
         if (isPlatformAdmin)
         {
-            claims.Add(
-                new Claim(
-                    "platform_admin",
-                    "true"));
+            claims.Add(new Claim("platform_admin", "true"));
         }
 
-
-        foreach (string role in roles.Distinct(
-                     StringComparer.OrdinalIgnoreCase))
+        foreach (string role in roles.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!string.IsNullOrWhiteSpace(role))
             {
-                claims.Add(
-                    new Claim(
-                        ClaimTypes.Role,
-                        role));
+                claims.Add(new Claim(ClaimTypes.Role, role));
             }
         }
 
-
-        foreach (string permission in permissions.Distinct(
-                     StringComparer.OrdinalIgnoreCase))
+        foreach (string permission in permissions.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!string.IsNullOrWhiteSpace(permission))
             {
-                claims.Add(
-                    new Claim(
-                        "permission",
-                        permission));
+                claims.Add(new Claim("permission", permission));
             }
         }
 
+        byte[] key = Encoding.UTF8.GetBytes(_settings.Secret);
+        var securityKey = new SymmetricSecurityKey(key);
+        var credentials = new SigningCredentials(
+            securityKey,
+            SecurityAlgorithms.HmacSha256);
 
-        byte[] key =
-            Encoding.UTF8.GetBytes(
-                _settings.Secret);
+        DateTime issuedAt = DateTime.UtcNow;
+        DateTime expiresAt = issuedAt.AddMinutes(_settings.ExpirationMinutes);
 
+        var token = new JwtSecurityToken(
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
+            claims: claims,
+            notBefore: issuedAt,
+            expires: expiresAt,
+            signingCredentials: credentials);
 
-        var securityKey =
-            new SymmetricSecurityKey(
-                key);
-
-
-        var credentials =
-            new SigningCredentials(
-                securityKey,
-                SecurityAlgorithms.HmacSha256);
-
-
-        DateTime issuedAt =
-            DateTime.UtcNow;
-
-
-        DateTime expiresAt =
-            issuedAt.AddMinutes(
-                _settings.ExpirationMinutes);
-
-
-        var token =
-            new JwtSecurityToken(
-                issuer: _settings.Issuer,
-                audience: _settings.Audience,
-                claims: claims,
-                notBefore: issuedAt,
-                expires: expiresAt,
-                signingCredentials: credentials);
-
-
-        return new JwtSecurityTokenHandler()
-            .WriteToken(token);
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
