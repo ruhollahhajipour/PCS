@@ -1,0 +1,65 @@
+name: PCS temporary GitHub Pages preview
+
+on:
+  push:
+    branches:
+      - preview/pcs-auth-bypass-2026-10-31
+    paths:
+      - "frontend/**"
+      - ".github/workflows/pcs-preview-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pcs-temporary-pages-preview
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    # Temporary review deployment only. Remove this workflow and disable Pages
+    # after the PCS preview has been reviewed and approved.
+    if: github.ref == 'refs/heads/preview/pcs-auth-bypass-2026-10-31'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    env:
+      PCS_PREVIEW_AUTH_BYPASS: "true"
+      PCS_GITHUB_PAGES: "true"
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Build PCS frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Preserve SPA deep-link fallback
+        run: cp frontend/dist/index.html frontend/dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy temporary preview
+        id: deployment
+        uses: actions/deploy-pages@v4
