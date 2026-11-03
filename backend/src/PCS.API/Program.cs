@@ -601,6 +601,11 @@ builder.Services.AddInfrastructure(
     builder.Configuration);
 
 
+// Resource authorization is separate from permission claims:
+// the caller must also be an active member of the resource's company.
+builder.Services.AddScoped<IProjectAccessGuard, ProjectAccessGuard>();
+
+
 builder.Services.AddControllers();
 
 builder.Services
