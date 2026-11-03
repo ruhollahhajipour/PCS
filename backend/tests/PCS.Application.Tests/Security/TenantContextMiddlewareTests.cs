@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using PCS.Application.Identity.Interfaces;
 using PCS.Domain.Entities;
 using PCS.Domain.Entities.Security;
 using PCS.Infrastructure.Persistence;
@@ -37,7 +38,7 @@ public sealed class TenantContextMiddlewareTests
         });
 
         var context = CreateHttpContext(user.Id, company.Id);
-        await middleware.InvokeAsync(context, dbContext);
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
         Assert.False(nextCalled);
@@ -69,7 +70,7 @@ public sealed class TenantContextMiddlewareTests
         });
 
         var context = CreateHttpContext(user.Id, company.Id);
-        await middleware.InvokeAsync(context, dbContext);
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
         Assert.False(nextCalled);
@@ -101,7 +102,7 @@ public sealed class TenantContextMiddlewareTests
         });
 
         var context = CreateHttpContext(user.Id, company.Id);
-        await middleware.InvokeAsync(context, dbContext);
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
         Assert.True(nextCalled);
@@ -182,7 +183,7 @@ public sealed class TenantContextMiddlewareTests
             inactiveCompany.Id,
             isPlatformAdmin: true);
 
-        await inactiveMiddleware.InvokeAsync(inactiveContext, dbContext);
+        await inactiveMiddleware.InvokeAsync(inactiveContext, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status200OK, inactiveContext.Response.StatusCode);
         Assert.True(inactiveNextCalled);
@@ -198,7 +199,7 @@ public sealed class TenantContextMiddlewareTests
             deletedCompany.Id,
             isPlatformAdmin: true);
 
-        await deletedMiddleware.InvokeAsync(deletedContext, dbContext);
+        await deletedMiddleware.InvokeAsync(deletedContext, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status404NotFound, deletedContext.Response.StatusCode);
         Assert.False(deletedNextCalled);
@@ -248,9 +249,81 @@ public sealed class TenantContextMiddlewareTests
             inactiveCompany.Id,
             isPlatformAdmin: true);
 
-        await middleware.InvokeAsync(context, dbContext);
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
 
         Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+        Assert.False(nextCalled);
+    }
+
+    [Fact]
+    public async Task Token_without_security_stamp_is_rejected()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var (user, company) = await SeedAsync(
+            dbContext,
+            userIsDeleted: false,
+            membershipIsDeleted: false);
+
+        bool nextCalled = false;
+        var middleware = new TenantContextMiddleware(_ =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var context = CreateHttpContext(
+            user.Id,
+            company.Id,
+            securityStamp: null);
+
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
+        Assert.False(nextCalled);
+    }
+
+    [Fact]
+    public async Task Token_with_old_security_stamp_is_rejected_after_password_hash_changes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var (user, company) = await SeedAsync(
+            dbContext,
+            userIsDeleted: false,
+            membershipIsDeleted: false);
+
+        user.PasswordHash = "new-password-hash";
+        await dbContext.SaveChangesAsync();
+
+        bool nextCalled = false;
+        var middleware = new TenantContextMiddleware(_ =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        var context = CreateHttpContext(user.Id, company.Id);
+
+        await middleware.InvokeAsync(context, dbContext, new TestJwtService());
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
         Assert.False(nextCalled);
     }
 
@@ -291,16 +364,37 @@ public sealed class TenantContextMiddlewareTests
         return (user, company);
     }
 
+    private sealed class TestJwtService : IJwtService
+    {
+        public string CreateSecurityStamp(string passwordHash) =>
+            "test-security-stamp";
+
+        public string GenerateToken(
+            Guid userId,
+            string username,
+            IEnumerable<string> roles,
+            IEnumerable<string> permissions,
+            Guid? companyId,
+            bool isPlatformAdmin,
+            string securityStamp) => "test-token";
+    }
+
     private static DefaultHttpContext CreateHttpContext(
         Guid userId,
         Guid companyId,
-        bool isPlatformAdmin = false)
+        bool isPlatformAdmin = false,
+        string? securityStamp = "test-security-stamp")
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId.ToString()),
             new("company_id", companyId.ToString())
         };
+
+        if (!string.IsNullOrWhiteSpace(securityStamp))
+        {
+            claims.Add(new Claim("security_stamp", securityStamp));
+        }
 
         if (isPlatformAdmin)
         {
