@@ -78,6 +78,29 @@ public sealed class PermissionAuthorizationHandlerTests
     }
 
     [Fact]
+    public async Task Inactive_user_role_assignment_cannot_grant_access()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<PCSDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new PCSDbContext(options);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        var data = await SeedCompanyPermissionAsync(dbContext);
+        data.Assignment.IsActive = false;
+        await dbContext.SaveChangesAsync();
+
+        Assert.False(await IsAuthorizedAsync(
+            dbContext,
+            data.User.Id,
+            data.Company.Id));
+    }
+
+    [Fact]
     public async Task Company_scoped_role_cannot_grant_access_in_another_company()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -173,7 +196,7 @@ public sealed class PermissionAuthorizationHandlerTests
             isPlatformAdmin: true));
     }
 
-    private static async Task<(User User, Company Company, Role Role, Permission Permission, RolePermission RolePermission)>
+    private static async Task<(User User, Company Company, Role Role, Permission Permission, UserRole Assignment, RolePermission RolePermission)>
         SeedCompanyPermissionAsync(PCSDbContext dbContext)
     {
         var user = new User
@@ -229,7 +252,7 @@ public sealed class PermissionAuthorizationHandlerTests
 
         await dbContext.SaveChangesAsync();
 
-        return (user, company, role, permission, rolePermission);
+        return (user, company, role, permission, assignment, rolePermission);
     }
 
     private static async Task<bool> IsAuthorizedAsync(
