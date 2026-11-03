@@ -241,7 +241,7 @@ public sealed class AuthService : IAuthService
             .ToList();
 
         string securityStamp =
-            _jwtService.CreateSecurityStamp(user.PasswordHash);
+            _jwtService.CreateSecurityStamp(user.Id, user.PasswordHash);
 
         string token = _jwtService.GenerateToken(
             user.Id,
