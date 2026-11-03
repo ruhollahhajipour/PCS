@@ -721,6 +721,10 @@ builder.Services
         });
 
 
+builder.Services.AddScoped<
+    Microsoft.AspNetCore.Authorization.IAuthorizationHandler,
+    PermissionAuthorizationHandler>();
+
 builder.Services.AddAuthorization(
     options =>
     {
@@ -733,10 +737,8 @@ builder.Services.AddAuthorization(
                 policy =>
                 {
                     policy.RequireAuthenticatedUser();
-
-                    policy.RequireClaim(
-                        "permission",
-                        permission);
+                    policy.AddRequirements(
+                        new PermissionRequirement(permission));
                 });
         }
     });
