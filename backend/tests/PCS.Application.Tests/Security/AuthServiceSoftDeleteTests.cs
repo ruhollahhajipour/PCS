@@ -218,7 +218,7 @@ public sealed class AuthServiceSoftDeleteTests
 
     private sealed class TestJwtService : IJwtService
     {
-        public string CreateSecurityStamp(string passwordHash) => "test-security-stamp";
+        public string CreateSecurityStamp(Guid userId, string passwordHash) => "test-security-stamp";
 
         public string GenerateToken(
             Guid userId,
