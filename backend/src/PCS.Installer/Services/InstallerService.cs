@@ -317,7 +317,7 @@ public class InstallerService
 
         uninstaller.Uninstall(
             context,
-            true);
+            removeUserData: false);
 
 
         progress?.Report(

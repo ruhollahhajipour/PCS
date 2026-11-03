@@ -7,10 +7,13 @@ public class UninstallerService
 {
     public void Uninstall(
         InstallerContext context,
-        bool removeDatabase)
+        bool removeUserData = false)
     {
         ArgumentNullException.ThrowIfNull(context);
 
+        // Remove the current user's automatic startup entry before
+        // deleting the launcher executable it points to.
+        new StartupService().Remove(context);
 
         /*
          * Current PCS Free / Local installation does
@@ -20,125 +23,55 @@ public class UninstallerService
          * for compatibility with future editions.
          */
         StopWindowsService();
-
         RemoveWindowsService();
 
+        // Remove application files and installation configuration.
+        DeleteFolder(context.BackendPath);
+        DeleteFolder(context.FrontendPath);
+        DeleteFolder(Path.Combine(context.InstallPath, "Launcher"));
+        DeleteFolder(context.ConfigPath);
+        DeleteFolder(context.LogsPath);
+        DeleteFolder(Path.Combine(context.InstallPath, "Resources"));
 
-
-        /*
-         * ======================================================
-         * REMOVE APPLICATION DIRECTORIES
-         * ======================================================
-         */
-
-        DeleteFolder(
-            context.BackendPath);
-
-
-        DeleteFolder(
-            context.FrontendPath);
-
-
-        DeleteFolder(
-            Path.Combine(
-                context.InstallPath,
-                "Launcher"));
-
-
-        DeleteFolder(
-            context.ConfigPath);
-
-
-        DeleteFolder(
-            context.LogsPath);
-
-
-        DeleteFolder(
-            context.BackupPath);
-
-
-        DeleteFolder(
-            context.ImportPath);
-
-
-        DeleteFolder(
-            context.ExportPath);
-
-
-
-        if (removeDatabase)
+        // Project data is preserved by default. This includes the
+        // SQLite database, backups, and user-managed import/export files.
+        if (removeUserData)
         {
-            DeleteFolder(
-                context.DatabasePath);
+            DeleteFolder(context.DatabasePath);
+            DeleteFolder(context.BackupPath);
+            DeleteFolder(context.ImportPath);
+            DeleteFolder(context.ExportPath);
         }
 
+        RemoveDesktopShortcut(context.ProductName);
+        RemoveStartMenuShortcut(context.ProductName);
 
-
-        /*
-         * ======================================================
-         * REMOVE SHORTCUTS
-         * ======================================================
-         */
-
-        RemoveDesktopShortcut(
-            context.ProductName);
-
-
-        RemoveStartMenuShortcut(
-            context.ProductName);
-
-
-
-        /*
-         * ======================================================
-         * REMOVE EMPTY INSTALL DIRECTORY
-         * ======================================================
-         */
-
-        TryDeleteEmptyDirectory(
-            context.InstallPath);
+        // The installation root is removed only when no user data remains.
+        TryDeleteEmptyDirectory(context.InstallPath);
     }
-
-
 
     private static void StopWindowsService()
     {
-        ExecuteCommand(
-            "sc",
-            "stop PCS.API.Service");
+        ExecuteCommand("sc", "stop PCS.API.Service");
     }
-
-
 
     private static void RemoveWindowsService()
     {
-        ExecuteCommand(
-            "sc",
-            "delete PCS.API.Service");
+        ExecuteCommand("sc", "delete PCS.API.Service");
     }
 
-
-
-    private static void DeleteFolder(
-        string folder)
+    private static void DeleteFolder(string folder)
     {
         if (!Directory.Exists(folder))
         {
             return;
         }
 
-
         try
         {
-            DirectoryInfo directory =
-                new DirectoryInfo(folder);
+            DirectoryInfo directory = new(folder);
 
-
-            foreach (
-                FileInfo file
-                in directory.GetFiles(
-                    "*",
-                    SearchOption.AllDirectories))
+            foreach (FileInfo file in directory.GetFiles("*", SearchOption.AllDirectories))
             {
                 try
                 {
@@ -150,86 +83,43 @@ public class UninstallerService
                 }
             }
 
-
-            Directory.Delete(
-                folder,
-                recursive: true);
+            Directory.Delete(folder, recursive: true);
         }
         catch
         {
-            /*
-             * Cleanup errors must not crash the
-             * uninstaller.
-             */
+            // Cleanup errors must not crash the uninstaller.
         }
     }
 
-
-
-    private static void RemoveDesktopShortcut(
-        string productName)
+    private static void RemoveDesktopShortcut(string productName)
     {
-        string desktop =
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.DesktopDirectory);
-
+        string desktop = Environment.GetFolderPath(
+            Environment.SpecialFolder.DesktopDirectory);
 
         if (string.IsNullOrWhiteSpace(desktop))
         {
             return;
         }
 
-
-        string shortcut =
-            Path.Combine(
-                desktop,
-                "PCS.lnk");
-
-
-        TryDeleteFile(
-            shortcut);
+        TryDeleteFile(Path.Combine(desktop, "PCS.lnk"));
     }
 
-
-
-    private static void RemoveStartMenuShortcut(
-        string productName)
+    private static void RemoveStartMenuShortcut(string productName)
     {
-        string programs =
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.Programs);
-
+        string programs = Environment.GetFolderPath(
+            Environment.SpecialFolder.Programs);
 
         if (string.IsNullOrWhiteSpace(programs))
         {
             return;
         }
 
-
-        string folder =
-            Path.Combine(
-                programs,
-                productName);
-
-
-        string shortcut =
-            Path.Combine(
-                folder,
-                "PCS.lnk");
-
-
-        TryDeleteFile(
-            shortcut);
-
-
-        TryDeleteEmptyDirectory(
-            folder);
+        string folder = Path.Combine(programs, productName);
+        TryDeleteFile(Path.Combine(folder, "PCS.lnk"));
+        TryDeleteEmptyDirectory(folder);
     }
 
-
-
-    private static void TryDeleteFile(
-        string file)
+    private static void TryDeleteFile(string file)
     {
         try
         {
@@ -238,14 +128,8 @@ public class UninstallerService
                 return;
             }
 
-
-            File.SetAttributes(
-                file,
-                FileAttributes.Normal);
-
-
-            File.Delete(
-                file);
+            File.SetAttributes(file, FileAttributes.Normal);
+            File.Delete(file);
         }
         catch
         {
@@ -253,10 +137,7 @@ public class UninstallerService
         }
     }
 
-
-
-    private static void TryDeleteEmptyDirectory(
-        string directory)
+    private static void TryDeleteEmptyDirectory(string directory)
     {
         try
         {
@@ -265,19 +146,12 @@ public class UninstallerService
                 return;
             }
 
-
-            if (
-                Directory
-                    .EnumerateFileSystemEntries(
-                        directory)
-                    .Any())
+            if (Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 return;
             }
 
-
-            Directory.Delete(
-                directory);
+            Directory.Delete(directory);
         }
         catch
         {
@@ -285,48 +159,23 @@ public class UninstallerService
         }
     }
 
-
-
-    private static void ExecuteCommand(
-        string fileName,
-        string arguments)
+    private static void ExecuteCommand(string fileName, string arguments)
     {
         try
         {
-            using Process process =
-                new();
+            using Process process = new();
 
-
-            process.StartInfo.FileName =
-                fileName;
-
-
-            process.StartInfo.Arguments =
-                arguments;
-
-
-            process.StartInfo.CreateNoWindow =
-                true;
-
-
-            process.StartInfo.UseShellExecute =
-                false;
-
+            process.StartInfo.FileName = fileName;
+            process.StartInfo.Arguments = arguments;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.UseShellExecute = false;
 
             process.Start();
-
-
             process.WaitForExit();
         }
         catch
         {
-            /*
-             * Current Free / Local installation does
-             * not require a Windows Service.
-             *
-             * Therefore service cleanup failures are
-             * intentionally ignored.
-             */
+            // Current local installations do not require a Windows Service.
         }
     }
 }

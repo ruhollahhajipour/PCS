@@ -56,6 +56,9 @@ jobs:
       - name: Restore backend solution
         run: dotnet restore backend/PCS.Backend.slnx
 
+      - name: Run installer uninstall safety tests
+        run: dotnet test backend/tests/PCS.Installer.Tests/PCS.Installer.Tests.csproj --configuration Release
+
       - name: Publish API for Windows x64
         run: dotnet publish backend/src/PCS.API/PCS.API.csproj --configuration Release --runtime win-x64 --self-contained true --output backend/publish/PCS.API
 
