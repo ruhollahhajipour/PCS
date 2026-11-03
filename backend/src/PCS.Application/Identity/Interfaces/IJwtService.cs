@@ -2,7 +2,7 @@ namespace PCS.Application.Identity.Interfaces;
 
 public interface IJwtService
 {
-    string CreateSecurityStamp(string passwordHash);
+    string CreateSecurityStamp(Guid userId, string passwordHash);
 
     string GenerateToken(
         Guid userId,
