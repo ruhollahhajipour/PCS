@@ -158,8 +158,6 @@ public sealed class AuthService : IAuthService
 
         if (isPlatformAdmin)
         {
-            // Platform administrators must be able to inspect and reactivate
-            // inactive companies, but soft-deleted companies remain inaccessible.
             return await _dbContext.Companies
                 .IgnoreQueryFilters()
                 .AnyAsync(
@@ -242,13 +240,17 @@ public sealed class AuthService : IAuthService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        string securityStamp =
+            _jwtService.CreateSecurityStamp(user.PasswordHash);
+
         string token = _jwtService.GenerateToken(
             user.Id,
             user.UserName,
             roles,
             permissions,
             companyId,
-            IsPlatformAdmin(user));
+            IsPlatformAdmin(user),
+            securityStamp);
 
         return new LoginResponse
         {
