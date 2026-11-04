@@ -502,6 +502,38 @@ if (
 }
 
 
+// A relative SQLite path must never depend on the process working
+// directory. Installed: <root>\Database. Otherwise: the current directory
+// (development only; installed deployments always receive an absolute path).
+if (string.Equals(
+        DatabaseProviderResolver.GetProvider(builder.Configuration),
+        DatabaseProviderResolver.Sqlite,
+        StringComparison.OrdinalIgnoreCase))
+{
+    string sqliteBaseDirectory =
+        !string.IsNullOrWhiteSpace(installedRoot)
+            ? Path.Combine(installedRoot, "Database")
+            : Directory.GetCurrentDirectory();
+
+    string resolvedConnectionString =
+        SqliteConnectionPathResolver.MakeAbsolute(
+            configuredConnectionString,
+            sqliteBaseDirectory);
+
+    builder.Configuration["ConnectionStrings:DefaultConnection"] =
+        resolvedConnectionString;
+
+    string? sqliteDirectory =
+        Path.GetDirectoryName(
+            new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(
+                resolvedConnectionString).DataSource);
+
+    if (!string.IsNullOrEmpty(sqliteDirectory))
+    {
+        Directory.CreateDirectory(sqliteDirectory);
+    }
+}
+
 Log.Information(
     "PCS database connection string is configured.");
 

@@ -80,7 +80,7 @@ jobs:
           [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($secretBytes)
           $jwtSecret = [Convert]::ToBase64String($secretBytes)
           $adminPassword = "Smoke-" + [Guid]::NewGuid().ToString("N") + "!aA1"
-          $dbFile = Join-Path $dbDir "pcs.db"
+          $dbFile = Join-Path $dbDir "PCS.db"
           $connection = "Data Source=$dbFile"
 
           $settings = @{
@@ -91,6 +91,12 @@ jobs:
             InitialAdmin = @{ Username = "admin"; Password = $adminPassword; FirstName = "PCS"; LastName = "Administrator"; Email = "admin@pcs.local" }
           }
           $settings | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $backendDir "appsettings.json") -Encoding utf8
+
+          # The installer also writes Config\pcs.config.json, which the API loads over appsettings.
+          $configDir = Join-Path $installRoot "Config"
+          New-Item -ItemType Directory -Force $configDir | Out-Null
+          @{ ConnectionString = $connection; Provider = "Sqlite" } | ConvertTo-Json |
+            Set-Content (Join-Path $configDir "pcs.config.json") -Encoding utf8
 
           # The installer applies migrations before first start; do the same here.
           $env:Database__Provider = "Sqlite"
@@ -144,3 +150,57 @@ jobs:
               if (Test-Path $path) { Write-Host "--- $log"; Get-Content $path -Tail 40 }
             }
           }
+
+      # A relative SQLite path must never create a stray database next to the API,
+      # and a missing connection string must fail fast instead of guessing one.
+      - name: Database path safety (installed layout)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          function New-Layout([string] $name, [string] $connection) {
+            $root = Join-Path $env:RUNNER_TEMP $name
+            $backend = Join-Path $root "Backend"
+            New-Item -ItemType Directory -Force $backend | Out-Null
+            Copy-Item "backend/publish/PCS.API/*" $backend -Recurse
+            $bytes = New-Object byte[] 64
+            [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+            @{
+              Hosting = @{ Mode = "OnPremise" }
+              Database = @{ Provider = "Sqlite" }
+              ConnectionStrings = @{ DefaultConnection = $connection }
+              Jwt = @{ Secret = [Convert]::ToBase64String($bytes); Issuer = "PCS"; Audience = "PCS"; ExpirationMinutes = 480 }
+              InitialAdmin = @{ Username = "admin"; Password = ("Smoke-" + [Guid]::NewGuid().ToString("N") + "!aA1"); FirstName = "PCS"; LastName = "Administrator"; Email = "admin@pcs.local" }
+            } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $backend "appsettings.json") -Encoding utf8
+            return $root
+          }
+
+          function Invoke-Api([string] $root, [int] $port) {
+            $backend = Join-Path $root "Backend"
+            $p = Start-Process -FilePath (Join-Path $backend "PCS.API.exe") `
+              -ArgumentList "--urls `"http://localhost:$port`"" -WorkingDirectory $backend `
+              -PassThru -WindowStyle Hidden `
+              -RedirectStandardOutput (Join-Path $root "out.log") -RedirectStandardError (Join-Path $root "err.log")
+            if (-not $p.WaitForExit(30000)) { Stop-Process -Id $p.Id -Force; return $null }
+            return $p.ExitCode
+          }
+
+          # 1. No connection string anywhere: the API must refuse to start and create no database.
+          $missing = New-Layout "PCS-missing" ""
+          $code = Invoke-Api $missing 5101
+          if ($null -eq $code -or $code -eq 0) { throw "API started without a database connection string (exit: $code)" }
+          if (Get-ChildItem $missing -Recurse -Filter *.db -ErrorAction SilentlyContinue) {
+            throw "A database file was created although no connection string was configured"
+          }
+
+          # 2. Relative path in an installed layout: the file belongs in <root>\Database, never in Backend.
+          $relative = New-Layout "PCS-relative" "Data Source=PCS.db"
+          Invoke-Api $relative 5102 | Out-Null   # exits (schema is not migrated); only the file location matters
+          if (Get-ChildItem (Join-Path $relative "Backend") -Filter *.db -ErrorAction SilentlyContinue) {
+            throw "A database file was created inside Backend"
+          }
+          if (-not (Test-Path (Join-Path $relative "Database\PCS.db"))) {
+            throw "Relative SQLite path was not resolved to <root>\Database\PCS.db"
+          }
+
+          Write-Host "Database path safety checks passed."
