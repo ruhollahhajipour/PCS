@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "feature/project-planning-architecture"
+      - "ai/**"
     paths:
       - "backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj"
       - "backend/src/PCS.Infrastructure.Migrations.SqlServer/**"

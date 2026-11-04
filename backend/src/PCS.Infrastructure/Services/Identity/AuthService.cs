@@ -39,13 +39,18 @@ public sealed class AuthService : IAuthService
             .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
             .SingleOrDefaultAsync(
-                x => x.UserName == username && x.IsActive,
+                x => x.UserName == username && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (user is null ||
             !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             return null;
+        }
+
+        if (_passwordHasher.NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = _passwordHasher.Hash(request.Password);
         }
 
         bool isPlatformAdmin = IsPlatformAdmin(user);
@@ -55,7 +60,9 @@ public sealed class AuthService : IAuthService
             .Where(x =>
                 x.UserId == user.Id &&
                 x.IsActive &&
-                x.Company.IsActive)
+                !x.IsDeleted &&
+                x.Company.IsActive &&
+                !x.Company.IsDeleted)
             .OrderBy(x => x.AssignedAt)
             .Select(x => (Guid?)x.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
@@ -133,7 +140,7 @@ public sealed class AuthService : IAuthService
             .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
     }
 
@@ -149,20 +156,26 @@ public sealed class AuthService : IAuthService
             return isPlatformAdmin;
         }
 
+        if (isPlatformAdmin)
+        {
+            // Platform administrators must be able to inspect and reactivate
+            // inactive companies, but soft-deleted companies remain inaccessible.
+            return await _dbContext.Companies
+                .IgnoreQueryFilters()
+                .AnyAsync(
+                    x => x.Id == companyId.Value && !x.IsDeleted,
+                    cancellationToken);
+        }
+
         bool companyExists = await _dbContext.Companies
             .IgnoreQueryFilters()
             .AnyAsync(
-                x => x.Id == companyId.Value && x.IsActive,
+                x => x.Id == companyId.Value && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (!companyExists)
         {
             return false;
-        }
-
-        if (isPlatformAdmin)
-        {
-            return true;
         }
 
         return await _dbContext.CompanyUsers
@@ -171,7 +184,10 @@ public sealed class AuthService : IAuthService
                 x =>
                     x.UserId == user.Id &&
                     x.CompanyId == companyId.Value &&
-                    x.IsActive,
+                    x.IsActive &&
+                    !x.IsDeleted &&
+                    x.Company.IsActive &&
+                    !x.Company.IsDeleted,
                 cancellationToken);
     }
 
@@ -264,7 +280,7 @@ public sealed class AuthService : IAuthService
         var user = await _dbContext.Users
             .IgnoreQueryFilters()
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (user is null ||

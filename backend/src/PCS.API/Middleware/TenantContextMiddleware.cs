@@ -31,8 +31,38 @@ public sealed class TenantContextMiddleware
             return;
         }
 
-        bool isPlatformAdmin =
+        bool userIsActive = await dbContext.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
+                context.RequestAborted);
+
+        if (!userIsActive)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        bool tokenClaimsPlatformAdmin =
             context.User.HasClaim("platform_admin", "true");
+
+        bool hasActivePlatformAdminRole = tokenClaimsPlatformAdmin &&
+            await dbContext.UserRoles
+                .IgnoreQueryFilters()
+                .AnyAsync(
+                    x =>
+                        x.UserId == userId &&
+                        x.IsActive &&
+                        x.CompanyId == null &&
+                        x.Role.IsActive &&
+                        x.Role.Scope == "Platform" &&
+                        x.Role.Code == "SUPER_ADMIN",
+                    context.RequestAborted);
+
+        // A signed JWT is not sufficient proof of a currently active
+        // platform-admin assignment. Re-check the authoritative database
+        // assignment so role revocation takes effect before token expiry.
+        bool isPlatformAdmin = hasActivePlatformAdminRole;
 
         Guid? tokenCompanyId =
             Guid.TryParse(
@@ -80,7 +110,7 @@ public sealed class TenantContextMiddleware
             bool companyExists = await dbContext.Companies
                 .IgnoreQueryFilters()
                 .AnyAsync(
-                    x => x.Id == activeCompanyId.Value && x.IsActive,
+                    x => x.Id == activeCompanyId.Value && !x.IsDeleted && (isPlatformAdmin || x.IsActive),
                     context.RequestAborted);
 
             if (!companyExists)
@@ -97,7 +127,12 @@ public sealed class TenantContextMiddleware
                         x =>
                             x.UserId == userId &&
                             x.CompanyId == activeCompanyId.Value &&
-                            x.IsActive,
+                            x.IsActive &&
+                            !x.IsDeleted &&
+                            x.User.IsActive &&
+                            !x.User.IsDeleted &&
+                            x.Company.IsActive &&
+                            !x.Company.IsDeleted,
                         context.RequestAborted);
 
                 if (!isMember)

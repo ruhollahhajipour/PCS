@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PCS.Application.Common.Interfaces;
 using PCS.Domain.Entities;
 using PCS.Domain.Entities.Planning;
+using PCS.Domain.Entities.Security;
 using PCS.Infrastructure.Persistence;
 using PCS.Infrastructure.Repositories;
 
@@ -40,6 +41,58 @@ public sealed class TenantIsolationTests
             Id = companyBId,
             Code = "B",
             Name = "Company B",
+            IsActive = true
+        };
+
+        var userA = new User
+        {
+            Id = userId,
+            UserName = "tenant-user-a",
+            PasswordHash = "test-hash",
+            FirstName = "Tenant",
+            LastName = "User A",
+            Email = "tenant-a@pcs.local",
+            IsActive = true
+        };
+
+        var userB = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "tenant-user-b",
+            PasswordHash = "test-hash",
+            FirstName = "Tenant",
+            LastName = "User B",
+            Email = "tenant-b@pcs.local",
+            IsActive = true
+        };
+
+        var membershipA = new CompanyUser
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyAId,
+            Company = companyA,
+            UserId = userA.Id,
+            User = userA,
+            IsActive = true
+        };
+
+        var membershipB = new CompanyUser
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyBId,
+            Company = companyB,
+            UserId = userA.Id,
+            User = userA,
+            IsActive = true
+        };
+
+        var membershipOtherUser = new CompanyUser
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyBId,
+            Company = companyB,
+            UserId = userB.Id,
+            User = userB,
             IsActive = true
         };
 
@@ -137,6 +190,11 @@ public sealed class TenantIsolationTests
             seedContext.AddRange(
                 companyA,
                 companyB,
+                userA,
+                userB,
+                membershipA,
+                membershipB,
+                membershipOtherUser,
                 plantA,
                 plantB,
                 projectA,
@@ -159,6 +217,11 @@ public sealed class TenantIsolationTests
             Assert.Single(await tenantContext.WbsNodes.ToListAsync());
             Assert.Single(await tenantContext.Activities.ToListAsync());
 
+            var companyMemberships = await tenantContext.CompanyUsers.ToListAsync();
+            Assert.Single(companyMemberships);
+            Assert.Equal(companyAId, companyMemberships[0].CompanyId);
+            Assert.Equal(userId, companyMemberships[0].UserId);
+
             Assert.Null(await tenantContext.Projects
                 .SingleOrDefaultAsync(x => x.Id == projectB.Id));
 
@@ -167,6 +230,49 @@ public sealed class TenantIsolationTests
 
             Assert.Null(await projectRepository.GetByIdAsync(projectB.Id));
             Assert.NotNull(await projectRepository.GetByIdAsync(projectA.Id));
+
+            // A foreign-tenant entity detached from its original DbContext
+            // cannot be mutated through the generic repository.
+            Assert.Throws<InvalidOperationException>(
+                () => projectRepository.Update(projectB));
+            Assert.Throws<InvalidOperationException>(
+                () => projectRepository.Delete(projectB));
+
+            var dedicatedProjectRepository = new ProjectRepository(tenantContext);
+            Assert.Throws<InvalidOperationException>(
+                () => dedicatedProjectRepository.Update(projectB));
+            Assert.Throws<InvalidOperationException>(
+                () => dedicatedProjectRepository.Delete(projectB));
+
+            var activityRepository = new ActivityRepository(tenantContext);
+            Assert.Throws<InvalidOperationException>(
+                () => activityRepository.Update(activityB));
+
+            var relationshipRepository =
+                new ActivityRelationshipRepository(tenantContext);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => relationshipRepository.AddRangeAsync(
+                [
+                    new ActivityRelationship
+                    {
+                        Id = Guid.NewGuid(),
+                        PredecessorId = activityA.Id,
+                        SuccessorId = activityB.Id,
+                        Type = "FS"
+                    }
+                ]));
+
+            Assert.Throws<InvalidOperationException>(
+                () => relationshipRepository.DeleteRange(
+                [
+                    new ActivityRelationship
+                    {
+                        Id = Guid.NewGuid(),
+                        PredecessorId = activityA.Id,
+                        SuccessorId = activityA.Id
+                    }
+                ]));
         }
 
         await using (var platformContext =
@@ -176,6 +282,23 @@ public sealed class TenantIsolationTests
         {
             Assert.Equal(2, await platformContext.Projects.CountAsync());
             Assert.Equal(2, await platformContext.Activities.CountAsync());
+            Assert.Equal(3, await platformContext.CompanyUsers.CountAsync());
+        }
+
+        await using (var userMembershipContext =
+            new PCSDbContext(options, new TestTenant(null, false, userId)))
+        {
+            var ownMemberships = await userMembershipContext.CompanyUsers.ToListAsync();
+            Assert.Equal(2, ownMemberships.Count);
+            Assert.All(ownMemberships, membership => Assert.Equal(userId, membership.UserId));
+        }
+
+        await using (var otherUserContext =
+            new PCSDbContext(options, new TestTenant(null, false, userB.Id)))
+        {
+            var ownMemberships = await otherUserContext.CompanyUsers.ToListAsync();
+            Assert.Single(ownMemberships);
+            Assert.Equal(userB.Id, ownMemberships[0].UserId);
         }
     }
 

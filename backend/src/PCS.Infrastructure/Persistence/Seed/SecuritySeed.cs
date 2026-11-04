@@ -224,7 +224,8 @@ public static class SecuritySeed
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(passwordHasher);
 
-        await SynchronizeRolesAsync(context);
+        var newlyCreatedRoleCodes =
+            await SynchronizeRolesAsync(context);
 
         await SynchronizePermissionsAsync(context);
 
@@ -247,7 +248,8 @@ public static class SecuritySeed
         await SynchronizeRolePermissionsAsync(
             context,
             dbRoles,
-            dbPermissions);
+            dbPermissions,
+            newlyCreatedRoleCodes);
 
         await EnsureInitialAdministratorAsync(
             context,
@@ -261,10 +263,12 @@ public static class SecuritySeed
     // Roles
     // ============================================================
 
-    private static async Task SynchronizeRolesAsync(
+    private static async Task<HashSet<string>> SynchronizeRolesAsync(
         DbContext context)
     {
         var roleSet = context.Set<Role>();
+        var newlyCreatedRoleCodes =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var definition in RoleDefinitions)
         {
@@ -296,6 +300,7 @@ public static class SecuritySeed
                     };
 
                 await roleSet.AddAsync(role);
+                newlyCreatedRoleCodes.Add(definition.Code);
 
                 continue;
             }
@@ -309,17 +314,13 @@ public static class SecuritySeed
             role.Description =
                 definition.Description;
 
-            role.Scope =
-                definition.Scope;
-
-            role.IsSystemRole =
-                definition.IsSystemRole;
-
-            role.IsActive =
-                definition.IsActive;
+            // Preserve security-controlled state on existing roles.
+            // Scope, IsSystemRole and IsActive must only change through
+            // an explicit administrative operation.
         }
 
         await context.SaveChangesAsync();
+        return newlyCreatedRoleCodes;
     }
 
 
@@ -373,11 +374,8 @@ public static class SecuritySeed
             permission.Description =
                 definition.Description;
 
-            permission.IsSystemPermission =
-                definition.IsSystemPermission;
-
-            permission.IsActive =
-                definition.IsActive;
+            // Preserve IsSystemPermission and IsActive. Seed must never
+            // restore a permission that an administrator disabled.
         }
 
         await context.SaveChangesAsync();
@@ -391,14 +389,18 @@ public static class SecuritySeed
     private static async Task SynchronizeRolePermissionsAsync(
         DbContext context,
         IReadOnlyDictionary<string, Role> dbRoles,
-        IReadOnlyDictionary<string, Permission> dbPermissions)
+        IReadOnlyDictionary<string, Permission> dbPermissions,
+        IReadOnlySet<string> newlyCreatedRoleCodes)
     {
         var rolePermissionSet =
             context.Set<RolePermission>();
 
         foreach (var definition in RolePermissionDefinitions)
         {
-            if (!dbRoles.TryGetValue(
+            // Default grants are applied only when a role is first created.
+            // Re-running startup must not restore manually revoked grants.
+            if (!newlyCreatedRoleCodes.Contains(definition.Key) ||
+                !dbRoles.TryGetValue(
                     definition.Key,
                     out var role))
             {
@@ -474,8 +476,24 @@ public static class SecuritySeed
 
         var existingUser =
             await userSet
+                .IgnoreQueryFilters()
                 .SingleOrDefaultAsync(
                     x => x.UserName == normalizedUsername);
+
+        bool createdInitialAdministrator = existingUser is null;
+
+        if (createdInitialAdministrator)
+        {
+            bool anotherSystemUserExists = await userSet
+                .IgnoreQueryFilters()
+                .AnyAsync(x => x.IsSystemUser);
+
+            if (anotherSystemUserExists)
+            {
+                throw new InvalidOperationException(
+                    "The configured initial administrator was not found, but a system user already exists. PCS will not create a second bootstrap administrator automatically.");
+            }
+        }
 
         // A configured bootstrap password is required only when
         // the initial administrator does not already exist.
@@ -542,47 +560,13 @@ public static class SecuritySeed
                         "SYSTEM"
                 };
 
-            await userSet.AddAsync(
-                adminUser);
-
-            await context.SaveChangesAsync();
+            await userSet.AddAsync(adminUser);
         }
         else
         {
-            // ====================================================
-            // Existing administrator
-            //
-            // SECURITY:
-            // Never overwrite the existing password.
-            // Never reset MustChangePassword automatically.
-            // ====================================================
-
-            adminUser =
-                existingUser;
-
-            bool changed =
-                false;
-
-            if (!adminUser.IsActive)
-            {
-                adminUser.IsActive =
-                    true;
-
-                changed = true;
-            }
-
-            if (!adminUser.IsSystemUser)
-            {
-                adminUser.IsSystemUser =
-                    true;
-
-                changed = true;
-            }
-
-            if (changed)
-            {
-                await context.SaveChangesAsync();
-            }
+            // Existing bootstrap accounts are intentionally left untouched.
+            // In particular, never reactivate a disabled or soft-deleted user.
+            adminUser = existingUser;
         }
 
         // ========================================================
@@ -597,68 +581,37 @@ public static class SecuritySeed
                 "PCS SUPER_ADMIN role was not found after security seed.");
         }
 
-        var userRoleSet =
-            context.Set<UserRole>();
-
-        var existingUserRole =
-            await userRoleSet
-                .SingleOrDefaultAsync(
-                    x =>
-                        x.UserId == adminUser.Id &&
-                        x.RoleId == superAdminRole.Id);
-
-        if (existingUserRole == null)
+        if (!createdInitialAdministrator)
         {
-            await userRoleSet.AddAsync(
-                new UserRole
-                {
-                    UserId =
-                        adminUser.Id,
-
-                    RoleId =
-                        superAdminRole.Id,
-
-                    // SUPER_ADMIN is a Platform role.
-                    CompanyId =
-                        null,
-
-                    AssignedAt =
-                        DateTime.UtcNow,
-
-                    AssignedByUserId =
-                        null,
-
-                    IsActive =
-                        true
-                });
-
-            await context.SaveChangesAsync();
-
+            // Do not recreate a missing or revoked SUPER_ADMIN assignment
+            // for an existing account. Recovery must be an explicit action.
             return;
         }
 
-        bool userRoleChanged =
-            false;
-
-        if (existingUserRole.CompanyId != null)
+        if (!superAdminRole.IsActive ||
+            !string.Equals(
+                superAdminRole.Scope,
+                "Platform",
+                StringComparison.OrdinalIgnoreCase))
         {
-            existingUserRole.CompanyId =
-                null;
-
-            userRoleChanged = true;
+            throw new InvalidOperationException(
+                "PCS SUPER_ADMIN role must be active and have Platform scope when bootstrapping the initial administrator.");
         }
 
-        if (!existingUserRole.IsActive)
-        {
-            existingUserRole.IsActive =
-                true;
+        var userRoleSet = context.Set<UserRole>();
+        await userRoleSet.AddAsync(
+            new UserRole
+            {
+                UserId = adminUser.Id,
+                RoleId = superAdminRole.Id,
+                CompanyId = null,
+                AssignedAt = DateTime.UtcNow,
+                AssignedByUserId = null,
+                IsActive = true
+            });
 
-            userRoleChanged = true;
-        }
-
-        if (userRoleChanged)
-        {
-            await context.SaveChangesAsync();
-        }
+        // Persist the new administrator and its initial role assignment
+        // together so a partial bootstrap cannot strand the account.
+        await context.SaveChangesAsync();
     }
 }

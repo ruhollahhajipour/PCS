@@ -2,6 +2,7 @@ using System.Security.Claims;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 using PCS.Application.Identity.DTOs;
 using PCS.Application.Identity.Interfaces;
@@ -20,6 +21,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login(
         [FromBody] LoginRequest request,

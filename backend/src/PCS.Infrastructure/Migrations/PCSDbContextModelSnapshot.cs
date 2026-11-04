@@ -211,7 +211,8 @@ namespace PCS.Infrastructure.Migrations
                         .HasFilter("\"IsPrimaryAdmin\" = 1 AND \"IsActive\" = 1");
 
                     b.HasIndex("CompanyId", "UserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = 0");
 
                     b.ToTable("CompanyUsers", (string)null);
                 });
