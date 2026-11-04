@@ -47,7 +47,7 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Information | Reports hub, notifications | PI | `Notification` entity; no API verified. |
 | Database | SQLite provider + migrations | IV | CI apply on fresh DB. |
 | Database | SQL Server provider + migrations | IV | CI apply on SQL Server 2022 container. |
-| Database | Single authoritative DB path | PI | F-12. |
+| Database | Single authoritative DB path | IV | Installed layout verified in CI (`<root>\Database\PCS.db`; relative paths resolved; fail-fast). Dev tools still use a relative dev path. |
 | Installer | Build `PCSSetup.exe` from clean checkout (Windows) | IV | CI run 41634830553. |
 | Installer | Installed-layout run, login, SPA | IV (headless reproduction) | The wizard UI itself is not exercised. |
 | Installer | New install via wizard, shortcuts, startup | INV | |

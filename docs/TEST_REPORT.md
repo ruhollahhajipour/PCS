@@ -2,6 +2,15 @@
 
 Updated 2026-11-04. Only executed results are listed. "Local" means the audit sandbox, which has no NuGet access, so no backend test has been run locally.
 
+## Stage A, head `1c6d6e9`
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests (77 passed, 0 failed) | 41914278945, 41914268273 | success |
+| Frontend Validation | 41914278857 | success |
+| Installer Build and Smoke Test, including `Database path safety (installed layout)` | 41914268627 | success |
+| SQL Server Migration Scaffold | 41914268263 | success |
+
 ## CI results on head `aa13a22` (and `cd0f606` for migrations)
 
 | Workflow | Run | Result |

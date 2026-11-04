@@ -13,12 +13,10 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 | F-09 | High | Warehouse, Procurement, Vendors, Materials, Documents, Reports have no backend; Warehouse data lives in browser `localStorage` and is lost with the browser profile. | Do not use for real data. |
 | F-10 | Medium | A frontend CPM engine exists; Gantt data source not traced. | |
 | F-11 | Medium | Two workspace storage keys. | Clear site data if the selection looks stale. |
-| F-12 | Medium | Relative default DB path `pcs.db` outside the installed layout. | Always start via the installed layout or set `ConnectionStrings__DefaultConnection` to an absolute path. |
 | F-13 | Medium | Installed API listens on `localhost:5000` only; no supported multi-user LAN mode. | Single workstation. |
-| F-14 | Medium | SQL Server install requires a trusted TLS certificate. | Install a trusted certificate. |
 | F-15 | Medium | CPM calendar mapping unverified. | |
 | F-16 | Medium | Overlapping open PRs, baseline undecided. | |
-| F-17 | Low | Stale committed binaries and placeholder files. | |
+| F-17 | Low | Stale committed binaries and placeholder files (list in MASTER_AUDIT F-17; `PublishService.cs` is in use and must stay). Deletion awaits owner approval. | |
 | F-18 | Low | Anonymous `/api/health` exposes version. | |
 | F-19 | Low | Thin frontend tests. | |
 
@@ -30,6 +28,9 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 | F-02 | Reproducible self-contained installer build and CI smoke test. | `c3a660f` |
 | F-03 | Windows/macOS native bindings added to the frontend lockfile. | `aa13a22` |
 | F-04 | SQL Server credential escaping; logging category. | `cd0f606` |
+| F-12 | Relative SQLite paths resolved against `<root>\Database`; no default connection string in shipped settings; CI checks. Design-time factory and DbCheck tools still use a relative dev path. | `b43d651` |
+| F-14 | Explicit "Trust server certificate" option, default off. | `084aa73` |
+| F-20 | Release builder builds the frontend for same-origin `/api`. | `1c6d6e9` |
 
 ## Build-environment limits
 
