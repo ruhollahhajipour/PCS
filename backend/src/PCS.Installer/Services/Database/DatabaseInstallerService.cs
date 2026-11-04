@@ -48,7 +48,21 @@ public class DatabaseInstallerService
                 options.Options);
 
 
-        db.Database.Migrate();
+        try
+        {
+            db.Database.Migrate();
+        }
+        catch (SqlException ex) when (
+            ex.Message.Contains(
+                "certificate",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "The SQL Server TLS certificate is not trusted by this computer. " +
+                "Install a trusted certificate on the server, or tick " +
+                "\"Trust server certificate\" on the database page (less secure).",
+                ex);
+        }
 
 
         SeedData(db);
@@ -118,7 +132,7 @@ public class DatabaseInstallerService
                     SqlConnectionEncryptOption.Mandatory,
 
                 TrustServerCertificate =
-                    false
+                    context.TrustServerCertificate
             };
 
 
