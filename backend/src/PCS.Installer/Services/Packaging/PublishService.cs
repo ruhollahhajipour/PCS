@@ -28,15 +28,25 @@ public class PublishService
     public async Task PublishFrontendAsync(
         string frontendRoot)
     {
+        // The on-premise API serves the SPA from the same origin, so the
+        // frontend must be built against the relative /api path.
+        var frontendEnvironment =
+            new Dictionary<string, string>
+            {
+                ["VITE_API_URL"] = "/api"
+            };
+
         await ExecuteAsync(
             "npm",
-            "install",
-            frontendRoot);
+            "ci --legacy-peer-deps --no-audit --no-fund",
+            frontendRoot,
+            frontendEnvironment);
 
         await ExecuteAsync(
             "npm",
             "run build",
-            frontendRoot);
+            frontendRoot,
+            frontendEnvironment);
 
         string source =
             Path.Combine(
@@ -68,7 +78,8 @@ public class PublishService
     private static async Task ExecuteAsync(
         string fileName,
         string arguments,
-        string? workingDirectory = null)
+        string? workingDirectory = null,
+        IDictionary<string, string>? environment = null)
     {
         var process =
             new Process();
@@ -86,6 +97,15 @@ public class PublishService
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+        if (environment != null)
+        {
+            foreach (var pair in environment)
+            {
+                process.StartInfo.Environment[pair.Key] =
+                    pair.Value;
+            }
+        }
 
         process.Start();
 
