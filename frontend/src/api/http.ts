@@ -1,5 +1,6 @@
 import axios from "axios";
 import { resolveApiBaseUrl } from "./apiBaseUrl";
+import { installRefreshInterceptor } from "./refreshInterceptor";
 
 const apiBaseUrl = resolveApiBaseUrl(
   import.meta.env.VITE_API_URL,
@@ -53,6 +54,10 @@ http.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Registered before the logging interceptor so a transparently refreshed 401
+// is not logged as an API error.
+installRefreshInterceptor(http);
 
 http.interceptors.response.use(
   (response) => response,

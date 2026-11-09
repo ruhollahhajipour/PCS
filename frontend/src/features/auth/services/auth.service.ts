@@ -15,6 +15,8 @@ export interface ChangePasswordRequest {
 
 export interface ChangePasswordResponse {
   message: string;
+
+  refreshToken?: string;
 }
 
 
@@ -42,11 +44,15 @@ class AuthService {
   // =========================================================
 
   async logout(): Promise<void> {
-    await http.post(
-      "/auth/logout"
-    );
-
-    this.clearSession();
+    try {
+      await http.post(
+        "/auth/logout",
+        { refreshToken: this.getRefreshToken() }
+      );
+    }
+    finally {
+      this.clearSession();
+    }
   }
 
 
@@ -57,7 +63,11 @@ class AuthService {
   async refreshToken(): Promise<LoginResponse> {
     const { data } =
       await http.post<LoginResponse>(
-        "/auth/refresh"
+        "/auth/refresh",
+        {
+          refreshToken: this.getRefreshToken(),
+          companyId: this.getActiveCompanyId(),
+        }
       );
 
     return data;
@@ -100,6 +110,15 @@ class AuthService {
         "/auth/change-password",
         request
       );
+
+    // Changing the password ends all other sessions; this device receives a
+    // fresh refresh token so it stays signed in.
+    if (data.refreshToken) {
+      localStorage.setItem(
+        "pcs-refresh-token",
+        data.refreshToken
+      );
+    }
 
     return data;
   }
@@ -150,15 +169,12 @@ class AuthService {
     }
 
 
+    // Only login, refresh and change-password return a refresh token. /me and
+    // select-company do not, and must not discard the one already stored.
     if (response.refreshToken) {
       localStorage.setItem(
         "pcs-refresh-token",
         response.refreshToken
-      );
-    }
-    else {
-      localStorage.removeItem(
-        "pcs-refresh-token"
       );
     }
   }
