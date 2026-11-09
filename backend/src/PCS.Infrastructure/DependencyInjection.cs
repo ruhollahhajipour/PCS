@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 
 using PCS.Application.Common.Interfaces;
+using PCS.Application.Identity;
 using PCS.Application.Identity.Interfaces;
 using PCS.Application.Projects.Interfaces;
 using PCS.Application.Planning.Interfaces;
@@ -92,6 +93,12 @@ public static class DependencyInjection
         services.AddScoped<
          IJwtService,
          JwtService>();
+
+
+        services.AddSingleton(
+            configuration
+                .GetSection(LockoutOptions.SectionName)
+                .Get<LockoutOptions>() ?? new LockoutOptions());
 
 
         services.AddScoped<

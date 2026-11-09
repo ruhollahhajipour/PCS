@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using PCS.Application.Common.Auditing;
 using PCS.Application.Common.Interfaces;
+using PCS.Application.Identity;
 using PCS.Application.Identity.DTOs;
 using PCS.Application.Identity.Interfaces;
 using PCS.Infrastructure.Persistence;
@@ -14,13 +15,19 @@ public sealed class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
     private readonly IAuditService? _auditService;
+    private readonly LockoutOptions _lockout;
+    private readonly TimeProvider _time;
 
     public AuthService(
         PCSDbContext dbContext,
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
-        IAuditService? auditService = null)
+        IAuditService? auditService = null,
+        LockoutOptions? lockoutOptions = null,
+        TimeProvider? timeProvider = null)
     {
+        _lockout = lockoutOptions ?? new LockoutOptions();
+        _time = timeProvider ?? TimeProvider.System;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
@@ -74,9 +81,32 @@ public sealed class AuthService : IAuthService
                 x => x.UserName == username && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
+        DateTime now = _time.GetUtcNow().UtcDateTime;
+
+        if (user is not null &&
+            user.LockoutEnd.HasValue &&
+            user.LockoutEnd.Value > now)
+        {
+            // The password is not even checked while the account is locked, so
+            // a correct guess during the lockout window gains nothing. The
+            // caller sees the same result as for any other failed login.
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user.Id,
+                username,
+                null,
+                "locked_out",
+                cancellationToken);
+
+            return null;
+        }
+
         if (user is null ||
             !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
+            bool locked = user is not null &&
+                await RegisterFailedAttemptAsync(user, now, cancellationToken);
+
             await RecordSecurityEventAsync(
                 AuditActions.LoginFailed,
                 user?.Id,
@@ -85,8 +115,22 @@ public sealed class AuthService : IAuthService
                 "invalid_credentials",
                 cancellationToken);
 
+            if (locked)
+            {
+                await RecordSecurityEventAsync(
+                    AuditActions.AccountLocked,
+                    user!.Id,
+                    username,
+                    null,
+                    $"locked_for_{_lockout.LockoutMinutes}_minutes",
+                    cancellationToken);
+            }
+
             return null;
         }
+
+        user.FailedLoginCount = 0;
+        user.LockoutEnd = null;
 
         if (_passwordHasher.NeedsRehash(user.PasswordHash))
         {
@@ -137,6 +181,32 @@ public sealed class AuthService : IAuthService
             cancellationToken);
 
         return response;
+    }
+
+    // Returns true when this failure locked the account.
+    private async Task<bool> RegisterFailedAttemptAsync(
+        Domain.Entities.Security.User user,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (!_lockout.Enabled)
+        {
+            return false;
+        }
+
+        user.FailedLoginCount++;
+
+        bool locked = user.FailedLoginCount >= _lockout.MaxFailedAttempts;
+
+        if (locked)
+        {
+            user.LockoutEnd = now.AddMinutes(_lockout.LockoutMinutes);
+            user.FailedLoginCount = 0;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return locked;
     }
 
     public async Task<LoginResponse?> GetCurrentUserAsync(

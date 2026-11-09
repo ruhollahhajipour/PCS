@@ -40,7 +40,8 @@ internal static class AuditTrailBuilder
         new(StringComparer.OrdinalIgnoreCase)
         {
             "CreatedAt", "CreatedBy", "UpdatedAt", "UpdatedBy",
-            "DeletedAt", "DeletedBy", "LastLoginAt", "RowVersion", "ConcurrencyStamp"
+            "DeletedAt", "DeletedBy", "LastLoginAt", "RowVersion", "ConcurrencyStamp",
+            "FailedLoginCount", "LockoutEnd"
         };
 
     private static readonly string[] SensitiveFragments =

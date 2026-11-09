@@ -44,6 +44,16 @@ public class User : AuditableEntity
     public DateTime? LastLoginAt { get; set; }
 
     /// <summary>
+    /// تعداد ورودهای ناموفق متوالی از آخرین ورود موفق یا آخرین قفل شدن.
+    /// </summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>
+    /// تا این زمان (UTC) ورود برای حساب قفل است.
+    /// </summary>
+    public DateTime? LockoutEnd { get; set; }
+
+    /// <summary>
     /// نقش‌های کاربر.
     /// </summary>
     public ICollection<UserRole> UserRoles { get; set; }
