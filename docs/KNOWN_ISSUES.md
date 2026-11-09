@@ -7,7 +7,7 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 | ID | Sev | Summary | Workaround |
 |---|---|---|---|
 | F-05 | High | Hard-coded "Ruhollah" in headers and a mock user on the Users page. | None. |
-| F-06 | High | Audit log is never written. | None. |
+| F-06 | High | ~~Audit log is never written.~~ **Fixed (B1, `68b333f`)**: automatic trail for allow-listed entities, plus Login/LoginFailed/SelectCompany/PasswordChanged/PasswordChangeFailed events and correlation id. CI: Backend 83/83 passed. Remaining: audit of license, export and import events (stage D/E); no UI to browse the trail. | None. |
 | F-07 | High | No refresh tokens, password reset, email verification, account lockout, session management. | Admin resets passwords out of band. |
 | F-08 | High | License enforcement absent on the backend. | None. |
 | F-09 | High | Warehouse, Procurement, Vendors, Materials, Documents, Reports have no backend; Warehouse data lives in browser `localStorage` and is lost with the browser profile. | Do not use for real data. |

@@ -24,6 +24,15 @@ Installer smoke steps passed: build release, upload artifact, EF migration on SQ
 
 A first Installer run (41634081821, `cd0f606`) **failed**: missing Windows rolldown binding in the lockfile. Fixed in `aa13a22`.
 
+## Stage B1 (commit `68b333f`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests | 42595322522, 42595313441 | success, 83 passed (77 + 6 new `AuditTrailTests`) |
+| Frontend Validation | 42595322581 | success |
+| SQL Server Migration Scaffold | 42595313213 | success |
+| Installer Build and Smoke Test | 42595313357 | success |
+
 ## Local runs
 
 | Command | Result |

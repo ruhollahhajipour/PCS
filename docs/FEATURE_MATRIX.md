@@ -14,7 +14,7 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Auth | Session management | NI | |
 | Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); tenant/membership tests in CI. |
 | Authorization | Platform admin scope, inactive membership handling | IV | Tests in CI. |
-| Audit | Audit log table and service | PI | Service registered, **0 call sites**. |
+| Audit | Audit log table and service | IV | Automatic trail + security events (B1, CI 83 tests). No UI; license/export events pending. |
 | Licensing | License entities, status/access query | PI | Read-only; not enforced on any endpoint. |
 | Licensing | Module entitlements, issue/activate, upgrade from Free, admin cap (3) | NI | |
 | Master data | Companies, Plants | INV | Controllers + frontend API use; no UI tests. |

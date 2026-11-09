@@ -15,6 +15,9 @@ Historic entries are in `docs/03-Roadmap/CHANGELOG.md` (empty at audit time). Th
 - Installer: explicit "Trust server certificate" option for SQL Server, default off, with an actionable certificate error (`084aa73`).
 - Installer release builder builds the frontend for same-origin `/api` (`1c6d6e9`).
 
+### Added (stage B1)
+- Automatic audit trail in `PCSDbContext.SaveChanges` (allow-listed entities, changed properties only, secrets never recorded, batches over 25 rows summarised), security events from `AuthService`, `X-Correlation-ID` middleware, `HttpAuditContext` (`68b333f`).
+
 ### Added
 - CI workflow `Installer Build and Smoke Test` (Windows): builds `PCSSetup.exe`, uploads it, and smoke-tests an installed layout with SQLite (`c3a660f`).
 - Audit and control documentation under `docs/`.

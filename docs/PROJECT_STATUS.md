@@ -23,7 +23,7 @@ Updated 2026-11-04 · Branch `ai/pcs-independent-remediation` · Head `1c6d6e9` 
 | T-14 | Release builder same-origin `/api` | P0 | T-01 | `PublishService.cs` | Implemented | Compiled in CI | Same bundle as `build-release.ps1` |
 | T-15 | Delete stale artifacts (F-17) | P2 | owner | see MASTER_AUDIT F-17 | Blocked (needs approval) | — | List approved, then deleted with CI green |
 | T-07 | Remove hard-coded identity (F-05) | P1 | — | `Header.tsx` ×2, `Users.tsx` | Not Started | — | Header from profile; test |
-| T-08 | Audit log wiring (F-06) | P0 | — | services, controllers | Not Started | — | Rows for login, permission, project, license changes |
+| T-08 | Audit log wiring (F-06) | P0 | — | services, controllers | Implemented | `68b333f` | Rows for login, permission, project, license changes |
 | T-09 | Auth completion (F-07) | P0 | T-08 | Identity services, entities, migrations | Not Started | — | See roadmap phase 2 |
 | T-10 | License enforcement (F-08) | P1 | T-08 | API filter, services | Not Started | — | 403 on unlicensed module (test) |
 | T-11 | Trace Gantt data source (F-10) | P1 | — | PMS frontend/backend | Not Started | — | Backend-only CPM |
