@@ -44,6 +44,18 @@ A first Installer run (41634081821, `cd0f606`) **failed**: missing Windows rolld
 
 First attempt on `b34a7c6` failed to compile (missing `using` in the new test); fixed in `813b23b`.
 
+## Stage B3 (commit `461fe1b` + bot migration `45128d0`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests | 42684284700, 42685132307 | success, 95 passed (87 + 8 `RefreshTokenServiceTests`) |
+| Frontend Validation (CI) | 42684284518, 42684299782 | success |
+| SQL Server Migration Scaffold (scaffold + SQLite + SQL Server 2022 apply) | 42684284502, 42685137002 | success |
+| Installer Build and Smoke Test | 42684284707 | **failure**: model had a pending change because CI added the migration after this build (EF `PendingModelChangesWarning`) |
+| Installer Build and Smoke Test (re-run with the migration) | 42685127751 | success |
+
+Local: vitest 43/43 (7 new interceptor tests), eslint, tsc, production build pass.
+
 ## Local runs
 
 | Command | Result |

@@ -6,12 +6,12 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Area | Feature | Status | Notes |
 |---|---|---|---|
 | Auth | Login (JWT), password hashing, legacy hash upgrade | IV | Security tests in CI. Login uses username, not email. |
-| Auth | Logout, session restoration | INV | Frontend token in `localStorage`. |
-| Auth | Refresh token rotation | NI | |
+| Auth | Logout, session restoration | IV (API) / LOCAL (UI) | `POST auth/logout` revokes the session; UI restores via /me with silent refresh (vitest). Tokens still in `localStorage`. |
+| Auth | Refresh token rotation | IV | Hashed storage, rotation, reuse detection with 10 s grace, audited; 8 tests in CI; frontend single-flight refresh (7 vitest). |
 | Auth | Password reset by emailed one-time code | NI | `PasswordResetToken` entity exists, unused; no email sender. |
 | Auth | Email verification | NI | |
 | Auth | Account lockout | IV | Configurable (`Security:Lockout`), audited; 4 tests in CI, migration applied on SQLite and SQL Server 2022. Plus per-IP rate limit. |
-| Auth | Session management | NI | |
+| Auth | Session management | IV | `GET auth/sessions`, `DELETE auth/sessions/{id}`; password change ends all other sessions. No UI page yet. |
 | Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); tenant/membership tests in CI. |
 | Authorization | Platform admin scope, inactive membership handling | IV | Tests in CI. |
 | Audit | Audit log table and service | IV | Automatic trail + security events (B1, CI 83 tests). No UI; license/export events pending. |

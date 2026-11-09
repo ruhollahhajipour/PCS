@@ -24,7 +24,7 @@ Updated 2026-11-04 · Branch `ai/pcs-independent-remediation` · Head `1c6d6e9` 
 | T-15 | Delete stale artifacts (F-17) | P2 | owner | see MASTER_AUDIT F-17 | Blocked (needs approval) | — | List approved, then deleted with CI green |
 | T-07 | Remove hard-coded identity (F-05) | P1 | — | `Header.tsx` ×2, `Users.tsx` | Not Started | — | Header from profile; test |
 | T-08 | Audit log wiring (F-06) | P0 | — | services, controllers | Implemented | `68b333f` | Rows for login, permission, project, license changes |
-| T-09 | Auth completion (F-07) | P0 | T-08 | Identity services, entities, migrations | In Progress | B2 `b34a7c6` done | Lockout done; refresh tokens (B3), reset/verification (B4) pending |
+| T-09 | Auth completion (F-07) | P0 | T-08 | Identity services, entities, migrations | In Progress | B2, B3 done (`461fe1b`) | Lockout and refresh tokens done; reset/verification (B4) pending |
 | T-10 | License enforcement (F-08) | P1 | T-08 | API filter, services | Not Started | — | 403 on unlicensed module (test) |
 | T-11 | Trace Gantt data source (F-10) | P1 | — | PMS frontend/backend | Not Started | — | Backend-only CPM |
 | T-12 | Reconcile open PRs (F-16) | P0 | owner | GitHub | Blocked (owner decision) | — | One baseline |

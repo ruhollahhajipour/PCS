@@ -15,6 +15,10 @@ Historic entries are in `docs/03-Roadmap/CHANGELOG.md` (empty at audit time). Th
 - Installer: explicit "Trust server certificate" option for SQL Server, default off, with an actionable certificate error (`084aa73`).
 - Installer release builder builds the frontend for same-origin `/api` (`1c6d6e9`).
 
+### Added (stage B3)
+- Refresh tokens: hashed storage, rotation, reuse detection, `auth/refresh`, `auth/logout`, `auth/sessions`; password change ends all sessions; table `RefreshTokens` with migrations for both providers (`461fe1b`, `45128d0`).
+- Frontend: silent single-flight refresh on 401; `/auth/me` and select-company no longer discard the stored refresh token (`461fe1b`).
+
 ### Added (stage B2)
 - Configurable account lockout (`Security:Lockout:MaxFailedAttempts`/`LockoutMinutes`), `AccountLocked` audit event, migration `AddAccountLockout` for SQLite and SQL Server (`b34a7c6`, `4640eac`).
 - CI: the migration scaffold workflow creates named pending migrations for both providers (`6314e24`).

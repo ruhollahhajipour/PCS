@@ -8,7 +8,7 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 |---|---|---|---|
 | F-05 | High | Hard-coded "Ruhollah" in headers and a mock user on the Users page. | None. |
 | F-06 | High | ~~Audit log is never written.~~ **Fixed (B1, `68b333f`)**: automatic trail for allow-listed entities, plus Login/LoginFailed/SelectCompany/PasswordChanged/PasswordChangeFailed events and correlation id. CI: Backend 83/83 passed. Remaining: audit of license, export and import events (stage D/E); no UI to browse the trail. | None. |
-| F-07 | High | No refresh tokens, password reset, email verification, session management. **Account lockout fixed (B2, `b34a7c6`, CI 87/87)**; a locked user sees the same generic login failure (by design, no enumeration). | Admin resets passwords out of band. |
+| F-07 | High | No password reset, email verification (B4 pending). **Refresh tokens and session management fixed (B3, `461fe1b`, CI 95/95; no sessions UI yet).** **Account lockout fixed (B2, `b34a7c6`, CI 87/87)**; a locked user sees the same generic login failure (by design, no enumeration). | Admin resets passwords out of band. |
 | F-08 | High | License enforcement absent on the backend. | None. |
 | F-09 | High | Warehouse, Procurement, Vendors, Materials, Documents, Reports have no backend; Warehouse data lives in browser `localStorage` and is lost with the browser profile. | Do not use for real data. |
 | F-10 | Medium | A frontend CPM engine exists; Gantt data source not traced. | |
