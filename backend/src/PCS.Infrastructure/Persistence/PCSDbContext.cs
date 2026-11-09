@@ -99,6 +99,9 @@ public class PCSDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens
         => Set<PasswordResetToken>();
 
+    public DbSet<RefreshToken> RefreshTokens
+        => Set<RefreshToken>();
+
     public DbSet<Role> Roles
         => Set<Role>();
 

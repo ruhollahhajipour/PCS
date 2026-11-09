@@ -33,6 +33,8 @@ public static class AuditActions
     public const string LoginFailed = "LoginFailed";
     public const string AccountLocked = "AccountLocked";
     public const string Logout = "Logout";
+    public const string RefreshTokenReuse = "RefreshTokenReuse";
+    public const string SessionRevoked = "SessionRevoked";
     public const string SelectCompany = "SelectCompany";
     public const string PasswordChanged = "PasswordChanged";
     public const string PasswordChangeFailed = "PasswordChangeFailed";

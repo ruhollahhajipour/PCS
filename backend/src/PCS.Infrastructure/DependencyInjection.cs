@@ -101,6 +101,17 @@ public static class DependencyInjection
                 .Get<LockoutOptions>() ?? new LockoutOptions());
 
 
+        services.AddSingleton(
+            configuration
+                .GetSection(RefreshTokenOptions.SectionName)
+                .Get<RefreshTokenOptions>() ?? new RefreshTokenOptions());
+
+
+        services.AddScoped<
+         IRefreshTokenService,
+         RefreshTokenService>();
+
+
         services.AddScoped<
          IAuthService,
          AuthService>();

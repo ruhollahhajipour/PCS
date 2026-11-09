@@ -14,10 +14,14 @@ namespace PCS.API.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IRefreshTokenService _refreshTokens;
 
-    public AuthController(IAuthService authService)
+    public AuthController(
+        IAuthService authService,
+        IRefreshTokenService refreshTokens)
     {
         _authService = authService;
+        _refreshTokens = refreshTokens;
     }
 
     [AllowAnonymous]
@@ -39,7 +43,103 @@ public sealed class AuthController : ControllerBase
             });
         }
 
+        var refresh = await _refreshTokens.IssueAsync(
+            response.UserId,
+            response.ActiveCompanyId,
+            cancellationToken);
+
+        response.RefreshToken = refresh.Token;
+
         return Ok(response);
+    }
+
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    [HttpPost("refresh")]
+    public async Task<ActionResult<LoginResponse>> Refresh(
+        [FromBody] RefreshRequest request,
+        CancellationToken cancellationToken)
+    {
+        var rotation = await _refreshTokens.RotateAsync(
+            request.RefreshToken,
+            request.CompanyId,
+            cancellationToken);
+
+        if (rotation is null)
+        {
+            return Unauthorized(new { message = "The session is no longer valid." });
+        }
+
+        var response = await _authService.GetCurrentUserAsync(
+            rotation.UserId,
+            rotation.CompanyId,
+            cancellationToken);
+
+        if (response is null)
+        {
+            // The user was deactivated or lost access to the company.
+            await _refreshTokens.RevokeFamilyAsync(
+                rotation.FamilyId,
+                "access_lost",
+                cancellationToken);
+
+            return Unauthorized(new { message = "The session is no longer valid." });
+        }
+
+        response.RefreshToken = rotation.Token;
+
+        return Ok(response);
+    }
+
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        [FromBody] LogoutRequest? request,
+        CancellationToken cancellationToken)
+    {
+        // The refresh token is the credential, so logout works with an expired
+        // access token and never reveals whether the token existed.
+        if (!string.IsNullOrWhiteSpace(request?.RefreshToken))
+        {
+            await _refreshTokens.RevokeByTokenAsync(
+                request.RefreshToken,
+                cancellationToken);
+        }
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpGet("sessions")]
+    public async Task<ActionResult<IReadOnlyList<SessionDto>>> Sessions(
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _refreshTokens.ListSessionsAsync(userId, cancellationToken));
+    }
+
+    [Authorize]
+    [HttpDelete("sessions/{sessionId:guid}")]
+    public async Task<IActionResult> RevokeSession(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        bool revoked = await _refreshTokens.RevokeSessionAsync(
+            userId,
+            sessionId,
+            cancellationToken);
+
+        return revoked ? NoContent() : NotFound();
     }
 
     [Authorize]
@@ -110,9 +210,22 @@ public sealed class AuthController : ControllerBase
             });
         }
 
+        // A new password ends every session; this device gets a fresh one so
+        // the user is not signed out of the window they just used.
+        await _refreshTokens.RevokeAllForUserAsync(
+            userId,
+            "password_changed",
+            cancellationToken);
+
+        var refresh = await _refreshTokens.IssueAsync(
+            userId,
+            TryGetCompanyId(),
+            cancellationToken);
+
         return Ok(new
         {
-            message = "Password changed successfully."
+            message = "Password changed successfully.",
+            refreshToken = refresh.Token
         });
     }
 

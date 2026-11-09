@@ -105,7 +105,7 @@ jobs:
           # at a time, for both providers. A name is only scaffolded when it is
           # absent, so re-runs are no-ops. Order matters: add new names at the end
           # and push one schema change per commit.
-          $pending = @("AddAccountLockout")
+          $pending = @("AddAccountLockout", "AddRefreshTokens")
           foreach ($name in $pending) {
             $env:Database__Provider = "Sqlite"
             $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\pcs-sqlite-design.db"
