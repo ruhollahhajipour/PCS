@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PCS.Application.Common.Interfaces;
 using PCS.Application.Identity;
 using PCS.Application.Identity.DTOs;
+using PCS.Application.Identity.Interfaces;
 using PCS.Domain.Entities;
 using PCS.Domain.Entities.Security;
 using PCS.Infrastructure.Persistence;
