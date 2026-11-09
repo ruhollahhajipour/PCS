@@ -33,6 +33,17 @@ A first Installer run (41634081821, `cd0f606`) **failed**: missing Windows rolld
 | SQL Server Migration Scaffold | 42595313213 | success |
 | Installer Build and Smoke Test | 42595313357 | success |
 
+## Stage B2 (commit `813b23b`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests | 42682459623, 42682472413 | success, 87 passed (83 + 4 `AccountLockoutTests`) |
+| Frontend Validation | 42682472401 | success |
+| SQL Server Migration Scaffold (dispatch; SQLite + SQL Server 2022 apply) | 42682773936 | success |
+| Installer Build and Smoke Test (dispatch) | 42682779301 | success |
+
+First attempt on `b34a7c6` failed to compile (missing `using` in the new test); fixed in `813b23b`.
+
 ## Local runs
 
 | Command | Result |

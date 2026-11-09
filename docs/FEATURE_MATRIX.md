@@ -10,7 +10,7 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Auth | Refresh token rotation | NI | |
 | Auth | Password reset by emailed one-time code | NI | `PasswordResetToken` entity exists, unused; no email sender. |
 | Auth | Email verification | NI | |
-| Auth | Account lockout | NI | Only per-IP login rate limiting (INV). |
+| Auth | Account lockout | IV | Configurable (`Security:Lockout`), audited; 4 tests in CI, migration applied on SQLite and SQL Server 2022. Plus per-IP rate limit. |
 | Auth | Session management | NI | |
 | Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); tenant/membership tests in CI. |
 | Authorization | Platform admin scope, inactive membership handling | IV | Tests in CI. |
