@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
+using PCS.Application.Common.Auditing;
+using PCS.Application.Common.Interfaces;
 using PCS.Application.Identity.DTOs;
 using PCS.Application.Identity.Interfaces;
 using PCS.Infrastructure.Persistence;
@@ -11,15 +13,45 @@ public sealed class AuthService : IAuthService
     private readonly PCSDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly IAuditService? _auditService;
 
     public AuthService(
         PCSDbContext dbContext,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IAuditService? auditService = null)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _auditService = auditService;
+    }
+
+    // Security events are recorded without passwords, tokens or other secrets.
+    private Task RecordSecurityEventAsync(
+        string action,
+        Guid? userId,
+        string? username,
+        Guid? companyId,
+        string? details,
+        CancellationToken cancellationToken)
+    {
+        if (_auditService is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _auditService.RecordAsync(
+            new AuditEvent(
+                AuditModules.Security,
+                "User",
+                userId?.ToString() ?? "unknown",
+                action,
+                userId,
+                username,
+                companyId,
+                details),
+            cancellationToken);
     }
 
     public async Task<LoginResponse?> LoginAsync(
@@ -45,6 +77,14 @@ public sealed class AuthService : IAuthService
         if (user is null ||
             !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user?.Id,
+                username,
+                null,
+                "invalid_credentials",
+                cancellationToken);
+
             return null;
         }
 
@@ -69,6 +109,14 @@ public sealed class AuthService : IAuthService
 
         if (!companyId.HasValue && !isPlatformAdmin)
         {
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user.Id,
+                user.UserName,
+                null,
+                "no_active_membership",
+                cancellationToken);
+
             return null;
         }
 
@@ -79,6 +127,14 @@ public sealed class AuthService : IAuthService
 
         user.LastLoginAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await RecordSecurityEventAsync(
+            AuditActions.Login,
+            user.Id,
+            user.UserName,
+            companyId,
+            null,
+            cancellationToken);
 
         return response;
     }
@@ -125,10 +181,20 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        return await BuildLoginResponseAsync(
+        var selected = await BuildLoginResponseAsync(
             user,
             companyId,
             cancellationToken);
+
+        await RecordSecurityEventAsync(
+            AuditActions.SelectCompany,
+            user.Id,
+            user.UserName,
+            companyId,
+            null,
+            cancellationToken);
+
+        return selected;
     }
 
     private Task<Domain.Entities.Security.User?> LoadUserAsync(
@@ -288,6 +354,14 @@ public sealed class AuthService : IAuthService
                 request.CurrentPassword,
                 user.PasswordHash))
         {
+            await RecordSecurityEventAsync(
+                AuditActions.PasswordChangeFailed,
+                userId,
+                user?.UserName,
+                null,
+                "current_password_rejected",
+                cancellationToken);
+
             return false;
         }
 
@@ -296,6 +370,15 @@ public sealed class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await RecordSecurityEventAsync(
+            AuditActions.PasswordChanged,
+            user.Id,
+            user.UserName,
+            null,
+            null,
+            cancellationToken);
+
         return true;
     }
 }

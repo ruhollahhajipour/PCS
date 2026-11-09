@@ -13,13 +13,47 @@ namespace PCS.Infrastructure.Persistence;
 public class PCSDbContext : DbContext
 {
     private readonly ICurrentTenant? _currentTenant;
+    private readonly IAuditContext? _auditContext;
 
     public PCSDbContext(
         DbContextOptions<PCSDbContext> options,
-        ICurrentTenant? currentTenant = null)
+        ICurrentTenant? currentTenant = null,
+        IAuditContext? auditContext = null)
         : base(options)
     {
         _currentTenant = currentTenant;
+        _auditContext = auditContext;
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AppendAuditTrail();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        AppendAuditTrail();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    // Audit rows are added to the same unit of work, so a data change and its
+    // audit record are committed or rolled back together.
+    private void AppendAuditTrail()
+    {
+        ChangeTracker.DetectChanges();
+
+        List<AuditLog> rows = AuditTrailBuilder.Build(
+            ChangeTracker.Entries().ToList(),
+            _currentTenant,
+            _auditContext);
+
+        if (rows.Count > 0)
+        {
+            AuditLogs.AddRange(rows);
+        }
     }
 
     private Guid? CurrentCompanyId => _currentTenant?.CompanyId;

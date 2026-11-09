@@ -627,6 +627,7 @@ Log.Information(
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenant, CurrentTenant>();
+builder.Services.AddScoped<IAuditContext, HttpAuditContext>();
 
 builder.Services.AddApplication();
 
@@ -796,7 +797,8 @@ builder.Services.AddCors(
 
                 policy
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .WithExposedHeaders(CorrelationIdMiddleware.HeaderName);
             });
     });
 
@@ -985,6 +987,8 @@ using (
 // ============================================================
 // HTTP Pipeline
 // ============================================================
+
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
