@@ -21,6 +21,11 @@ import {
 } from "./AuthContext";
 
 
+import {
+  SESSION_EXPIRED_EVENT,
+} from "../api/refreshInterceptor";
+
+
 // =============================================================
 // Create Auth User
 // =============================================================
@@ -111,7 +116,7 @@ export function AuthProvider({
 
 
     setRefreshToken(
-      response.refreshToken ?? null
+      AuthService.getRefreshToken()
     );
 
 
@@ -207,6 +212,35 @@ export function AuthProvider({
 
     return () => {
       mounted = false;
+    };
+
+  }, []);
+
+
+  // ===========================================================
+  // The refresh token was rejected: the session is over
+  // ===========================================================
+
+  useEffect(() => {
+
+    function handleSessionExpired(): void {
+      setToken(null);
+
+      setRefreshToken(null);
+
+      setUser(null);
+    }
+
+    window.addEventListener(
+      SESSION_EXPIRED_EVENT,
+      handleSessionExpired
+    );
+
+    return () => {
+      window.removeEventListener(
+        SESSION_EXPIRED_EVENT,
+        handleSessionExpired
+      );
     };
 
   }, []);

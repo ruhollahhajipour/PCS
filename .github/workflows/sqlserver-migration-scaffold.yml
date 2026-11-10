@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - "feature/project-planning-architecture"
+      - "ai/**"
     paths:
       - "backend/src/PCS.Infrastructure.Migrations.SqlServer/PCS.Infrastructure.Migrations.SqlServer.csproj"
       - "backend/src/PCS.Infrastructure.Migrations.SqlServer/**"
       - "backend/src/PCS.Infrastructure/Persistence/DatabaseProviderResolver.cs"
       - "backend/src/PCS.Infrastructure/Persistence/PCSDbContext.cs"
       - "backend/src/PCS.Infrastructure/Migrations/**"
+      - "backend/src/PCS.Domain/**"
       - "backend/src/PCS.API/PCS.API.csproj"
       - "backend/src/PCS.Installer/PCS.Installer.csproj"
       - "backend/src/PCS.Installer/Services/Database/DatabaseInstallerService.cs"
@@ -99,11 +101,34 @@ jobs:
             $changed = $true
           }
 
+          # Schema changes made in code are scaffolded here, one named migration
+          # at a time, for both providers. A name is only scaffolded when it is
+          # absent, so re-runs are no-ops. Order matters: add new names at the end
+          # and push one schema change per commit.
+          $pending = @("AddAccountLockout", "AddRefreshTokens", "AddAccountRecovery")
+          foreach ($name in $pending) {
+            $env:Database__Provider = "Sqlite"
+            $env:ConnectionStrings__DefaultConnection = "Data Source=$env:RUNNER_TEMP\pcs-sqlite-design.db"
+            if (-not (Get-ChildItem "backend/src/PCS.Infrastructure/Migrations" -Filter "*_$name.cs" -ErrorAction SilentlyContinue)) {
+              dotnet ef migrations add $name --project $sqliteProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              $changed = $true
+            }
+
+            $env:Database__Provider = "SqlServer"
+            $env:ConnectionStrings__DefaultConnection = "Server=(localdb)\MSSQLLocalDB;Database=PCS_MigrationDesign;Integrated Security=True;TrustServerCertificate=True"
+            if (-not (Get-ChildItem "backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations" -Filter "*_$name.cs" -ErrorAction SilentlyContinue)) {
+              dotnet ef migrations add $name --project $sqlServerProject --startup-project $startupProject --context PCSDbContext --output-dir Migrations --configuration Release
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              $changed = $true
+            }
+          }
+
           if ($changed) {
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add backend/src/PCS.Infrastructure/Migrations backend/src/PCS.Infrastructure.Migrations.SqlServer/Migrations
-            git commit -m "chore(db): sync provider snapshots for tenant query filters"
+            git commit -m "chore(db): scaffold pending migrations for both providers"
             git push origin "HEAD:$env:GITHUB_REF_NAME"
           }
           else {

@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PCS.Infrastructure.Persistence;
 using PCS.Installer.Models;
@@ -47,7 +48,21 @@ public class DatabaseInstallerService
                 options.Options);
 
 
-        db.Database.Migrate();
+        try
+        {
+            db.Database.Migrate();
+        }
+        catch (SqlException ex) when (
+            ex.Message.Contains(
+                "certificate",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "The SQL Server TLS certificate is not trusted by this computer. " +
+                "Install a trusted certificate on the server, or tick " +
+                "\"Trust server certificate\" on the database page (less secure).",
+                ex);
+        }
 
 
         SeedData(db);
@@ -102,22 +117,37 @@ public class DatabaseInstallerService
     private string BuildSqlServerConnection(
         InstallerContext context)
     {
+        // The builder escapes values, so a password containing ';' or '='
+        // cannot corrupt or inject additional connection-string options.
+        var builder =
+            new SqlConnectionStringBuilder
+            {
+                DataSource =
+                    context.DatabaseServer,
+
+                InitialCatalog =
+                    context.DatabaseName,
+
+                Encrypt =
+                    SqlConnectionEncryptOption.Mandatory,
+
+                TrustServerCertificate =
+                    context.TrustServerCertificate
+            };
+
+
         if (context.WindowsAuthentication)
         {
-            return
-                $"Server={context.DatabaseServer};" +
-                $"Database={context.DatabaseName};" +
-                "Trusted_Connection=True;" +
-                "TrustServerCertificate=True;";
+            builder.IntegratedSecurity = true;
+        }
+        else
+        {
+            builder.UserID = context.Username;
+            builder.Password = context.Password;
         }
 
 
-        return
-            $"Server={context.DatabaseServer};" +
-            $"Database={context.DatabaseName};" +
-            $"User Id={context.Username};" +
-            $"Password={context.Password};" +
-            "TrustServerCertificate=True;";
+        return builder.ConnectionString;
     }
 
 

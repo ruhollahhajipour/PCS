@@ -35,12 +35,50 @@ public class ProjectRepository : IProjectRepository
 
     public void Update(Project project)
     {
-        _context.Projects.Update(project);
+        ArgumentNullException.ThrowIfNull(project);
+
+        var entry = _context.Entry(project);
+        if (entry.State == EntityState.Detached)
+        {
+            throw new InvalidOperationException(
+                "ProjectRepository.Update requires a project loaded through the current DbContext.");
+        }
+
+        if (entry.State == EntityState.Deleted)
+        {
+            throw new InvalidOperationException("A deleted project cannot be updated.");
+        }
     }
 
     public void Delete(Project project)
     {
-        _context.Projects.Remove(project);
+        ArgumentNullException.ThrowIfNull(project);
+
+        var entry = _context.Entry(project);
+        if (entry.State == EntityState.Detached)
+        {
+            throw new InvalidOperationException(
+                "ProjectRepository.Delete requires a project loaded through the current DbContext.");
+        }
+
+        if (entry.State == EntityState.Deleted)
+        {
+            return;
+        }
+
+        if (entry.State == EntityState.Added)
+        {
+            _context.Projects.Remove(project);
+            return;
+        }
+
+        project.IsDeleted = true;
+        project.DeletedAt = DateTime.UtcNow;
+        project.UpdatedAt = DateTime.UtcNow;
+
+        entry.Property(nameof(Project.IsDeleted)).IsModified = true;
+        entry.Property(nameof(Project.DeletedAt)).IsModified = true;
+        entry.Property(nameof(Project.UpdatedAt)).IsModified = true;
     }
 
     public async Task<bool> ExistsAsync(string code)

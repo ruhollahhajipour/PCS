@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 
 using PCS.Application.Common.Interfaces;
+using PCS.Application.Identity;
 using PCS.Application.Identity.Interfaces;
 using PCS.Application.Projects.Interfaces;
 using PCS.Application.Planning.Interfaces;
@@ -12,6 +13,7 @@ using PCS.Application.Licensing.Interfaces;
 using PCS.Infrastructure.Persistence;
 using PCS.Infrastructure.Repositories;
 using PCS.Infrastructure.Services;
+using PCS.Infrastructure.Services.Email;
 using PCS.Infrastructure.Services.Identity;
 
 namespace PCS.Infrastructure;
@@ -92,6 +94,57 @@ public static class DependencyInjection
         services.AddScoped<
          IJwtService,
          JwtService>();
+
+
+        services.AddSingleton(
+            configuration
+                .GetSection(LockoutOptions.SectionName)
+                .Get<LockoutOptions>() ?? new LockoutOptions());
+
+
+        services.AddSingleton(
+            configuration
+                .GetSection(RefreshTokenOptions.SectionName)
+                .Get<RefreshTokenOptions>() ?? new RefreshTokenOptions());
+
+
+        EmailOptions emailOptions =
+            configuration
+                .GetSection(EmailOptions.SectionName)
+                .Get<EmailOptions>() ?? new EmailOptions();
+
+        services.AddSingleton(emailOptions);
+
+        if (string.Equals(emailOptions.Provider, "Smtp", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        }
+        else if (string.Equals(emailOptions.Provider, "Log", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IEmailSender, LoggingEmailSender>();
+        }
+        else
+        {
+            services.AddSingleton<IEmailSender, NullEmailSender>();
+        }
+
+        AccountRecoveryOptions recoveryOptions =
+            configuration
+                .GetSection(AccountRecoveryOptions.SectionName)
+                .Get<AccountRecoveryOptions>() ?? new AccountRecoveryOptions();
+
+        recoveryOptions.CodeKey ??= configuration["Jwt:Secret"];
+
+        services.AddSingleton(recoveryOptions);
+
+        services.AddScoped<
+         IAccountRecoveryService,
+         AccountRecoveryService>();
+
+
+        services.AddScoped<
+         IRefreshTokenService,
+         RefreshTokenService>();
 
 
         services.AddScoped<

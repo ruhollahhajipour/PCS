@@ -1,8 +1,10 @@
 ﻿using System.Text;
+using System.Threading.RateLimiting;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -500,6 +502,38 @@ if (
 }
 
 
+// A relative SQLite path must never depend on the process working
+// directory. Installed: <root>\Database. Otherwise: the current directory
+// (development only; installed deployments always receive an absolute path).
+if (string.Equals(
+        DatabaseProviderResolver.GetProvider(builder.Configuration),
+        DatabaseProviderResolver.Sqlite,
+        StringComparison.OrdinalIgnoreCase))
+{
+    string sqliteBaseDirectory =
+        !string.IsNullOrWhiteSpace(installedRoot)
+            ? Path.Combine(installedRoot, "Database")
+            : Directory.GetCurrentDirectory();
+
+    string resolvedConnectionString =
+        SqliteConnectionPathResolver.MakeAbsolute(
+            configuredConnectionString,
+            sqliteBaseDirectory);
+
+    builder.Configuration["ConnectionStrings:DefaultConnection"] =
+        resolvedConnectionString;
+
+    string? sqliteDirectory =
+        Path.GetDirectoryName(
+            new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(
+                resolvedConnectionString).DataSource);
+
+    if (!string.IsNullOrEmpty(sqliteDirectory))
+    {
+        Directory.CreateDirectory(sqliteDirectory);
+    }
+}
+
 Log.Information(
     "PCS database connection string is configured.");
 
@@ -593,6 +627,15 @@ Log.Information(
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenant, CurrentTenant>();
+builder.Services.AddScoped<IAuditContext, HttpAuditContext>();
+
+// The logging email sender prints one-time codes, so it must never run in production.
+if (string.Equals(builder.Configuration["Email:Provider"], "Log", StringComparison.OrdinalIgnoreCase) &&
+    !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        "Email:Provider 'Log' is for development only. Use 'Smtp' or 'None'.");
+}
 
 builder.Services.AddApplication();
 
@@ -602,6 +645,23 @@ builder.Services.AddInfrastructure(
 
 
 builder.Services.AddControllers();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }));
+});
 
 builder.Services
     .AddHealthChecks()
@@ -745,7 +805,8 @@ builder.Services.AddCors(
 
                 policy
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .WithExposedHeaders(CorrelationIdMiddleware.HeaderName);
             });
     });
 
@@ -935,11 +996,16 @@ using (
 // HTTP Pipeline
 // ============================================================
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+
 app.UseMiddleware<ExceptionMiddleware>();
 
+app.UseRouting();
 
 app.UseCors(
     "PCS");
+
+app.UseRateLimiter();
 
 
 // HTTPS redirection intentionally disabled
