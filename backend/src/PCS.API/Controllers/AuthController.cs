@@ -15,13 +15,16 @@ public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IRefreshTokenService _refreshTokens;
+    private readonly IAccountRecoveryService _recovery;
 
     public AuthController(
         IAuthService authService,
-        IRefreshTokenService refreshTokens)
+        IRefreshTokenService refreshTokens,
+        IAccountRecoveryService recovery)
     {
         _authService = authService;
         _refreshTokens = refreshTokens;
+        _recovery = recovery;
     }
 
     [AllowAnonymous]
@@ -108,6 +111,82 @@ public sealed class AuthController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _recovery.RequestPasswordResetAsync(
+            request.Identifier,
+            cancellationToken);
+
+        // Same answer whether or not the account exists.
+        return Ok(new
+        {
+            message = "If the account exists and has an email address, a code has been sent."
+        });
+    }
+
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        bool reset = await _recovery.ResetPasswordAsync(
+            request.Identifier,
+            request.Code,
+            request.NewPassword,
+            cancellationToken);
+
+        return reset
+            ? Ok(new { message = "Password has been reset." })
+            : BadRequest(new { message = "The code is invalid or expired, or the password is too short." });
+    }
+
+    [Authorize]
+    [EnableRateLimiting("login")]
+    [HttpPost("send-verification")]
+    public async Task<IActionResult> SendVerification(
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        bool sent = await _recovery.SendEmailVerificationAsync(
+            userId,
+            cancellationToken);
+
+        return Ok(new { sent });
+    }
+
+    [Authorize]
+    [EnableRateLimiting("login")]
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail(
+        [FromBody] VerifyEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        bool verified = await _recovery.VerifyEmailAsync(
+            userId,
+            request.Code,
+            cancellationToken);
+
+        return verified
+            ? Ok(new { message = "Email address verified." })
+            : BadRequest(new { message = "The code is invalid or expired." });
     }
 
     [Authorize]

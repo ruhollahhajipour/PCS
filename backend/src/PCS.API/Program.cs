@@ -629,6 +629,14 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenant, CurrentTenant>();
 builder.Services.AddScoped<IAuditContext, HttpAuditContext>();
 
+// The logging email sender prints one-time codes, so it must never run in production.
+if (string.Equals(builder.Configuration["Email:Provider"], "Log", StringComparison.OrdinalIgnoreCase) &&
+    !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        "Email:Provider 'Log' is for development only. Use 'Smtp' or 'None'.");
+}
+
 builder.Services.AddApplication();
 
 

@@ -73,13 +73,20 @@ public sealed class AuthService : IAuthService
 
         string username = request.Username.Trim();
 
-        var user = await _dbContext.Users
-            .IgnoreQueryFilters()
-            .Include(x => x.UserRoles)
-                .ThenInclude(x => x.Role)
-            .SingleOrDefaultAsync(
-                x => x.UserName == username && x.IsActive && !x.IsDeleted,
-                cancellationToken);
+        // The identifier is a user name or an email address. An address shared by
+        // several accounts is ambiguous and never logs anyone in.
+        var candidates = await UserLookup
+            .ByIdentifier(
+                _dbContext.Users
+                    .IgnoreQueryFilters()
+                    .Include(x => x.UserRoles)
+                        .ThenInclude(x => x.Role),
+                username)
+            .Where(x => x.IsActive && !x.IsDeleted)
+            .Take(2)
+            .ToListAsync(cancellationToken);
+
+        var user = candidates.Count == 1 ? candidates[0] : null;
 
         DateTime now = _time.GetUtcNow().UtcDateTime;
 

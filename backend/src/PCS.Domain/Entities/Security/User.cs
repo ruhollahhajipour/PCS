@@ -29,6 +29,11 @@ public class User : AuditableEntity
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
+    /// زمان تأیید ایمیل با کد یک‌بارمصرف (UTC)؛ null یعنی تأیید نشده.
+    /// </summary>
+    public DateTime? EmailVerifiedAt { get; set; }
+
+    /// <summary>
     /// فعال یا غیرفعال بودن حساب کاربری.
     /// </summary>
     public bool IsActive { get; set; } = true;

@@ -38,6 +38,10 @@ public static class AuditActions
     public const string SelectCompany = "SelectCompany";
     public const string PasswordChanged = "PasswordChanged";
     public const string PasswordChangeFailed = "PasswordChangeFailed";
+    public const string PasswordResetRequested = "PasswordResetRequested";
+    public const string PasswordReset = "PasswordReset";
+    public const string PasswordResetFailed = "PasswordResetFailed";
+    public const string EmailVerified = "EmailVerified";
     public const string Export = "Export";
     public const string Import = "Import";
 }
