@@ -40,6 +40,31 @@ class AuthService {
 
 
   // =========================================================
+  // Forgotten password (one-time code sent by email)
+  // =========================================================
+
+  async forgotPassword(
+    identifier: string
+  ): Promise<void> {
+    await http.post(
+      "/auth/forgot-password",
+      { identifier }
+    );
+  }
+
+  async resetPassword(
+    identifier: string,
+    code: string,
+    newPassword: string
+  ): Promise<void> {
+    await http.post(
+      "/auth/reset-password",
+      { identifier, code, newPassword }
+    );
+  }
+
+
+  // =========================================================
   // Logout
   // =========================================================
 

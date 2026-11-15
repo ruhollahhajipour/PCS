@@ -8,8 +8,8 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Auth | Login (JWT), password hashing, legacy hash upgrade | IV | Security tests in CI. Login uses username, not email. |
 | Auth | Logout, session restoration | IV (API) / LOCAL (UI) | `POST auth/logout` revokes the session; UI restores via /me with silent refresh (vitest). Tokens still in `localStorage`. |
 | Auth | Refresh token rotation | IV | Hashed storage, rotation, reuse detection with 10 s grace, audited; 8 tests in CI; frontend single-flight refresh (7 vitest). |
-| Auth | Password reset by emailed one-time code | NI | `PasswordResetToken` entity exists, unused; no email sender. |
-| Auth | Email verification | NI | |
+| Auth | Password reset by emailed one-time code | IV (API) / LOCAL (UI) | 8-char code, keyed-HMAC at rest, 15 min, single use, 5 attempts, per-account cooldown, uniform response; `IEmailSender` (Smtp / Log dev-only / None). 11 tests in CI; `/forgot-password` page builds. Real SMTP delivery not tested. |
+| Auth | Email verification | IV (API) | Code by email; recorded in `Users.EmailVerifiedAt`; does not block login. No UI yet. |
 | Auth | Account lockout | IV | Configurable (`Security:Lockout`), audited; 4 tests in CI, migration applied on SQLite and SQL Server 2022. Plus per-IP rate limit. |
 | Auth | Session management | IV | `GET auth/sessions`, `DELETE auth/sessions/{id}`; password change ends all other sessions. No UI page yet. |
 | Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); tenant/membership tests in CI. |

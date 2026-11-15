@@ -15,6 +15,9 @@ Historic entries are in `docs/03-Roadmap/CHANGELOG.md` (empty at audit time). Th
 - Installer: explicit "Trust server certificate" option for SQL Server, default off, with an actionable certificate error (`084aa73`).
 - Installer release builder builds the frontend for same-origin `/api` (`1c6d6e9`).
 
+### Added (stage B4)
+- Password reset and email verification by one-time code, login by email or user name, `IEmailSender` (Smtp / Log / None), forgot-password page; migration `AddAccountRecovery` (`8fad32d`, `c9933f1`).
+
 ### Added (stage B3)
 - Refresh tokens: hashed storage, rotation, reuse detection, `auth/refresh`, `auth/logout`, `auth/sessions`; password change ends all sessions; table `RefreshTokens` with migrations for both providers (`461fe1b`, `45128d0`).
 - Frontend: silent single-flight refresh on 401; `/auth/me` and select-company no longer discard the stored refresh token (`461fe1b`).
