@@ -24,6 +24,15 @@ Installer smoke steps passed: build release, upload artifact, EF migration on SQ
 
 A first Installer run (41634081821, `cd0f606`) **failed**: missing Windows rolldown binding in the lockfile. Fixed in `aa13a22`.
 
+## Stage B5 (commits `e08fc77`, `b8239a8`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests | 43678341697 | failure: 121 passed, 1 failed. The pre-existing `ExceptionMiddlewareTests` expected HTTP 500 for `InvalidOperationException`, which F-21 deliberately changed to 400 |
+| Backend Application Tests (after the test was kept on an unexpected exception type) | 43678651488, 43678647646 | success, 122 passed (106 + 16 new: 7 HTTP isolation, 3 HTTP auth flow, 6 middleware mapping) |
+| Frontend Validation | 43678651515 | success |
+| Installer Build and Smoke Test | 43678338393 | success |
+
 ## Stage B1 (commit `68b333f`)
 
 | Workflow | Run | Result |
