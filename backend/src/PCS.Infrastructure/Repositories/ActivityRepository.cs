@@ -58,7 +58,22 @@ public class ActivityRepository
     public void Update(
         Activity activity)
     {
-        _context.Update(activity);
+        ArgumentNullException.ThrowIfNull(activity);
+
+        var entry = _context.Entry(activity);
+        if (entry.State == EntityState.Detached)
+        {
+            throw new InvalidOperationException(
+                "ActivityRepository.Update requires an activity loaded through the current DbContext.");
+        }
+
+        if (entry.State == EntityState.Deleted)
+        {
+            throw new InvalidOperationException("A deleted activity cannot be updated.");
+        }
+
+        // Keep EF change tracking scoped to the entity already loaded
+        // through the current tenant-filtered DbContext.
     }
 
 

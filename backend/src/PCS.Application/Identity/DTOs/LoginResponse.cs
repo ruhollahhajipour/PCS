@@ -4,6 +4,12 @@ public class LoginResponse
 {
     public string Token { get; set; } = "";
 
+    /// <summary>
+    /// Set by login and refresh only. Other responses leave it null and the
+    /// client keeps the refresh token it already has.
+    /// </summary>
+    public string? RefreshToken { get; set; }
+
     public string Username { get; set; } = "";
 
     public string FullName { get; set; } = "";

@@ -16,6 +16,7 @@ public class DatabasePage : InstallerPageBase
     private TextBox databaseNameBox = null!;
 
     private CheckBox windowsAuthBox = null!;
+    private CheckBox trustCertificateBox = null!;
 
     private Label usernameLabel = null!;
     private TextBox usernameBox = null!;
@@ -368,6 +369,34 @@ public class DatabasePage : InstallerPageBase
             };
 
 
+        trustCertificateBox =
+            new CheckBox
+            {
+                Text =
+                    "Trust server certificate",
+
+                Location =
+                    new Point(
+                        500,
+                        141),
+
+                AutoSize =
+                    true,
+
+                Font =
+                    Fonts.Small,
+
+                ForeColor =
+                    Colors.TextSecondary,
+
+                BackColor =
+                    Color.Transparent,
+
+                Checked =
+                    context.TrustServerCertificate
+            };
+
+
         authenticationHint =
             new Label
             {
@@ -534,6 +563,14 @@ public class DatabasePage : InstallerPageBase
             };
 
 
+        trustCertificateBox.CheckedChanged +=
+            (_, _) =>
+            {
+                context.TrustServerCertificate =
+                    trustCertificateBox.Checked;
+            };
+
+
         windowsAuthBox.CheckedChanged +=
             (_, _) =>
             {
@@ -572,6 +609,8 @@ public class DatabasePage : InstallerPageBase
 
         databaseCard.Controls.Add(serverLabel);
         databaseCard.Controls.Add(serverBox);
+
+        databaseCard.Controls.Add(trustCertificateBox);
 
         databaseCard.Controls.Add(databaseLabel);
         databaseCard.Controls.Add(databaseNameBox);
@@ -688,6 +727,15 @@ public class DatabasePage : InstallerPageBase
 
         windowsAuthBox.Enabled =
             isSqlServer;
+
+        trustCertificateBox.Enabled =
+            isSqlServer;
+
+        if (!isSqlServer)
+        {
+            trustCertificateBox.Checked =
+                false;
+        }
 
 
         if (!isSqlServer)

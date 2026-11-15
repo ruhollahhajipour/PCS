@@ -7,4 +7,6 @@ public interface IPasswordHasher
     bool Verify(
         string password,
         string hash);
+
+    bool NeedsRehash(string hash);
 }

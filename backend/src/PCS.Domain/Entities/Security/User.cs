@@ -29,6 +29,11 @@ public class User : AuditableEntity
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
+    /// زمان تأیید ایمیل با کد یک‌بارمصرف (UTC)؛ null یعنی تأیید نشده.
+    /// </summary>
+    public DateTime? EmailVerifiedAt { get; set; }
+
+    /// <summary>
     /// فعال یا غیرفعال بودن حساب کاربری.
     /// </summary>
     public bool IsActive { get; set; } = true;
@@ -42,6 +47,16 @@ public class User : AuditableEntity
     /// آخرین زمان ورود موفق.
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>
+    /// تعداد ورودهای ناموفق متوالی از آخرین ورود موفق یا آخرین قفل شدن.
+    /// </summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>
+    /// تا این زمان (UTC) ورود برای حساب قفل است.
+    /// </summary>
+    public DateTime? LockoutEnd { get; set; }
 
     /// <summary>
     /// نقش‌های کاربر.

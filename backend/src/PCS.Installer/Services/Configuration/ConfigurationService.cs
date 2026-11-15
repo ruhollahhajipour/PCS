@@ -208,13 +208,12 @@ public class ConfigurationService
                     new
                     {
                         LogLevel =
-                            new
+                            // A dotted category name cannot be an
+                            // anonymous-type member, so use a dictionary.
+                            new Dictionary<string, string>
                             {
-                                Default =
-                                    "Information",
-
-                                MicrosoftAspNetCore =
-                                    "Warning"
+                                ["Default"] = "Information",
+                                ["Microsoft.AspNetCore"] = "Warning"
                             }
                     },
 

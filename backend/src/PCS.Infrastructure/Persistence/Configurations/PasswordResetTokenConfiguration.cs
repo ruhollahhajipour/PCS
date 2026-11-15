@@ -19,6 +19,10 @@ public sealed class PasswordResetTokenConfiguration
             .IsRequired()
             .HasMaxLength(128);
 
+        builder.Property(x => x.Purpose)
+            .IsRequired()
+            .HasMaxLength(32);
+
         builder.Property(x => x.ExpiresAt)
             .IsRequired();
 

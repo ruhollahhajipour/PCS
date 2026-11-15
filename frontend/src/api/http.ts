@@ -1,42 +1,14 @@
 import axios from "axios";
+import { resolveApiBaseUrl } from "./apiBaseUrl";
+import { installRefreshInterceptor } from "./refreshInterceptor";
 
-const configuredApiUrl =
-  import.meta.env.VITE_API_URL?.trim();
-
-if (import.meta.env.PROD) {
-  if (!configuredApiUrl) {
-    throw new Error(
-      "VITE_API_URL must be configured for production builds."
-    );
-  }
-
-  let parsedApiUrl: URL;
-
-  try {
-    parsedApiUrl = new URL(configuredApiUrl);
-  }
-  catch {
-    throw new Error(
-      "VITE_API_URL must be an absolute HTTPS URL ending in /api."
-    );
-  }
-
-  if (
-    parsedApiUrl.protocol !== "https:" ||
-    parsedApiUrl.pathname.replace(/\/+$/, "") !== "/api" ||
-    parsedApiUrl.search ||
-    parsedApiUrl.hash
-  ) {
-    throw new Error(
-      "VITE_API_URL must use HTTPS and point exactly to the API base path ending in /api."
-    );
-  }
-}
+const apiBaseUrl = resolveApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+  import.meta.env.PROD
+);
 
 const http = axios.create({
-  baseURL:
-    configuredApiUrl ||
-    "/api",
+  baseURL: apiBaseUrl,
 
   timeout: 30000,
 
@@ -82,6 +54,10 @@ http.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Registered before the logging interceptor so a transparently refreshed 401
+// is not logged as an API error.
+installRefreshInterceptor(http);
 
 http.interceptors.response.use(
   (response) => response,

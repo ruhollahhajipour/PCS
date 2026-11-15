@@ -226,6 +226,10 @@ public class InstallerContext
     public bool WindowsAuthentication { get; set; }
         = true;
 
+    // Off by default: SQL Server's TLS certificate must be trusted.
+    public bool TrustServerCertificate { get; set; }
+        = false;
+
 
     public string ConnectionString { get; set; }
         = string.Empty;

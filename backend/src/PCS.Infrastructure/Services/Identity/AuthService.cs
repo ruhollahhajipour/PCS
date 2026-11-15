@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 
+using PCS.Application.Common.Auditing;
+using PCS.Application.Common.Interfaces;
+using PCS.Application.Identity;
 using PCS.Application.Identity.DTOs;
 using PCS.Application.Identity.Interfaces;
 using PCS.Infrastructure.Persistence;
@@ -11,15 +14,51 @@ public sealed class AuthService : IAuthService
     private readonly PCSDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly IAuditService? _auditService;
+    private readonly LockoutOptions _lockout;
+    private readonly TimeProvider _time;
 
     public AuthService(
         PCSDbContext dbContext,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IAuditService? auditService = null,
+        LockoutOptions? lockoutOptions = null,
+        TimeProvider? timeProvider = null)
     {
+        _lockout = lockoutOptions ?? new LockoutOptions();
+        _time = timeProvider ?? TimeProvider.System;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _auditService = auditService;
+    }
+
+    // Security events are recorded without passwords, tokens or other secrets.
+    private Task RecordSecurityEventAsync(
+        string action,
+        Guid? userId,
+        string? username,
+        Guid? companyId,
+        string? details,
+        CancellationToken cancellationToken)
+    {
+        if (_auditService is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _auditService.RecordAsync(
+            new AuditEvent(
+                AuditModules.Security,
+                "User",
+                userId?.ToString() ?? "unknown",
+                action,
+                userId,
+                username,
+                companyId,
+                details),
+            cancellationToken);
     }
 
     public async Task<LoginResponse?> LoginAsync(
@@ -34,18 +73,75 @@ public sealed class AuthService : IAuthService
 
         string username = request.Username.Trim();
 
-        var user = await _dbContext.Users
-            .IgnoreQueryFilters()
-            .Include(x => x.UserRoles)
-                .ThenInclude(x => x.Role)
-            .SingleOrDefaultAsync(
-                x => x.UserName == username && x.IsActive,
+        // The identifier is a user name or an email address. An address shared by
+        // several accounts is ambiguous and never logs anyone in.
+        var candidates = await UserLookup
+            .ByIdentifier(
+                _dbContext.Users
+                    .IgnoreQueryFilters()
+                    .Include(x => x.UserRoles)
+                        .ThenInclude(x => x.Role),
+                username)
+            .Where(x => x.IsActive && !x.IsDeleted)
+            .Take(2)
+            .ToListAsync(cancellationToken);
+
+        var user = candidates.Count == 1 ? candidates[0] : null;
+
+        DateTime now = _time.GetUtcNow().UtcDateTime;
+
+        if (user is not null &&
+            user.LockoutEnd.HasValue &&
+            user.LockoutEnd.Value > now)
+        {
+            // The password is not even checked while the account is locked, so
+            // a correct guess during the lockout window gains nothing. The
+            // caller sees the same result as for any other failed login.
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user.Id,
+                username,
+                null,
+                "locked_out",
                 cancellationToken);
+
+            return null;
+        }
 
         if (user is null ||
             !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
+            bool locked = user is not null &&
+                await RegisterFailedAttemptAsync(user, now, cancellationToken);
+
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user?.Id,
+                username,
+                null,
+                "invalid_credentials",
+                cancellationToken);
+
+            if (locked)
+            {
+                await RecordSecurityEventAsync(
+                    AuditActions.AccountLocked,
+                    user!.Id,
+                    username,
+                    null,
+                    $"locked_for_{_lockout.LockoutMinutes}_minutes",
+                    cancellationToken);
+            }
+
             return null;
+        }
+
+        user.FailedLoginCount = 0;
+        user.LockoutEnd = null;
+
+        if (_passwordHasher.NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = _passwordHasher.Hash(request.Password);
         }
 
         bool isPlatformAdmin = IsPlatformAdmin(user);
@@ -55,13 +151,23 @@ public sealed class AuthService : IAuthService
             .Where(x =>
                 x.UserId == user.Id &&
                 x.IsActive &&
-                x.Company.IsActive)
+                !x.IsDeleted &&
+                x.Company.IsActive &&
+                !x.Company.IsDeleted)
             .OrderBy(x => x.AssignedAt)
             .Select(x => (Guid?)x.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (!companyId.HasValue && !isPlatformAdmin)
         {
+            await RecordSecurityEventAsync(
+                AuditActions.LoginFailed,
+                user.Id,
+                user.UserName,
+                null,
+                "no_active_membership",
+                cancellationToken);
+
             return null;
         }
 
@@ -73,7 +179,41 @@ public sealed class AuthService : IAuthService
         user.LastLoginAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await RecordSecurityEventAsync(
+            AuditActions.Login,
+            user.Id,
+            user.UserName,
+            companyId,
+            null,
+            cancellationToken);
+
         return response;
+    }
+
+    // Returns true when this failure locked the account.
+    private async Task<bool> RegisterFailedAttemptAsync(
+        Domain.Entities.Security.User user,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (!_lockout.Enabled)
+        {
+            return false;
+        }
+
+        user.FailedLoginCount++;
+
+        bool locked = user.FailedLoginCount >= _lockout.MaxFailedAttempts;
+
+        if (locked)
+        {
+            user.LockoutEnd = now.AddMinutes(_lockout.LockoutMinutes);
+            user.FailedLoginCount = 0;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return locked;
     }
 
     public async Task<LoginResponse?> GetCurrentUserAsync(
@@ -118,10 +258,20 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        return await BuildLoginResponseAsync(
+        var selected = await BuildLoginResponseAsync(
             user,
             companyId,
             cancellationToken);
+
+        await RecordSecurityEventAsync(
+            AuditActions.SelectCompany,
+            user.Id,
+            user.UserName,
+            companyId,
+            null,
+            cancellationToken);
+
+        return selected;
     }
 
     private Task<Domain.Entities.Security.User?> LoadUserAsync(
@@ -133,7 +283,7 @@ public sealed class AuthService : IAuthService
             .Include(x => x.UserRoles)
                 .ThenInclude(x => x.Role)
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
     }
 
@@ -149,20 +299,26 @@ public sealed class AuthService : IAuthService
             return isPlatformAdmin;
         }
 
+        if (isPlatformAdmin)
+        {
+            // Platform administrators must be able to inspect and reactivate
+            // inactive companies, but soft-deleted companies remain inaccessible.
+            return await _dbContext.Companies
+                .IgnoreQueryFilters()
+                .AnyAsync(
+                    x => x.Id == companyId.Value && !x.IsDeleted,
+                    cancellationToken);
+        }
+
         bool companyExists = await _dbContext.Companies
             .IgnoreQueryFilters()
             .AnyAsync(
-                x => x.Id == companyId.Value && x.IsActive,
+                x => x.Id == companyId.Value && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (!companyExists)
         {
             return false;
-        }
-
-        if (isPlatformAdmin)
-        {
-            return true;
         }
 
         return await _dbContext.CompanyUsers
@@ -171,7 +327,10 @@ public sealed class AuthService : IAuthService
                 x =>
                     x.UserId == user.Id &&
                     x.CompanyId == companyId.Value &&
-                    x.IsActive,
+                    x.IsActive &&
+                    !x.IsDeleted &&
+                    x.Company.IsActive &&
+                    !x.Company.IsDeleted,
                 cancellationToken);
     }
 
@@ -264,7 +423,7 @@ public sealed class AuthService : IAuthService
         var user = await _dbContext.Users
             .IgnoreQueryFilters()
             .SingleOrDefaultAsync(
-                x => x.Id == userId && x.IsActive,
+                x => x.Id == userId && x.IsActive && !x.IsDeleted,
                 cancellationToken);
 
         if (user is null ||
@@ -272,6 +431,14 @@ public sealed class AuthService : IAuthService
                 request.CurrentPassword,
                 user.PasswordHash))
         {
+            await RecordSecurityEventAsync(
+                AuditActions.PasswordChangeFailed,
+                userId,
+                user?.UserName,
+                null,
+                "current_password_rejected",
+                cancellationToken);
+
             return false;
         }
 
@@ -280,6 +447,15 @@ public sealed class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await RecordSecurityEventAsync(
+            AuditActions.PasswordChanged,
+            user.Id,
+            user.UserName,
+            null,
+            null,
+            cancellationToken);
+
         return true;
     }
 }

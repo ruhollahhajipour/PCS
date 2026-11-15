@@ -1790,7 +1790,6 @@ namespace PCS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
-                    b.Navigation("Activities");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaselineActivity", b =>
@@ -1802,6 +1801,11 @@ namespace PCS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ProjectBaseline");
+                });
+
+            modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectBaseline", b =>
+                {
+                    b.Navigation("Activities");
                 });
 
             modelBuilder.Entity("PCS.Domain.Entities.Planning.ProjectCalendar", b =>

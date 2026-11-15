@@ -19,6 +19,7 @@ import { useWorkspace } from "../context/WorkspaceContext";
 
 // Keep the application shell eager; load feature pages only when their route is visited.
 const Login = lazy(() => import("../pages/Login"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
 const ChangePassword = lazy(() => import("../pages/ChangePassword"));
 const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
 const Companies = lazy(() => import("../features/companies/pages/Companies"));
@@ -144,6 +145,11 @@ export default function AppRoutes() {
         <Route
           path="/login"
           element={<LazyPage component={Login} />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<LazyPage component={ForgotPassword} />}
         />
 
         <Route

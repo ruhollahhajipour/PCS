@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Link,
   FormControlLabel,
   Paper,
   Stack,
@@ -14,7 +15,7 @@ import {
 
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
 
@@ -38,7 +39,7 @@ export default function Login() {
 
     if (!username.trim() || !password) {
       setError(
-        "Please enter your username and password."
+        "Please enter your username or email and password."
       );
       return;
     }
@@ -165,7 +166,7 @@ export default function Login() {
 
             <TextField
               fullWidth
-              label="Username"
+              label="Username or email"
               value={username}
               onChange={(event) =>
                 setUsername(event.target.value)
@@ -209,6 +210,17 @@ export default function Login() {
               }
               label="Remember Me"
             />
+
+            <Box textAlign="right">
+              <Link
+                component={RouterLink}
+                to="/forgot-password"
+                underline="hover"
+                fontSize={14}
+              >
+                Forgot password?
+              </Link>
+            </Box>
 
             {/* =========================
                 SUBMIT
