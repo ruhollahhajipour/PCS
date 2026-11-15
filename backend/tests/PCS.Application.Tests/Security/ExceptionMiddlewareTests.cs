@@ -14,7 +14,9 @@ public sealed class ExceptionMiddlewareTests
         const string sensitiveInnerMessage = "SQL Server host internal-db-01";
 
         var middleware = new ExceptionMiddleware(
-            _ => throw new InvalidOperationException(
+            // An unexpected fault stays a 500. Expected failures (not found,
+            // forbidden, bad input) are mapped separately in Api/ExceptionMiddlewareTests.
+            _ => throw new NotSupportedException(
                 sensitiveMessage,
                 new Exception(sensitiveInnerMessage)),
             NullLogger<ExceptionMiddleware>.Instance);
