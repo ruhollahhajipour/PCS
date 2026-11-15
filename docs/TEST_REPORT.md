@@ -44,6 +44,18 @@ A first Installer run (41634081821, `cd0f606`) **failed**: missing Windows rolld
 
 First attempt on `b34a7c6` failed to compile (missing `using` in the new test); fixed in `813b23b`.
 
+## Stage B4 (commit `8fad32d` + bot migration `c9933f1`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| Backend Application Tests | 42901654659 | success, 106 passed (95 + 11 `AccountRecoveryTests`) |
+| Frontend Validation | 42901654688 | success |
+| SQL Server Migration Scaffold (re-run after migration) | 42902416670 | success |
+| Installer Build and Smoke Test (first run, before the migration existed) | 42901639701 | failure (pending model changes; expected ordering) |
+| Installer Build and Smoke Test (re-run) | 42902410211 | success |
+
+Local: vitest 43/43, eslint, tsc, build pass with the forgot-password page.
+
 ## Stage B3 (commit `461fe1b` + bot migration `45128d0`)
 
 | Workflow | Run | Result |
