@@ -15,6 +15,12 @@ Historic entries are in `docs/03-Roadmap/CHANGELOG.md` (empty at audit time). Th
 - Installer: explicit "Trust server certificate" option for SQL Server, default off, with an actionable certificate error (`084aa73`).
 - Installer release builder builds the frontend for same-origin `/api` (`1c6d6e9`).
 
+### Added (stage B5)
+- HTTP-level integration tests on the real API (`WebApplicationFactory`, throw-away SQLite): tenant isolation, forged company header, viewer permissions, lockout, refresh/logout, password reset (`e08fc77`).
+
+### Fixed (stage B5)
+- API returns 404/403/400 for expected failures instead of 500 (`e08fc77`).
+
 ### Added (stage B4)
 - Password reset and email verification by one-time code, login by email or user name, `IEmailSender` (Smtp / Log / None), forgot-password page; migration `AddAccountRecovery` (`8fad32d`, `c9933f1`).
 

@@ -18,7 +18,8 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 | F-16 | Medium | Overlapping open PRs, baseline undecided. | |
 | F-17 | Low | Stale committed binaries and placeholder files (list in MASTER_AUDIT F-17; `PublishService.cs` is in use and must stay). Deletion awaits owner approval. | |
 | F-18 | Low | Anonymous `/api/health` exposes version. | |
-| F-19 | Low | Thin frontend tests. | |
+| F-19 | Low | Thin frontend tests (43 vitest tests; no component tests yet). Backend HTTP tests added in B5. | |
+| F-22 | Low | Validation and business-rule messages are not shown to users: expected failures return generic text (400/403/404). | Users see a generic error. |
 
 ## Fixed in this remediation
 
@@ -30,6 +31,7 @@ Authoritative detail and evidence: [MASTER_AUDIT.md](MASTER_AUDIT.md). Dated 202
 | F-04 | SQL Server credential escaping; logging category. | `cd0f606` |
 | F-12 | Relative SQLite paths resolved against `<root>\Database`; no default connection string in shipped settings; CI checks. Design-time factory and DbCheck tools still use a relative dev path. | `b43d651` |
 | F-14 | Explicit "Trust server certificate" option, default off. | `084aa73` |
+| F-21 | API returned HTTP 500 for every exception, including not-found, forbidden and bad input. Now 404/403/400; faults stay 500. | `e08fc77` |
 | F-20 | Release builder builds the frontend for same-origin `/api`. | `1c6d6e9` |
 
 ## Build-environment limits

@@ -12,7 +12,8 @@ Status vocabulary (directive §4.2): **IV** Implemented & Verified · **INV** Im
 | Auth | Email verification | IV (API) | Code by email; recorded in `Users.EmailVerifiedAt`; does not block login. No UI yet. |
 | Auth | Account lockout | IV | Configurable (`Security:Lockout`), audited; 4 tests in CI, migration applied on SQLite and SQL Server 2022. Plus per-IP rate limit. |
 | Auth | Session management | IV | `GET auth/sessions`, `DELETE auth/sessions/{id}`; password change ends all other sessions. No UI page yet. |
-| Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); tenant/membership tests in CI. |
+| Authorization | Permission policies on API actions | IV | `[Permission]` on all non-public actions (read); HTTP tests in CI: anonymous 401, viewer cannot write, forged `X-PCS-CompanyId` refused. |
+| Multi-tenancy | Cross-company read/update/delete/create (projects, plants) | IV | Real API on SQLite via WebApplicationFactory (B5): other company gets 404/403, nothing leaks into lists. PMS, WBS, activity endpoints not yet covered. |
 | Authorization | Platform admin scope, inactive membership handling | IV | Tests in CI. |
 | Audit | Audit log table and service | IV | Automatic trail + security events (B1, CI 83 tests). No UI; license/export events pending. |
 | Licensing | License entities, status/access query | PI | Read-only; not enforced on any endpoint. |
